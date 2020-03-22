@@ -5,13 +5,20 @@ project(signalanalyzer)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTOUIC ON)
 
 find_package(Qt5Core)
 find_package(Qt5Widgets)
 
-add_executable(${PROJECT_NAME} "main.cpp")
+add_executable(${PROJECT_NAME} "main.cpp"
+                                "JonesPlot.h" "JonesPlot.cpp"
+                                "OGLChart.h" "OGLChart.cpp"
+                                "QOpenGLPlotter.h" "QOpenGLPlotter.cpp"
+				"ShapeGenerator.h" "ShapeGenerator.cpp"
+				"ShapeData.h" "ShapeData.cpp"
+                                )
 
-# link libs
+ # link libs
 target_link_libraries(${PROJECT_NAME} Qt5::Widgets)
 
 target_link_libraries(${PROJECT_NAME} Qt5::Core)
