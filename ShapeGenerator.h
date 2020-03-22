@@ -1,7 +1,8 @@
 #pragma once
+
+// Qt includes
 #include <qvector.h>
 #include <qvector3d.h>
-
 
 class ShapeGenerator {
 public:
