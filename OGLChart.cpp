@@ -36,16 +36,18 @@ void OGLChart::addData(float y, float x_ms)
 		needWrap = true;
 		_wrappedOnce = true;
 	}
-	//append new value
-	//delete old values
-	//map data to plot point to a specific position in the plot itself( not the window the plot is placed in)
-	//modify data for visualization
-	//- because then the positive y axis is directing at the top of the screen
+    // append new value
+    // delete old values
+    // map data to plot point to a specific position in the plot itself( not the window the plot is placed in)
+    // modify data for visualization
+    // - because then the positive y axis is directing at the top of the screen
     float y_inRange_S = static_cast<float>(_chartPositionY_S) - ( y *	 ( static_cast<float>(_chartHeight_S) / (_maxY - _minY) ) );
 
-	//+ so the data value runs from left to right side
-	//calculate new x-index when the dataseries has reached the left border of the plot
-    float x_ms_new = static_cast<float>(x_ms) - static_cast<float>(_maxX_ms) * static_cast<float>(wrapped_number - 1);	//calculate value after wrapping-> -1 because we start wrapped number at 1 -
+    // + so the data value runs from left to right side
+    // calculate new x-index when the dataseries has reached the left border of the plot
+    float x_ms_new = static_cast<float>(x_ms) - static_cast<float>(_maxX_ms) * static_cast<float>(wrapped_number - 1);
+
+    //calculate value after wrapping-> -1 because we start wrapped number at 1 -
 	//put x on right position of screen
     float x_inRange_ms_S = static_cast<float>(_chartPositionX_S) + (x_ms_new * (static_cast<float>(_chartWidth_S) / (_maxX_ms - _minX_ms)));
 	//add modified(in range) data to tempbuffer
@@ -58,59 +60,12 @@ void OGLChart::addData(float y, float x_ms)
 	_tempDataBuffer[_tempBufferIndex + 1] = y_inRange_S;
     _tempDataBuffer[_tempBufferIndex + 2] = z_depth;
 
-//    std::cout << "Point #" << _pointCount << ": " << x_inRange_ms_S << ", " << y_inRange_S << ", " << z_depth << std::endl;
+    // std::cout << "Point #" << _pointCount << ": " << x_inRange_ms_S << ", " << y_inRange_S << ", " << z_depth << std::endl;
 
-	//data_lock->unlock();
 	_tempBufferIndex += 3;
-	//send data to ogl - each point for itself
-	/*	simple solution: add each point to the buffer when its added
-	QVector<float> dataPoint;
-	dataPoint.append(x_inRange_ms_S);
-	dataPoint.append(y_inRange_S);
-	dataPoint.append(10.0); // z-coord : 0
-	//write data to buffer
-	if (_bufferIndex <= _bufferSize) {
-		chartVBO.bind();
-		chartVBO.write(_bufferIndex, dataPoint.data(), 3 * sizeof(float));
-		chartVBO.release();
-		_bufferIndex += 3 * sizeof(float);	//offset in bytes
-		if(!_wrappedOnce){
-		_pointCount++;
-		}
-	}
-	else {
-		std::cout << "chart data buffer full, number of datapoints(floats): " <<_pointCount <<"..restart writing at beginning" <<"\n\r";
-		_bufferIndex = 0;
-	}
-	*/
 }
 
 
-
-//void OGLChart::addPoint(int count, QVector<double> data)(){
-
-	//send data to ogl - each point for itself
-	/*	simple solution: add each point to the buffer when its added
-	QVector<float> dataPoint;
-	dataPoint.append(x_inRange_ms_S);
-	dataPoint.append(y_inRange_S);
-	dataPoint.append(10.0); // z-coord : 0
-	//write data to buffer
-	if (_bufferIndex <= _bufferSize) {
-		chartVBO.bind();
-		chartVBO.write(_bufferIndex, dataPoint.data(), 3 * sizeof(float));
-		chartVBO.release();
-		_bufferIndex += 3 * sizeof(float);	//offset in bytes
-		if(!_wrappedOnce){
-		_pointCount++;
-		}
-	}
-	else {
-		std::cout << "chart data buffer full, number of datapoints(floats): " <<_pointCount <<"..restart writing at beginning" <<"\n\r";
-		_bufferIndex = 0;
-	}
-	}
-	*/
 
 void OGLChart::addRange(int count, QVector<double> data) 
 {
@@ -139,8 +94,8 @@ void OGLChart::addRange(int count, QVector<double> data)
 
 void OGLChart::sendDataToOGL()
 {
-	//Bind VBO before 
-	//create plot point
+    // Bind VBO before
+    // create plot point
 	QVector<float> dataPoint;
 
 	int count = 0;
@@ -157,17 +112,17 @@ void OGLChart::sendDataToOGL()
 
 	//reset buffer(idx) now - all the data is now in dataPoint and in a few LOC's in OGL
 	_tempBufferIndex = 0;
-	if (count > 0) {	//only add data if there is new data which needs to be added
+    if (count > 0) {	// only add data if there is new data which needs to be added
 		if (_bufferIndex <= _bufferSize) {
 			//chartVBO.bind();
 			chartVBO.write(_bufferIndex, dataPoint.data(), count * sizeof(float));
 			//chartVBO.release();
 			_bufferIndex += dataPoint.size() * sizeof(float);	//offset in bytes
-			//stop counting points after one wrap (because after a wrap the point count stays the same)
+            // stop counting points after one wrap (because after a wrap the point count stays the same)
 			if (!_wrappedOnce) {	
 				_pointCount += count / 3;
 			}
-        } else {//buffer is full...reset buffer and start overwriting data at the beginning
+        } else { //buffer is full...reset buffer and start overwriting data at the beginning
 			std::cout << "chart data buffer full, number of datapoints(floats): " << _pointCount << "chartID: " << _chartId <<"..restart writing at beginning" << "\n\r";
 			_bufferIndex = 0;
 		}
@@ -206,13 +161,14 @@ OGLChart::OGLChart(int bufferSize,
                    int chartHeight_S,
                    int chartID)
     : _bufferSize(bufferSize*3*sizeof(float)),
-      _bufferIndex(0), chartVBO(QOpenGLBuffer::VertexBuffer),
+      _bufferIndex(0),
+      chartVBO(QOpenGLBuffer::VertexBuffer),
       _xAxisVBO(QOpenGLBuffer::VertexBuffer),
       _yAxisVBO(QOpenGLBuffer::VertexBuffer),
       _tempBufferIndex(0)
 {
 	QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
-	//f->initializeOpenGLFunctions();
+
 	//Sweep-Chart parameters
 	wrapped_number = 1;
 	needWrap = false;
@@ -268,31 +224,33 @@ void OGLChart::setupAxes() {
 	// |													| <- width
 	//P2--------------------------------------------------- P3
 	//						length
+
+    float axis_pos_z = 1.0f;
 	//first triang P1-P2-P4
 	xAxis_verts.append(_chartPositionX_S);
 	xAxis_verts.append(_chartPositionY_S);
-	xAxis_verts.append(10.0);
+    xAxis_verts.append(axis_pos_z);
 
 	xAxis_verts.append(_chartPositionX_S);
 	xAxis_verts.append(_chartPositionY_S + xAxis_width);
-	xAxis_verts.append(10.0);
+    xAxis_verts.append(axis_pos_z);
 
     xAxis_verts.append(_chartPositionX_S + xAxis_length);
 	xAxis_verts.append(_chartPositionY_S);
-	xAxis_verts.append(10.0);
+    xAxis_verts.append(axis_pos_z);
 
 	//second triang P3 - P4 - P2
 	xAxis_verts.append(_chartPositionX_S + xAxis_length);
 	xAxis_verts.append(_chartPositionY_S + xAxis_width);
-	xAxis_verts.append(10.0);
+    xAxis_verts.append(axis_pos_z);
 
 	xAxis_verts.append(_chartPositionX_S + xAxis_length);
 	xAxis_verts.append(_chartPositionY_S);
-	xAxis_verts.append(10.0);
+    xAxis_verts.append(axis_pos_z);
 
 	xAxis_verts.append(_chartPositionX_S);
 	xAxis_verts.append(_chartPositionY_S + xAxis_width);
-	xAxis_verts.append(10.0);
+    xAxis_verts.append(axis_pos_z);
 
 
 	// end of triangle approach
@@ -336,19 +294,19 @@ void OGLChart::setupAxes() {
 	//p1..
 	yAxis_verts.append(_chartPositionX_S);
 	yAxis_verts.append(_chartPositionY_S);
-	yAxis_verts.append(10.0);
+    yAxis_verts.append(axis_pos_z);
 
 	yAxis_verts.append(_chartPositionX_S);
 	yAxis_verts.append(_chartPositionY_S + yAxis_length);
-	yAxis_verts.append(10.0);
+    yAxis_verts.append(axis_pos_z);
 
 	yAxis_verts.append(_chartPositionX_S + yAxis_length);
 	yAxis_verts.append(_chartPositionY_S + yAxis_width);
-	yAxis_verts.append(10.0);
+    yAxis_verts.append(axis_pos_z);
 	//..p4
 	yAxis_verts.append(_chartPositionX_S + yAxis_length);
 	yAxis_verts.append(_chartPositionY_S);
-	yAxis_verts.append(10.0);
+    yAxis_verts.append(axis_pos_z);
 
 
 	//Setup OGL Chart buffer - empty 

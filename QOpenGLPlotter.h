@@ -39,10 +39,10 @@ public:
 	QOpenGLPlotter(QWidget* parent = 0);
 	~QOpenGLPlotter();
 
-	QMatrix4x4* m_projectionMat;
-	QMatrix4x4* m_modelMat;
-	QMatrix4x4* m_viewMat;
-	QMatrix4x4* m_MVP;
+	QMatrix4x4* _projection_mat;
+	QMatrix4x4* _model_mat;
+	QMatrix4x4* _view_mat;
+	QMatrix4x4* _MVP;
 
 	//Shader Programms
 	QOpenGLShaderProgram m_prog;
