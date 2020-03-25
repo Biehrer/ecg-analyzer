@@ -21,22 +21,13 @@ JonesPlot::JonesPlot(QWidget *parent)
     ui.setupUi(this);
 	
 	singlePlot = new QOpenGLPlotter(this);
-
-//    QSurfaceFormat format;
-//    format.setVersion(3,3);
-//    singlePlot->setFormat(format);
-
 	singlePlot->show();
 
     //    if( !singlePlot->IsActive() ){
     //        abort!
     //    }
 
+    // Start thread to add data to the plots
     std::thread dataThread(&QOpenGLPlotter::dataThreadFunc, singlePlot);
     dataThread.detach();
-	//std::thread dataThread();
-	//dataThread.join();
-	
-	//std::thread dataUpdateT(&QOpenGLPlotter::on_dataUpdate);
-
 }

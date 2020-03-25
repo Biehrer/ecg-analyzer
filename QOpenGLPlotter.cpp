@@ -32,19 +32,12 @@ QOpenGLPlotter::QOpenGLPlotter(QWidget* parent)
     :
       m_prog()
 {
+    // Setup opengl parameters
 	_nearZ = 1.0;
 	_farZ = 100.0;
-	cameraX = 0.0;
-	cameraY = 0.0;
-	cameraZ = 0.0;
-	lookatX = 0.0;
-	lookatY = 0.0;
-	lookatZ = 1.0;
+
     // DO NOT USE OPENGL COMMANDS INSIDE CONSTRUCTOR
 	_framecounter = 0;
-
-	//Chart parameters
-	x_dist = 1;
 
 	_pointcount = 0;
 
@@ -65,7 +58,6 @@ QOpenGLPlotter::QOpenGLPlotter(QWidget* parent)
 	dataUpdate_timer = new QTimer();
 	connect(dataUpdate_timer, SIGNAL(timeout()), this, SLOT(on_dataUpdate()));
 	dataUpdate_timer->setInterval(1);
-
 }
 
 void QOpenGLPlotter::dataThreadFunc()
@@ -176,12 +168,8 @@ void QOpenGLPlotter::resizeGL(int width, int height){
 
     _projection_mat->setToIdentity();
     _view_mat->setToIdentity();
-	
-	float height_ = this->height();
-	float width_ = this->width();
 
-	float aspect = width_ / height_;
-    _projection_mat->ortho(QRect(0, 0, width_, height_));
+    _projection_mat->ortho(QRect(0, 0, this->width(),this->height()));
 
 	f->glViewport(0, 0, this->width(), this->height());
 	this->update();

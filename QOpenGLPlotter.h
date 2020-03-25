@@ -51,7 +51,6 @@ public:
 	QOpenGLShaderProgram m_shaderSkybox;
 	QOpenGLShaderProgram m_shaderSphereTexture;
 
-
 	QOpenGLTexture* texture;
 	QOpenGLTexture* sphereTex;
 	bool initShaders();
@@ -79,6 +78,7 @@ private:
 	OGLChart* plot6;
 
 	float _fov;
+
 	//to keep track of game timing and to implement bullets with different flying speed
 	double last_time = 0;
 	double current_time = 0;
@@ -86,19 +86,9 @@ private:
 	double deltaTime = 0;
 	int _framecounter;
 
-	//camera position
-	float cameraX;
-	float cameraY;
-	float cameraZ;
-	//3Dpoint to which the camera looks
-	float lookatX;
-	float lookatY;
-	float lookatZ;
-
 	//Near/Far Plane
 	float _nearZ;
 	float _farZ;
-	float x_dist;
 
 	int _pointcount;
 
