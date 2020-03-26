@@ -13,9 +13,10 @@ find_package(Qt5Widgets)
 add_executable(${PROJECT_NAME} "main.cpp"
                                 "JonesPlot.h" "JonesPlot.cpp"
                                 "OGLChart.h" "OGLChart.cpp"
-                                "QOpenGLPlotter.h" "QOpenGLPlotter.cpp"
-				"ShapeGenerator.h" "ShapeGenerator.cpp"
-				"ShapeData.h" "ShapeData.cpp"
+                                "QOpenGLPlotWidget.h" "QOpenGLPlotWidget.cpp"
+                                # "ShapeGenerator.h" "ShapeGenerator.cpp"
+                                # "ShapeData.h" "ShapeData.cpp"
+                                "CircularBuffer.h"
                                 )
 
  # link libs
