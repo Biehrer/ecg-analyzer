@@ -1,6 +1,6 @@
 #include <OGLChart.h>
 
-//#define DEBUG_INFO
+// #define DEBUG_INFO
 
 #ifdef DEBUG_INFO
     #define DEBUG(msg) std::cout << msg << std::endl;
@@ -82,13 +82,15 @@ void OGLChart_C::AllocateSeriesVbo()
 
 void OGLChart_C::AddDataToSeries(float y, float x_ms)
 {
+    // cheap: dont add the value if its not inside the range..because its not visible eitherway
+    if ( y > _max_y_axis_value || y < _min_y_axis_value ){return;}
+
     // wrapp value around x-axis if the 'x_ms' value is bigger than maximum value of the x-axis
     if (_need_to_wrap_series) {
         _number_of_wraps++;
         _need_to_wrap_series = false;
 	}
 
-    // save raw data - or not? is this the duty of the plot itself or should the user be able to decide whether he wants to safe displayed data..
     // check if we need to wrap the data (when data series reached the right border of the screen)
     if (x_ms >= static_cast<float>(_max_x_axis_val_ms) * static_cast<float>(_number_of_wraps) ) {
 		//calculate new x value at most left chart position
@@ -98,17 +100,21 @@ void OGLChart_C::AddDataToSeries(float y, float x_ms)
 
     // chart_pos_screen_coords * scale_factor_screen_cords
     // - (minus) because then the positive y axis is directing at the top of the screen
-    float y_val_scaled_S = static_cast<float>(_screen_pos_y_S) - (y * ( static_cast<float>(_height_S) / (_max_y_axis_value - _min_y_axis_value) ) );
+//    float y_val_scaled_S = static_cast<float>(_screen_pos_y_S) - (y * ( static_cast<float>(_height_S) / (_max_y_axis_value - _min_y_axis_value) ) );
+
+    float y_val_scaled_S = static_cast<float>(_screen_pos_y_S) + (y * ( static_cast<float>(_height_S) / (_max_y_axis_value - _min_y_axis_value) ) );
+
+//    assert( y_val_scaled_S < _max_y_axis_value && y_val_scaled_S > _min_y_axis_value);
+
+
+    DEBUG("Scaled y value: "<< y_val_scaled_S);
 
     // + so the data value runs from left to right side
     // calculate new x-index when the dataseries has reached the left border of the plot
     float x_val_wrap_corrected_ms = static_cast<float>(x_ms) - static_cast<float>(_max_x_axis_val_ms) * static_cast<float>(_number_of_wraps - 1);
 
     // calculate value after wrapping-> -1 because we start wrapped number at 1 -
-    // put x on right position of screen
     float x_val_scaled_S = static_cast<float>(_screen_pos_x_S) + (x_val_wrap_corrected_ms * (static_cast<float>(_width_S) / (_max_x_axis_val_ms - _min_x_axis_val_ms)));
-	//add modified(in range) data to tempbuffer
-	//only needed if we are collecting data before sending it to ogl
 
     _input_buffer.InsertAtHead(x_val_scaled_S, y_val_scaled_S, 1.0f);
 }
@@ -187,6 +193,7 @@ void OGLChart_C::Draw()
 }
 
 
+// Todo: x-axes should always be at the position where the chart hast the value zero at the y axis.
 void OGLChart_C::SetupAxes() {
 	QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
 

@@ -10,6 +10,8 @@
 #include <assert.h>
 
 // Interface types of the CircularBuffer
+
+// Representation of a position in 3d space containing three components: x, y and z
 template<typename ElementType_TP>
 class Position3D_TC {
 
@@ -41,9 +43,9 @@ public:
 
 };
 
-// Circular buffer class
-// After data is read with ReadLatestData()
-// new data inside InsertAtHead(..) is written at the beginning of the buffer
+//! Circular buffer class used as input bufer for OGLChart_C
+//! After data is read with ReadLatestData(),
+//! new data inside InsertAtHead(..) is written at the beginning of the buffer
 template<typename ElementType_TP>
 class CircularBuffer_TC
 {

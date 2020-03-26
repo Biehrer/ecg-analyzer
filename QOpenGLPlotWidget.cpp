@@ -1,5 +1,14 @@
 #include "QOpenGLPlotWidget.h"
 
+#define DEBUG_INFO
+
+#ifdef DEBUG_INFO
+    #define DEBUG(msg) std::cout << msg << std::endl;
+#else
+    #define DEBUG(msg) do{} while(0)
+#endif
+
+
 QOpenGLPlotWidget::~QOpenGLPlotWidget() {
     delete _projection_mat;
     delete _model_mat;
@@ -79,6 +88,8 @@ void QOpenGLPlotWidget::on_dataUpdate()
 	double val_in_radians = _pointcount * (2 * pi_) / 360;
 	double data_value = 10 * std::sin(val_in_radians);
 
+    DEBUG("data value added to charts: " << data_value);
+
     plot1->AddDataToSeries(data_value, _pointcount); //assume pointcount is in ms
     plot2->AddDataToSeries(data_value, _pointcount); //assume pointcount is in ms
 
@@ -95,11 +106,11 @@ void QOpenGLPlotWidget::initializeGL()
 
     std::cout << "Start OpenGlPlotter by Jonas Biehrer" << std::endl;
 
-    //Get OpenGL Version from OS
+    // Get OpenGL Version from OS
     char *p = (char*)f->glGetString(GL_VERSION);
     std::cout << "using OpenGl Version: " << p << std::endl;
 
-    //Check if  OS is able to scale the width of drawn lines(rays) (with standard ogl 'GL_LINES' flag)
+    // Check if  OS is able to scale the width of drawn lines(rays) (with standard ogl 'GL_LINES' flag)
     std::cout << "maximum OGL line width on this operating system" << std::endl;
     GLfloat linerange[2];
 	f->glGetFloatv(GL_LINE_WIDTH_RANGE, linerange);
@@ -118,17 +129,17 @@ void QOpenGLPlotWidget::initializeGL()
 	f->glEnable(GL_TEXTURE_CUBE_MAP);
 	f->glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 
-	//Enable Depth Testing to allow overlapping objects
+    // Enable Depth Testing to allow overlapping objects
 	f->glEnable(GL_DEPTH);
 	f->glEnable(GL_DEPTH_TEST);
 	f->glDepthFunc(GL_LESS);
 
-	//Enable Blending to create transparency 
+    // Enable Blending to create transparency
 	f->glEnable(GL_BLEND);
 	f->glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	f->glDisable(GL_BLEND);
 
-	//f->glEnable(GL_CULL_FACE);
+    // f->glEnable(GL_CULL_FACE);
 	f->glEnable(GL_POINT_SMOOTH);
 	f->glEnable(GL_POINT_SIZE);
 	f->glEnable(GL_PROGRAM_POINT_SIZE);
@@ -138,12 +149,11 @@ void QOpenGLPlotWidget::initializeGL()
 
     int screenwidth_fraction = SREENWIDTH / 6;
 
-
-    int chart_to_chart_distance_S = 20;
+    int chart_to_chart_distance_S = 40;
     int chart_width = SREENWIDTH - screenwidth_fraction;
     int chart_height = SCREENHEIGHT / 6;
 
-    plot1 = new OGLChart_C(10000, 0, (SCREENHEIGHT / 6) * 1 + chart_to_chart_distance_S, chart_width, chart_height ); //space for 10000 Points (each point consists of 3 floats)
+    plot1 = new OGLChart_C(10000, 0, (SCREENHEIGHT / 6) * 1, chart_width, chart_height ); //space for 10000 Points (each point consists of 3 floats)
 
     plot2 = new OGLChart_C(10000, 0, (SCREENHEIGHT / 6) * 2 + chart_height + chart_to_chart_distance_S, chart_width, chart_height ); //space for 10000 Points (each point consists of 3 floats)
 //    plot3 = new OGLChart_C(10000, 0, (SCREENHEIGHT / 6) * 3 + 10, SREENWIDTH - screenwidth_fraction, SCREENHEIGHT / 6); //space for 10000 Points (each point consists of 3 floats)
@@ -160,7 +170,7 @@ void QOpenGLPlotWidget::resizeGL(int width, int height){
 
     _projection_mat->setToIdentity();
     _view_mat->setToIdentity();
-
+// This window is neber resized. only JonesPlot.h is resized
     _projection_mat->ortho(QRect(0, 0, this->width(),this->height()));
 
 	f->glViewport(0, 0, this->width(), this->height());
@@ -170,7 +180,6 @@ void QOpenGLPlotWidget::resizeGL(int width, int height){
 
 bool QOpenGLPlotWidget::InitializeShaderProgramms()
 {
-	QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
     std::cout << std::endl;
     std::cout << "Shader Compiling Error Log:" << std::endl;
 	std::cout << "Standard Shader error log: ";
