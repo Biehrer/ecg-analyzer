@@ -2,7 +2,7 @@
 
 JonesPlotApplication_C::~JonesPlotApplication_C() {
 
-	delete singlePlot;
+    delete plot_widget;
 }
 JonesPlotApplication_C::JonesPlotApplication_C(QWidget *parent)
 	: QMainWindow(parent)
@@ -20,8 +20,8 @@ JonesPlotApplication_C::JonesPlotApplication_C(QWidget *parent)
 
     ui.setupUi(this);
 	
-    singlePlot = new QOpenGLPlotWidget(this);
-	singlePlot->show();
+    plot_widget = new QOpenGLPlotWidget(this);
+    plot_widget->show();
 
     //    if( !singlePlot->IsActive() ){
     //        abort!
