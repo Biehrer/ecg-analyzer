@@ -25,19 +25,18 @@ struct XYAxisVertices_TP
 {
 public:
     XYAxisVertices_TP(QVector<float> x_axis_vertices,
-                      QVector<float> y_axis_vertices)
+                      QVector<float> y_axis_vertices )
         :
           _x_axis_vertices(x_axis_vertices),
           _y_axis_vertices(y_axis_vertices)
     {
     }
-
     QVector<float> _x_axis_vertices;
     QVector<float> _y_axis_vertices;
 };
 
 //! Description
-//! Specialization of a point-plot (GL_POINTS)
+//! Specialization of a OpenGl point-plot  (GL_POINTS) optimized for visualization of real time data
 //!
 //! Does not save the data which is added to the series. If the buffer is filled, data is removed to make place for the new data
 //! Uses a Vertex buffer objects in which new data is written in a round-robbin scheme:
@@ -48,75 +47,88 @@ public:
 class OGLChart
 {
 
+    // Constructor / Destructor / Copying..
 public:
+    OGLChart(int buffer_size,
+             int screen_pos_x_S,
+             int screen_pos_y_S,
+             int width_S,
+             int height_S);
 
-	OGLChart(int bufferSize, int screenPosX_S, int screenPosY_S, int chartWidth_S,int  chartHeight_S, int chartId = 0);
     ~OGLChart();
 
-    //! Appends new data value to the chart consisting of a x (ms) and y (no unit) component.
-    //! If the chart vbo is full, old data is overwritten, starting at the beginning of the chart vbo.
-    //! maps data to a plot point to a specific position in the plot itself (not the window the plot is placed in)
-    //! modify data for visualization
+// Public access functions
+public:
+    //! Appends a new data value to the chart which consistss of a x-value(ms) and y-value(no unit) component.
+    //! If the buffer of the chart is full, old data is overwritten, starting at the beginning of the buffer.
+    //! This function maps data to a plot point which means data is mapped to a specific position in the plot itself (not the window the plot is placed in)
     //!
-	void addData(float y, float x_ms);
-	void updateChart();
-	void drawNewestData();
+    void AddDataToSeries(float y, float x_ms);
 
-    void deleteDataFromBeginning(int);
-	void Draw();
-	void WriteSeriesToVBO();
-	void addRange(int, QVector<double>);
+    //! Draws the chart inside the opengl context from which this function is called
+    void Draw();
+
+    //! Binds and writes the data from the circular buffer to the vbo
+    void WriteSeriesToVBO();
+
+    void addRange(int, QVector<double>);
 
 
-    // Private helper functions
+// Private helper functions
 private:
-    // Draws the chart-axes inside the opengl context
+    //! Draws the x- and y-axis inside the opengl context
+    //! from which the function is called
     void DrawXYAxes();
 
-    const XYAxisVertices_TP CreateAxesVertices();
+    //! Craetes vertices used to draw the x and y axis
+    //!
+    //! \param size_S the size of the x and y axis.
+    //!               In case of x axis this means the 'height'.
+    //!               In case of the y axis this means the 'width'.
+    //! \returns a struct containing the vertices for the x- and y-axis
+    const XYAxisVertices_TP CreateAxesVertices(float size_S);
 
-    // Creates and fills vertex buffer objects used for the axes of the chart
+    //! Creates and fills vertex buffer objects used for the axes of the chart
     void SetupAxes();
 
-
+// Private attributes
 private:
-	QList<double>* _dataBuffer;
-	QVector<double>* _dataBufferdouble_X;
-	QVector<double>* _dataBufferdouble_Y;
-	std::mutex* data_lock;
-
-    // Vertex buffer object for the chart-data
+    //! Vertex buffer object which contains the data series added by AddData..(..)
     QOpenGLBuffer _chart_vbo;
 
-    // Vertex buffer objects for the x and y axis
+    //! Vertex buffer objects for the x and y axis
     QOpenGLBuffer _x_axis_vbo;
     QOpenGLBuffer _y_axis_vbo;
 
+    //! x-position of the left top corner of the chart
+    //! inside the ogl context in screen coordinates
+    int _screen_pos_x_S;
 
-    // x-position of the left top corner of the chart inside the ogl context in screen coordinates
-    int screen_pos_x_S;
-
-    // y-position of the left top corner of the chart inside the ogl context in screen coordinates
+    //! y-position of the left top corner of the chart
+    //! inside the ogl context in screen coordinates
     int _screen_pos_y_S;
 
+    //! width of the chart
     int _width_S;
+    //! height of the chart
     int _height_S;
 
     int _vbo_series_idx;
-	int _bufferSize;
-    int _point_count;
+    int _buffer_size;
+    int _point_count = 0;
 	
-	int _maxY;
-	int _minY;
+    int _max_y_axis_value;
+    int _min_y_axis_value;
 
-    int _min_x_val_ms;
-    int _max_x_val_ms;
+    int _min_x_axis_val_ms;
+    int _max_x_axis_val_ms;
 
-	//Input Buffer
-	float* _data_series_buffer;	//save values before adding them so we can add them at once and not each point for itself( this means less calls to glbuffersubdata)
+    // Input Buffer
+    float* _data_series_buffer;
+    //save values before adding them so we can add them at once and not each point for itself( this means less calls to glbuffersubdata)
     // Is incremented each time new data was added via AddData(...)
     // Is resetted ( set to zero ) when the data is written into the charts vertex buffer object _chart_vbo
-    int _series_buffer_idx;
+    int _data_series_buffer_idx;
 
     // Sweep chart parameters
     // counts how often the point series reached the left side of the screen and was wrapped to the left side again
@@ -125,16 +137,9 @@ private:
     bool _need_to_wrap_series;
     // Indicates if the dataseries was already wrapped one time from the right  to the left screen
     bool _dataseries_wrapped_once;
-//
-	int _chartId;
 };
 
-
-//this would be a waste of ressources..each plot means 10000 plotPoints and t
-class plotPoint
-{
-public:
-
-private:
-	QOpenGLBuffer pointVBO;
-};
+// old func headers
+//void updateChart();
+//void drawNewestData();
+//void deleteDataFromBeginning(int);

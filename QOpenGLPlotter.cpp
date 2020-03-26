@@ -15,7 +15,7 @@ QOpenGLPlotter::~QOpenGLPlotter() {
     delete _view_mat;
     delete _MVP;
 	
-	delete update_timer;
+    delete paint_update_timer;
     dataUpdate_timer->deleteLater();
 
 	delete dataUpdate_timer;
@@ -33,13 +33,10 @@ QOpenGLPlotter::QOpenGLPlotter(QWidget* parent)
       m_prog()
 {
     // Setup opengl parameters
+    // DO NOT USE OPENGL COMMANDS INSIDE THE CONSTRUCTOR
+
 	_nearZ = 1.0;
 	_farZ = 100.0;
-
-    // DO NOT USE OPENGL COMMANDS INSIDE CONSTRUCTOR
-	_framecounter = 0;
-
-	_pointcount = 0;
 
     _projection_mat = new QMatrix4x4();
     _model_mat = new QMatrix4x4();
@@ -51,13 +48,17 @@ QOpenGLPlotter::QOpenGLPlotter(QWidget* parent)
     _view_mat->setToIdentity();
     _MVP->setToIdentity();
 
-	update_timer = new QTimer();
-	connect(update_timer, SIGNAL(timeout()), this, SLOT(update()));
-	update_timer->setInterval(30);
+    _framecounter = 0;
+    _pointcount = 0;
 
-	dataUpdate_timer = new QTimer();
-	connect(dataUpdate_timer, SIGNAL(timeout()), this, SLOT(on_dataUpdate()));
-	dataUpdate_timer->setInterval(1);
+    paint_update_timer = new QTimer();
+    connect(paint_update_timer, SIGNAL(timeout()), this, SLOT(update()));
+    paint_update_timer->setInterval(30);
+
+    dataUpdate_timer = new QTimer();
+    connect(dataUpdate_timer, SIGNAL(timeout()), this, SLOT(on_dataUpdate()));
+    dataUpdate_timer->setInterval(1);
+    dataUpdate_timer->start(1);
 }
 
 void QOpenGLPlotter::dataThreadFunc()
@@ -99,27 +100,27 @@ void QOpenGLPlotter::on_dataUpdate()
 void QOpenGLPlotter::initializeGL()
 {
 	QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
-	//initialize OGL functions before any other OpenGL call !
+    // Initialize OGL functions before any other OpenGL call
 	f->initializeOpenGLFunctions();
 
-	std::cout << "Start OpenGlPlotter by Jonas Biehrer" << "\n\r";
+    std::cout << "Start OpenGlPlotter by Jonas Biehrer" << std::endl;
 
     //Get OpenGL Version from OS
     char *p = (char*)f->glGetString(GL_VERSION);
     std::cout << "using OpenGl Version: " << p << std::endl;
 
     //Check if  OS is able to scale the width of drawn lines(rays) (with standard ogl 'GL_LINES' flag)
-    std::cout << "maximum OGL line width on this operating system" << "\n\r";
+    std::cout << "maximum OGL line width on this operating system" << std::endl;
     GLfloat linerange[2];
 	f->glGetFloatv(GL_LINE_WIDTH_RANGE, linerange);
     std::cout << "minimal width: " << linerange[0] << std::endl;
     std::cout << "maximal width: " << linerange[1] << std::endl;
 
-    std::cout << "maximum OGL point size on this operating system" << "\n\r";
+    std::cout << "maximum OGL point size on this operating system" << std::endl;
     GLint point_range[2];
     f->glGetIntegerv(GL_ALIASED_POINT_SIZE_RANGE, point_range);
-    std::cout << "minimal width: " << point_range[0] << "\n\r";
-    std::cout << "maximal width: " << point_range[1] << "\n\r";
+    std::cout << "minimal size: " << point_range[0] << std::endl;
+    std::cout << "maximal size: " << point_range[1] << std::endl;
 
     // OpenGL Settings
 	f->glEnable(GL_TEXTURE_2D_ARRAY);
@@ -143,7 +144,7 @@ void QOpenGLPlotter::initializeGL()
 	f->glEnable(GL_PROGRAM_POINT_SIZE);
 
 
-	initShaders();
+    InitializeShaderProgramms();
 //    plot1 = new OGLChart(10000, 0, (this->height() / 6) * 1 + 10, SREENWIDTH, this->height() / 6, 1); //space for 10000 Points (each point consists of 3 floats)
 //    plot2 = new OGLChart(10000, 0, (this->height() / 6) * 2 + 10, SREENWIDTH, this->height() / 6, 2); //space for 10000 Points (each point consists of 3 floats)
 //    plot3 = new OGLChart(10000, 0, (this->height() / 6) * 3 + 10, SREENWIDTH, this->height() / 6, 3); //space for 10000 Points (each point consists of 3 floats)
@@ -151,14 +152,15 @@ void QOpenGLPlotter::initializeGL()
 //    plot5 = new OGLChart(10000, 0, (this->height() / 6) * 5 + 10, SREENWIDTH, this->height() / 6, 5); //space for 10000 Points (each point consists of 3 floats)
 //	plot6 = new OGLChart(10000, 0, (this->height() / 6) * 6 + 10, SREENWIDTH, this->height() / 6, 6);
 
-    plot1 = new OGLChart(10000, 0, (SCREENHEIGHT / 6) * 1 + 10, SREENWIDTH, SCREENHEIGHT / 6, 1);//space for 10000 Points (each point consists of 3 floats)
-    plot2 = new OGLChart(10000, 0, (SCREENHEIGHT / 6) * 2 + 10, SREENWIDTH, SCREENHEIGHT / 6, 2);//space for 10000 Points (each point consists of 3 floats)
-    plot3 = new OGLChart(10000, 0, (SCREENHEIGHT / 6) * 3 + 10, SREENWIDTH, SCREENHEIGHT / 6, 3);//space for 10000 Points (each point consists of 3 floats)
-    plot4 = new OGLChart(10000, 0, (SCREENHEIGHT / 6) * 4 + 10, SREENWIDTH, SCREENHEIGHT / 6, 4);//space for 10000 Points (each point consists of 3 floats)
-    plot5 = new OGLChart(10000, 0, (SCREENHEIGHT / 6) * 5 + 10, SREENWIDTH, SCREENHEIGHT / 6, 5);//space for 10000 Points (each point consists of 3 floats)
-    plot6 = new OGLChart(10000, 0, (SCREENHEIGHT / 6) * 6 + 10, SREENWIDTH, SCREENHEIGHT / 6, 6);
+    int screenwidth_fraction = SREENWIDTH / 6;
+    plot1 = new OGLChart(10000, 0, (SCREENHEIGHT / 6) * 1 + 10, SREENWIDTH - screenwidth_fraction, SCREENHEIGHT / 6);//space for 10000 Points (each point consists of 3 floats)
+    plot2 = new OGLChart(10000, 0, (SCREENHEIGHT / 6) * 2 + 10, SREENWIDTH - screenwidth_fraction, SCREENHEIGHT / 6);//space for 10000 Points (each point consists of 3 floats)
+    plot3 = new OGLChart(10000, 0, (SCREENHEIGHT / 6) * 3 + 10, SREENWIDTH - screenwidth_fraction, SCREENHEIGHT / 6);//space for 10000 Points (each point consists of 3 floats)
+    plot4 = new OGLChart(10000, 0, (SCREENHEIGHT / 6) * 4 + 10, SREENWIDTH - screenwidth_fraction, SCREENHEIGHT / 6);//space for 10000 Points (each point consists of 3 floats)
+    plot5 = new OGLChart(10000, 0, (SCREENHEIGHT / 6) * 5 + 10, SREENWIDTH - screenwidth_fraction, SCREENHEIGHT / 6);//space for 10000 Points (each point consists of 3 floats)
+    plot6 = new OGLChart(10000, 0, (SCREENHEIGHT / 6) * 6 + 10, SREENWIDTH - screenwidth_fraction, SCREENHEIGHT / 6);
 
-	update_timer->start();
+    paint_update_timer->start();
 }
 
 //is called when the window is resized
@@ -176,39 +178,36 @@ void QOpenGLPlotter::resizeGL(int width, int height){
 }
 
 
-bool QOpenGLPlotter::initShaders()
+bool QOpenGLPlotter::InitializeShaderProgramms()
 {
-
-    // initializes all shaders used in this program
 	QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
-	std::cout << "\n\r";
-	std::cout << "Shader Compiling Error Log:" << "\n\r";
+    std::cout << std::endl;
+    std::cout << "Shader Compiling Error Log:" << std::endl;
 	std::cout << "Standard Shader error log: ";
-	std::cout << "\n\r";
+    std::cout << std::endl;
 
-	QString path(QDir::currentPath());
-    //path = QDir::toNativeSeparators(path);	//changes (forward)slashes to backslashes
-
-	std::cout << "filepath to shaders: " << path.toStdString() << "\n\r";
+    QString path_of_executable(QDir::currentPath());
+    std::cout << "expected filepath to shaders (make sure it exists): "
+              << path_of_executable.toStdString() << std::endl;
 
 	bool success = false;
-    success = m_prog.addShaderFromSourceFile(QOpenGLShader::Vertex, QString(path + "//Resources//shaders//vertex.vsh"));
+    success = m_prog.addShaderFromSourceFile(QOpenGLShader::Vertex, QString(path_of_executable + "//Resources//shaders//vertex.vsh"));
 
     QString errorLog = m_prog.log();
-    std::cout << "Vertex Shader sucess?: " << success << "\n\r";
+    std::cout << "Vertex Shader sucess?: " << success << std::endl;
     std::cout << &errorLog;
-    std::cout << "\n\r";
+    std::cout << std::endl;
 
     if( !success ){
         throw::std::runtime_error("Error while readingv shader");
     }
 
-    success = m_prog.addShaderFromSourceFile(QOpenGLShader::Fragment, QString(path + "//Resources//shaders//fragment.fsh"));
+    success = m_prog.addShaderFromSourceFile(QOpenGLShader::Fragment, QString(path_of_executable + "//Resources//shaders//fragment.fsh"));
 
     errorLog = m_prog.log();
-    std::cout << "Fragment Shader sucess?: " << success << "\n\r";
+    std::cout << "Fragment Shader sucess?: " << success << std::endl;
     std::cout << &errorLog;
-    std::cout << "\n\r";
+    std::cout << std::endl;
 
     if( !success ){
         throw::std::runtime_error("Error while reading shader");
@@ -216,9 +215,9 @@ bool QOpenGLPlotter::initShaders()
 
 	success = m_prog.link();
 	errorLog = m_prog.log();
-	std::cout <<"linkinkg success?: "<< success << "\n\r" << "shader programm linking errors: ";
+    std::cout <<"linkinkg success?: "<< success << std::endl << "shader programm linking errors: ";
 	std::cout << &errorLog;
-	std::cout << "\n\r";
+    std::cout << std::endl;
 
 	m_prog.bind();
 	m_prog.bindAttributeLocation("position", 0);
@@ -227,19 +226,6 @@ bool QOpenGLPlotter::initShaders()
 
 	return success;
 }
-
- void QOpenGLPlotter::mouseMoveEvent(QMouseEvent* evt) {
-	 float x  = evt->x();
-	 float y = evt->y();
-	 plot1->addData(x, y);
-}
-
-
- void QOpenGLPlotter::mousePressEvent(QMouseEvent* evt) {
-	 float x = evt->x();
-	 float y = evt->y();
-	 plot1->addData(x, y);
- }
 
 
 void QOpenGLPlotter::paintGL(){
@@ -266,4 +252,18 @@ void QOpenGLPlotter::paintGL(){
 	plot6->Draw();
 
 	m_prog.release();
+}
+
+
+void QOpenGLPlotter::mouseMoveEvent(QMouseEvent* evt) {
+    float x  = evt->x();
+    float y = evt->y();
+   // plot1->addData(x, y);
+}
+
+
+void QOpenGLPlotter::mousePressEvent(QMouseEvent* evt) {
+    float x = evt->x();
+    float y = evt->y();
+   // plot1->addData(x, y);
 }

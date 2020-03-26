@@ -21,11 +21,11 @@
 #include <qdir.h>
 #include <qpainter.h>
 #include <qopenglwidget.h>
-#include <qopenglfunctions.h>
+#include <qopenglfunctions.h>/*
 #include <qopenglfunctions_3_2_core.h>
-#include <qopenglfunctions_3_3_core.h>
+#include <qopenglfunctions_3_3_core.h>*/
 #include <qopenglextrafunctions.h>
-#include <qopenglfunctions_3_1.h>
+//#include <qopenglfunctions_3_1.h>
 #include <qopenglbuffer.h>
 #include <qopenglshaderprogram.h>
 #include <qopengltexture.h>
@@ -53,7 +53,7 @@ public:
 
 	QOpenGLTexture* texture;
 	QOpenGLTexture* sphereTex;
-	bool initShaders();
+    bool InitializeShaderProgramms();
 	void dataThreadFunc();
 	
 protected:
@@ -95,7 +95,7 @@ private:
 	unsigned int targetBufferOffset;
 	int nFrames;
 	//QElapsedTimer* ingameTimer;	 //keeps track of ingame time
-	QTimer* update_timer;		// updates screen at around 30 - 60 Hz
+    QTimer* paint_update_timer;		// updates screen at around 30 - 60 Hz
 	QTimer* dataUpdate_timer;
 	QElapsedTimer* timestampsGen_ms;
 
