@@ -1,80 +1,86 @@
 #include <OGLChart.h>
 
+//#define DEBUG_INFO
 
-OGLChart::~OGLChart()
+#ifdef DEBUG_INFO
+    #define DEBUG(msg) std::cout << msg << std::endl;
+#else
+    #define DEBUG(msg) do{} while(0)
+#endif
+
+OGLChart_C::~OGLChart_C()
 {
     _chart_vbo.destroy();
     _y_axis_vbo.destroy();
     _x_axis_vbo.destroy();
-    delete _data_series_buffer;
 }
 
 // This is the specialization - pointchart realtime
-OGLChart::OGLChart(int max_num_of_points_in_buffer,
-                   int screen_pos_x,
-                   int screen_pos_y,
-                   int chart_width_S,
-                   int chart_height_S
-                   )
-    : _buffer_size( max_num_of_points_in_buffer * 3 * sizeof(float) ),    // each point consists of 3 floats - i could make this template but then i can only do header files.
+OGLChart_C::OGLChart_C(int max_num_of_points_in_buffer,
+                       int screen_pos_x,
+                       int screen_pos_y,
+                       int chart_width_S,
+                       int chart_height_S)
+    : _vbo_buffer_size( max_num_of_points_in_buffer * 3 * sizeof(float) ),    // vbo buffer size(3 times the point buffer size) each point consists of 3 floats - i could make this template but then i can only do header files.
       _vbo_series_idx(0),
       _chart_vbo(QOpenGLBuffer::VertexBuffer),
       _x_axis_vbo(QOpenGLBuffer::VertexBuffer),
       _y_axis_vbo(QOpenGLBuffer::VertexBuffer),
-      _data_series_buffer_idx(0)
+      _input_buffer(max_num_of_points_in_buffer)
 {
-    QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
+
+    DEBUG("Initialize OGLChart");
 
     // Sweep-chart parameters
     _number_of_wraps = 1;
     _need_to_wrap_series = false;
     _dataseries_wrapped_once = false;
 
-    //buffer which collects data at CPU side for OGL
-    _data_series_buffer = new float[TEMP_BUFFER_SIZE];
-
     // number of visualized points in the graph
     _point_count = 0;
 
-    //where to place Chart in respect to the OGL Viewport
+    // where to place Chart in respect to the OGL Viewport
     _screen_pos_x_S = screen_pos_x;
     _screen_pos_y_S = screen_pos_y;
 
     _width_S = chart_width_S;
     _height_S = chart_height_S;
+
     // chart values x and y axes
     _min_y_axis_value = 0;
     _max_y_axis_value = 10;
+
     _min_x_axis_val_ms = 0;
-    // 10 secs of data - buffersize(OGL buffer) needs to be this big! NEEDS TO MATCH WITH THE BUFFER SIZE THE USER USES AS INPUT(NUMBER OF VALUES IN BUFFER) -> therefore create the buffer variable dependent on how many ms should be displayed
+    // 10 secs of data - buffersize(OGL buffer) needs to be this big!
+    // NEEDS TO MATCH WITH THE BUFFER SIZE THE USER USES AS INPUT(NUMBER OF VALUES IN BUFFER)
+    // -> therefore create the buffer variable dependent on how many ms should be displayed
     _max_x_axis_val_ms = 10000;
 
-    //_maxX_ms = _bufferSize;
+    // Allocate a vertex buffer object to store data for visualization
+    AllocateSeriesVbo();
 
-    //Setup OGL Chart buffer - empty
-    _chart_vbo.create();
-    _chart_vbo.bind();
-    f->glEnableVertexAttribArray(0);
-    f->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);		//3 positions for x and y and z data coordinates
-    _chart_vbo.allocate(nullptr, _buffer_size);
-    _chart_vbo.setUsagePattern(QOpenGLBuffer::DynamicDraw);
-    f->glDisableVertexAttribArray(0);
-    _chart_vbo.release();
-
+    // Allocate vertex buffer objects for the x and y axis
     SetupAxes();
 }
 
 
 
-static void shiftData(double *data, int len, double newValue)
+void OGLChart_C::AllocateSeriesVbo()
 {
-	memmove(data, data + 1, sizeof(*data) * (len - 1));
-	data[len - 1] = newValue;
+    QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
+    // Setup OGL-Chart buffer - empty
+    _chart_vbo.create();
+    _chart_vbo.bind();
+    f->glEnableVertexAttribArray(0);
+    // 3 coordinates make one point  (x, y, z)
+    f->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+    _chart_vbo.allocate(nullptr, _vbo_buffer_size);
+    _chart_vbo.setUsagePattern(QOpenGLBuffer::DynamicDraw);
+    f->glDisableVertexAttribArray(0);
+    _chart_vbo.release();
 }
 
-bool timerange_wrapped = false;
-
-void OGLChart::AddDataToSeries(float y, float x_ms)
+void OGLChart_C::AddDataToSeries(float y, float x_ms)
 {
     // wrapp value around x-axis if the 'x_ms' value is bigger than maximum value of the x-axis
     if (_need_to_wrap_series) {
@@ -91,8 +97,7 @@ void OGLChart::AddDataToSeries(float y, float x_ms)
 	}
 
     // chart_pos_screen_coords * scale_factor_screen_cords
-
-    // - because then the positive y axis is directing at the top of the screen
+    // - (minus) because then the positive y axis is directing at the top of the screen
     float y_val_scaled_S = static_cast<float>(_screen_pos_y_S) - (y * ( static_cast<float>(_height_S) / (_max_y_axis_value - _min_y_axis_value) ) );
 
     // + so the data value runs from left to right side
@@ -101,74 +106,71 @@ void OGLChart::AddDataToSeries(float y, float x_ms)
 
     // calculate value after wrapping-> -1 because we start wrapped number at 1 -
     // put x on right position of screen
-    float x_val_scaled_ms_S = static_cast<float>(_screen_pos_x_S) + (x_val_wrap_corrected_ms * (static_cast<float>(_width_S) / (_max_x_axis_val_ms - _min_x_axis_val_ms)));
+    float x_val_scaled_S = static_cast<float>(_screen_pos_x_S) + (x_val_wrap_corrected_ms * (static_cast<float>(_width_S) / (_max_x_axis_val_ms - _min_x_axis_val_ms)));
 	//add modified(in range) data to tempbuffer
 	//only needed if we are collecting data before sending it to ogl
 
-    assert(_data_series_buffer_idx <= TEMP_BUFFER_SIZE && _data_series_buffer_idx >= 0 );
-
-    float z_depth = 1.0;
-    _data_series_buffer[_data_series_buffer_idx] = x_val_scaled_ms_S;
-    _data_series_buffer[_data_series_buffer_idx + 1] = y_val_scaled_S;
-    _data_series_buffer[_data_series_buffer_idx + 2] = z_depth;
-
-    // std::cout << "Point #" << _pointCount << ": " << x_inRange_ms_S << ", " << y_inRange_S << ", " << z_depth << std::endl;
-    _data_series_buffer_idx += 3;
+    _input_buffer.InsertAtHead(x_val_scaled_S, y_val_scaled_S, 1.0f);
 }
 
 
-void OGLChart::WriteSeriesToVBO()
+void OGLChart_C::UpdateVbo()
 {
-    // If there was no new data added
-    // => dont write to the vbo
-    if(_data_series_buffer_idx == 0){
+
+    if( !_input_buffer.NewDataToRead() ){
         return;
     }
 
-    // Bind VBO before
-    // create plot point
+    // Get latest data from the input buffer
+    auto latest_data = _input_buffer.ReadLatest();
+
+    // Todo: Spare this transformation to QVector by returning QVector directly from the input buffer
     QVector<float> additional_point_vertices;
 
-    int number_of_new_points = 0;
+    for(const auto& element : latest_data){
+        DEBUG(element);
+        additional_point_vertices.append(element._x);
+        additional_point_vertices.append(element._y);
+        additional_point_vertices.append(element._z);
+    }
 
-    // data_lock->lock();
-    // only create the new vertices if there was data added to the chart
-    while( number_of_new_points < _data_series_buffer_idx ) {
-        // Add x, y and z coordinate of the current value to the buffer
-        additional_point_vertices.append(_data_series_buffer[number_of_new_points]);
-        additional_point_vertices.append(_data_series_buffer[number_of_new_points + 1]);
-        additional_point_vertices.append(_data_series_buffer[number_of_new_points + 2]);
-        number_of_new_points += 3;
-        // check if the new data is bigger than the whole incoming buffer...
-	}
-    //std::cout << "number of points added: " << count << "chartID: " << _chartId << std::endl;
-	//data_lock->unlock();
-
-    //reset series_buffer_idx which holds the data on cpu side now
-    _data_series_buffer_idx = 0;
-
-    if (number_of_new_points > 0) {	// only add data if there is new data which needs to be added
-        if (_vbo_series_idx <= _buffer_size) {
-            _chart_vbo.write(_vbo_series_idx, additional_point_vertices.data(), number_of_new_points * sizeof(float));
-            _vbo_series_idx += additional_point_vertices.size() * sizeof(float);	// offset in bytes
-            // stop counting points after one wrap (because after a wrap the point count stays the same)
-            if (!_dataseries_wrapped_once) {
-                _point_count += number_of_new_points / 3;
-			}
-        } else { //buffer is full...reset buffer and start overwriting data at the beginning
-            std::cout << "chart data buffer full, number of datapoints(floats): " << _point_count << /*"chartID: " << _chartId <<*/ "..restart writing at beginning" << std::endl;
-            _vbo_series_idx = 0;
-		}
-	}
+    // Write data to the vbo
+    WriteToVbo(additional_point_vertices);
 }
 
-void OGLChart::Draw()
+
+void OGLChart_C::WriteToVbo(const QVector<float>& data)
+{
+    int number_of_new_coordinates = data.size();
+
+    // Write data to the vbo
+    if (_vbo_series_idx <= _vbo_buffer_size) {
+
+        _chart_vbo.write(_vbo_series_idx, data.data(), number_of_new_coordinates * sizeof(float));
+        // new write offset in bytes
+        _vbo_series_idx += data.size() * sizeof(float);
+        // stop counting points after one wrap (because after a wrap the point count stays the same)
+        if (!_dataseries_wrapped_once) {
+            _point_count += number_of_new_coordinates / 3;
+
+        }
+    } else {
+        //buffer is full; reset buffer index and start overwriting data at the beginning
+        std::cout << "chart data buffer full, number of datapoints(floats): " << _point_count
+                  << "..restart writing at beginning" << std::endl;
+        _vbo_series_idx = 0;
+    }
+
+}
+
+
+void OGLChart_C::Draw()
 {
     auto *f = QOpenGLContext::currentContext()->functions();
 
     // Bind buffer and send data to the gpu
     _chart_vbo.bind();
-    this->WriteSeriesToVBO();
+    this->UpdateVbo();
 
     // Draw inside the current context
 	f->glEnableVertexAttribArray(0);
@@ -185,21 +187,22 @@ void OGLChart::Draw()
 }
 
 
-void OGLChart::SetupAxes() {
+void OGLChart_C::SetupAxes() {
 	QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
 
     const auto axes_vertices = CreateAxesVertices(5.0);
 
     // Todo dont create another copy...this is a scope problem! because the struct does not exist outside the function
-    auto x_copy = axes_vertices._x_axis_vertices;
-    auto y_copy = axes_vertices._y_axis_vertices;
+    auto x_axis_vertices = axes_vertices._x_axis_vertices;
+    auto y_axis_vertices = axes_vertices._y_axis_vertices;
 
 	//Setup OGL Chart buffer - empty 
     _x_axis_vbo.create();
     _x_axis_vbo.bind();
 	f->glEnableVertexAttribArray(0);
+    // 3 positions for x and y and z data coordinates
     f->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
-    _x_axis_vbo.allocate(x_copy.constData(), x_copy.size() * sizeof(float));
+    _x_axis_vbo.allocate(x_axis_vertices .constData(), x_axis_vertices .size() * sizeof(float));
     _x_axis_vbo.setUsagePattern(QOpenGLBuffer::StaticDraw);
 	f->glDisableVertexAttribArray(0);
     _x_axis_vbo.release();
@@ -208,14 +211,14 @@ void OGLChart::SetupAxes() {
     _y_axis_vbo.create();
     _y_axis_vbo.bind();
 	f->glEnableVertexAttribArray(0);
-    f->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);		//3 positions for x and y and z data coordinates
-    _y_axis_vbo.allocate(y_copy.constData(), y_copy.size() * sizeof(float));
+    f->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+    _y_axis_vbo.allocate(y_axis_vertices.constData(), y_axis_vertices.size() * sizeof(float));
     _y_axis_vbo.setUsagePattern(QOpenGLBuffer::StaticDraw);
 	f->glDisableVertexAttribArray(0);
     _y_axis_vbo.release();
 
 }
-void OGLChart::DrawXYAxes()
+void OGLChart_C::DrawXYAxes()
 {
 	QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
 
@@ -236,14 +239,14 @@ void OGLChart::DrawXYAxes()
 
 }
 
-const XYAxisVertices_TP OGLChart::CreateAxesVertices(float size_S)
+const XYAxisVertices_TP OGLChart_C::CreateAxesVertices(float size_S)
 {
     // Todo no fixed values..needs to be adjustable from the outside through access functions
     // The user of the chart does not need to know anything from opengl so i could make an abstraction
     // But the openGl code depends on the chart type (hist, lines, points,..)
     float x_axis_width_S = _width_S;
     float x_axis_height_S = size_S;
-    float y_axis_height = _height_S;
+    float y_axis_height = _height_S * 2;
     float y_axis_width = size_S;
     float axis_pos_z = 1.0f;
 
@@ -295,43 +298,53 @@ const XYAxisVertices_TP OGLChart::CreateAxesVertices(float size_S)
     //	 |  |
     //	 |  |
     // P2|--|P3
+
+    // offset because _screen_pos_x/y refer to the mid of the chart where the value zero is
+    float y_offset = _height_S;
+
     // first triang: P1 - P2 - P4
     // P1
     y_axis_vertices.push_back(_screen_pos_x_S);
-    y_axis_vertices.push_back(_screen_pos_y_S);
+    y_axis_vertices.push_back(_screen_pos_y_S - y_offset);
     y_axis_vertices.push_back(axis_pos_z);
     // P2
     y_axis_vertices.push_back(_screen_pos_x_S);
-    y_axis_vertices.push_back(_screen_pos_y_S + y_axis_height);
+    y_axis_vertices.push_back(_screen_pos_y_S + y_axis_height - y_offset);
     y_axis_vertices.push_back(axis_pos_z);
     // P4
     y_axis_vertices.push_back(_screen_pos_x_S + y_axis_width);
-    y_axis_vertices.push_back(_screen_pos_y_S);
+    y_axis_vertices.push_back(_screen_pos_y_S  - y_offset);
     y_axis_vertices.push_back(axis_pos_z);
 
     // second triang: P3 - P4 - P2
     // P3
     y_axis_vertices.push_back(_screen_pos_x_S + y_axis_width);
-    y_axis_vertices.push_back(_screen_pos_y_S + y_axis_height);
+    y_axis_vertices.push_back(_screen_pos_y_S + y_axis_height  - y_offset);
     y_axis_vertices.push_back(axis_pos_z);
     // P4
     y_axis_vertices.push_back(_screen_pos_x_S + y_axis_width);
-    y_axis_vertices.push_back(_screen_pos_y_S);
+    y_axis_vertices.push_back(_screen_pos_y_S  - y_offset);
     y_axis_vertices.push_back(axis_pos_z);
     // P2
     y_axis_vertices.push_back(_screen_pos_x_S);
-    y_axis_vertices.push_back(_screen_pos_y_S + y_axis_height);
+    y_axis_vertices.push_back(_screen_pos_y_S + y_axis_height - y_offset);
     y_axis_vertices.push_back(axis_pos_z);
 
    return XYAxisVertices_TP(x_axis_vertices, y_axis_vertices);
 }
 
+// Old, unused code
+static void shiftData(double *data, int len, double newValue)
+{
+    memmove(data, data + 1, sizeof(*data) * (len - 1));
+    data[len - 1] = newValue;
+}
 
 //void OGLChart::drawNewestData(){}
 //void OGLChart::deleteDataFromBeginning(int count) {}
 //void OGLChart::updateChart() {}
 
-void OGLChart::addRange(int count, QVector<double> data)
+void OGLChart_C::addRange(int count, QVector<double> data)
 {
     //void* pointerToData = chartVBO.mapRange(_bufferIndex, count, QOpenGLBuffer::RangeAccessFlag::RangeWrite);
     //chartVBO.write(_bufferIndex, data.constData(), count);

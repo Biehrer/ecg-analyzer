@@ -1,25 +1,25 @@
 #pragma once
 
+// Project includes
+#include <CircularBuffer.h>
+
+// STL includes
 #include <iostream>
 #include <string>
 #include <mutex>
 
+// Qt includes
 #include <qlist.h>
 #include <qvector.h>
 #include "qbuffer.h"
 #include <qtimer.h>
-
-#include <qopenglfunctions_3_3_core.h>
-//#include <qopenglfunctions.h>
+#include <qopenglfunctions.h>
 #include <qopenglbuffer.h>
 #include <qopenglwidget.h>
-//#include <qopenglfunctions_3_2_core.h>
 #include <qopenglextrafunctions.h>
-//#include <qopenglfunctions_3_1.h>
 #include <qopenglshaderprogram.h>
 
 #define TEMP_BUFFER_SIZE 10000
-
 
 struct XYAxisVertices_TP
 {
@@ -44,18 +44,18 @@ public:
 //! // Coordinate systems used (Big letters adress a coordinate system)
 //! S - Screen coords
 //! W - OpenGL world coords
-class OGLChart
+class OGLChart_C
 {
 
     // Constructor / Destructor / Copying..
 public:
-    OGLChart(int buffer_size,
+    OGLChart_C(int buffer_size,
              int screen_pos_x_S,
              int screen_pos_y_S,
              int width_S,
              int height_S);
 
-    ~OGLChart();
+    ~OGLChart_C();
 
 // Public access functions
 public:
@@ -68,19 +68,26 @@ public:
     //! Draws the chart inside the opengl context from which this function is called
     void Draw();
 
-    //! Binds and writes the data from the circular buffer to the vbo
-    void WriteSeriesToVBO();
-
     void addRange(int, QVector<double>);
 
 
+    //! Binds and writes the data from the circular buffer to the vbo
+    void UpdateVbo();
+
 // Private helper functions
 private:
+
+    //! Creates and allocates an empty OpenGL vertex buffer object used to store data for visualization
+    void AllocateSeriesVbo();
+
+    //! Write data to the vbo
+    void WriteToVbo(const QVector<float>& data);
+
     //! Draws the x- and y-axis inside the opengl context
     //! from which the function is called
     void DrawXYAxes();
 
-    //! Craetes vertices used to draw the x and y axis
+    //! Creates vertices used to draw the x and y axis
     //!
     //! \param size_S the size of the x and y axis.
     //!               In case of x axis this means the 'height'.
@@ -91,13 +98,17 @@ private:
     //! Creates and fills vertex buffer objects used for the axes of the chart
     void SetupAxes();
 
+
+
 // Private attributes
 private:
     //! Vertex buffer object which contains the data series added by AddData..(..)
     QOpenGLBuffer _chart_vbo;
 
-    //! Vertex buffer objects for the x and y axis
+    //! Vertex buffer object for the x axis vertices
     QOpenGLBuffer _x_axis_vbo;
+
+    //! Vertex buffer object for the y axis vertices
     QOpenGLBuffer _y_axis_vbo;
 
     //! x-position of the left top corner of the chart
@@ -110,11 +121,13 @@ private:
 
     //! width of the chart
     int _width_S;
+
     //! height of the chart
     int _height_S;
 
     int _vbo_series_idx;
-    int _buffer_size;
+    int _vbo_buffer_size;
+
     int _point_count = 0;
 	
     int _max_y_axis_value;
@@ -123,12 +136,8 @@ private:
     int _min_x_axis_val_ms;
     int _max_x_axis_val_ms;
 
-    // Input Buffer
-    float* _data_series_buffer;
-    //save values before adding them so we can add them at once and not each point for itself( this means less calls to glbuffersubdata)
-    // Is incremented each time new data was added via AddData(...)
-    // Is resetted ( set to zero ) when the data is written into the charts vertex buffer object _chart_vbo
-    int _data_series_buffer_idx;
+    // Input buffer
+    CircularBuffer_TC<float> _input_buffer;
 
     // Sweep chart parameters
     // counts how often the point series reached the left side of the screen and was wrapped to the left side again

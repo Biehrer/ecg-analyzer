@@ -1,10 +1,10 @@
 #include "JonesPlot.h"
 
-JonesPlot::~JonesPlot() {
+JonesPlotApplication_C::~JonesPlotApplication_C() {
 
 	delete singlePlot;
 }
-JonesPlot::JonesPlot(QWidget *parent)
+JonesPlotApplication_C::JonesPlotApplication_C(QWidget *parent)
 	: QMainWindow(parent)
 {
 	//updates ogl scene
@@ -20,7 +20,7 @@ JonesPlot::JonesPlot(QWidget *parent)
 
     ui.setupUi(this);
 	
-	singlePlot = new QOpenGLPlotter(this);
+    singlePlot = new QOpenGLPlotWidget(this);
 	singlePlot->show();
 
     //    if( !singlePlot->IsActive() ){
