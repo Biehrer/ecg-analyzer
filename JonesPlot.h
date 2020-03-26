@@ -20,7 +20,12 @@ public:
     JonesPlotApplication_C(QWidget *parent = Q_NULLPTR);
     ~JonesPlotApplication_C();
 
+
+protected:
+    // Called when the window is resized
+    virtual void resizeEvent(QResizeEvent* event);
+
 private:
-    QOpenGLPlotWidget* singlePlot;
+    QOpenGLPlotWidget* plot_widget;
 	Ui::JonesPlotClass ui;
 };

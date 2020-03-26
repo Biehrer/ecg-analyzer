@@ -1,9 +1,15 @@
 #include "JonesPlot.h"
 
 JonesPlotApplication_C::~JonesPlotApplication_C() {
-
     delete plot_widget;
 }
+
+
+void JonesPlotApplication_C::resizeEvent(QResizeEvent* event)
+{
+//    plot_widget->resize(event->size().width(), event->size().height());
+}
+
 JonesPlotApplication_C::JonesPlotApplication_C(QWidget *parent)
 	: QMainWindow(parent)
 {
