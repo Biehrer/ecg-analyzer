@@ -1,6 +1,6 @@
 #include "QOpenGLPlotWidget.h"
 
-#define DEBUG_INFO
+//#define DEBUG_INFO
 
 #ifdef DEBUG_INFO
     #define DEBUG(msg) std::cout << msg << std::endl;
@@ -57,12 +57,13 @@ QOpenGLPlotWidget::QOpenGLPlotWidget(QWidget* parent)
     dataUpdate_timer = new QTimer();
     connect(dataUpdate_timer, SIGNAL(timeout()), this, SLOT(on_dataUpdate()));
     dataUpdate_timer->setInterval(1);
-    dataUpdate_timer->start(1);
+//   dataUpdate_timer->start(1);
 }
 
 void QOpenGLPlotWidget::dataThreadFunc()
 {
-	while(true){
+//    std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+    while(true){
         // duplicate for testing
         double pi_ = 3.1415026589;
         double val_in_radians = _pointcount * (2 * pi_) / 360;
@@ -71,27 +72,27 @@ void QOpenGLPlotWidget::dataThreadFunc()
 
         plot1->AddDataToSeries(data_value, _pointcount); //assume pointcount is in ms
         plot2->AddDataToSeries(data_value, _pointcount); //assume pointcount is in ms
-        plot3->AddDataToSeries(data_value, _pointcount); //assume pointcount is in ms
-        plot4->AddDataToSeries(data_value_cos, _pointcount); //assume pointcount is in ms
-        plot5->AddDataToSeries(data_value, _pointcount); //assume pointcount is in ms
-        plot6->AddDataToSeries(data_value_cos, _pointcount); //assume pointcount is in ms
+//        plot3->AddDataToSeries(data_value, _pointcount); //assume pointcount is in ms
+//        plot4->AddDataToSeries(data_value_cos, _pointcount); //assume pointcount is in ms
+//        plot5->AddDataToSeries(data_value, _pointcount); //assume pointcount is in ms
+//        plot6->AddDataToSeries(data_value_cos, _pointcount); //assume pointcount is in ms
 
         _pointcount++;
-        std::this_thread::sleep_for(std::chrono::milliseconds(30));
+        DEBUG("Thread added point (# " << _pointcount << "): " << data_value);
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
 	}
 }
 
 
 void QOpenGLPlotWidget::on_dataUpdate()
 {
-	double pi_ = 3.1415026589;
-	double val_in_radians = _pointcount * (2 * pi_) / 360;
-	double data_value = 10 * std::sin(val_in_radians);
+    double pi_ = 3.1415026589;
+    double val_in_radians = _pointcount * (2.0 * pi_) / 360.0;
+    float data_value = 10.0 * std::sin(val_in_radians);
 
-    DEBUG("data value added to charts: " << data_value);
-
-    plot1->AddDataToSeries(data_value, _pointcount); //assume pointcount is in ms
-    plot2->AddDataToSeries(data_value, _pointcount); //assume pointcount is in ms
+    DEBUG("Added data value (# " << _pointcount << "): " << data_value);
+    plot1->AddDataToSeries(data_value, _pointcount); //assume pointcount is some value in ms
+    plot2->AddDataToSeries(data_value, _pointcount); //assume pointcount is some value in ms
 
 	_pointcount++;	
 }
@@ -153,9 +154,14 @@ void QOpenGLPlotWidget::initializeGL()
     int chart_width = SREENWIDTH - screenwidth_fraction;
     int chart_height = SCREENHEIGHT / 6;
 
-    plot1 = new OGLChart_C(10000, 0, (SCREENHEIGHT / 6) * 1, chart_width, chart_height ); //space for 10000 Points (each point consists of 3 floats)
+    int max_point_count = 10000;
 
-    plot2 = new OGLChart_C(10000, 0, (SCREENHEIGHT / 6) * 2 + chart_height + chart_to_chart_distance_S, chart_width, chart_height ); //space for 10000 Points (each point consists of 3 floats)
+    // Chart is aligned at the right side of the screen
+    int chart_pos_x = 0;
+
+    plot1 = new OGLChart_C(max_point_count, chart_pos_x, (SCREENHEIGHT / 6) * 1, chart_width, chart_height ); //space for 10000 Points (each point consists of 3 floats)
+
+    plot2 = new OGLChart_C(max_point_count, chart_pos_x, (SCREENHEIGHT / 6) * 2 + chart_height + chart_to_chart_distance_S, chart_width, chart_height ); //space for 10000 Points (each point consists of 3 floats)
 //    plot3 = new OGLChart_C(10000, 0, (SCREENHEIGHT / 6) * 3 + 10, SREENWIDTH - screenwidth_fraction, SCREENHEIGHT / 6); //space for 10000 Points (each point consists of 3 floats)
 //    plot4 = new OGLChart_C(10000, 0, (SCREENHEIGHT / 6) * 4 + 10, SREENWIDTH - screenwidth_fraction, SCREENHEIGHT / 6); //space for 10000 Points (each point consists of 3 floats)
 //    plot5 = new OGLChart_C(10000, 0, (SCREENHEIGHT / 6) * 5 + 10, SREENWIDTH - screenwidth_fraction, SCREENHEIGHT / 6); //space for 10000 Points (each point consists of 3 floats)

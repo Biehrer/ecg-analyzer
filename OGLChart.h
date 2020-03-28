@@ -125,8 +125,8 @@ private:
     //! height of the chart
     int _height_S;
 
-    int _vbo_series_idx;
-    int _vbo_buffer_size;
+    int64_t _vbo_series_idx;
+    int64_t _vbo_buffer_size;
 
     int _point_count = 0;
 	

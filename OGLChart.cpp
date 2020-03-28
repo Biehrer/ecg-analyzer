@@ -1,6 +1,6 @@
 #include <OGLChart.h>
 
-// #define DEBUG_INFO
+//#define DEBUG_INFO
 
 #ifdef DEBUG_INFO
     #define DEBUG(msg) std::cout << msg << std::endl;
@@ -83,7 +83,7 @@ void OGLChart_C::AllocateSeriesVbo()
 void OGLChart_C::AddDataToSeries(float y, float x_ms)
 {
     // cheap: dont add the value if its not inside the range..because its not visible eitherway
-    if ( y > _max_y_axis_value || y < _min_y_axis_value ){return;}
+    // if ( y > _max_y_axis_value || y < _min_y_axis_value ){return;}
 
     // wrapp value around x-axis if the 'x_ms' value is bigger than maximum value of the x-axis
     if (_need_to_wrap_series) {
@@ -102,7 +102,7 @@ void OGLChart_C::AddDataToSeries(float y, float x_ms)
     // - (minus) because then the positive y axis is directing at the top of the screen
 //    float y_val_scaled_S = static_cast<float>(_screen_pos_y_S) - (y * ( static_cast<float>(_height_S) / (_max_y_axis_value - _min_y_axis_value) ) );
 
-    float y_val_scaled_S = static_cast<float>(_screen_pos_y_S) + (y * ( static_cast<float>(_height_S) / (_max_y_axis_value - _min_y_axis_value) ) );
+    float y_val_scaled_S = static_cast<float>(_screen_pos_y_S) - (y * ( static_cast<float>(_height_S) / (_max_y_axis_value - _min_y_axis_value) ) );
 
 //    assert( y_val_scaled_S < _max_y_axis_value && y_val_scaled_S > _min_y_axis_value);
 
@@ -122,7 +122,6 @@ void OGLChart_C::AddDataToSeries(float y, float x_ms)
 
 void OGLChart_C::UpdateVbo()
 {
-
     if( !_input_buffer.NewDataToRead() ){
         return;
     }
@@ -130,43 +129,53 @@ void OGLChart_C::UpdateVbo()
     // Get latest data from the input buffer
     auto latest_data = _input_buffer.ReadLatest();
 
-    // Todo: Spare this transformation to QVector by returning QVector directly from the input buffer
-    QVector<float> additional_point_vertices;
+    if ( !latest_data.empty() ) {
+        // Todo: Spare this transformation to QVector by returning QVector directly from the input buffer
+        QVector<float> additional_point_vertices;
+        for (const auto& element : latest_data) {
+            DEBUG(element);
+            additional_point_vertices.append(element._x);
+            additional_point_vertices.append(element._y);
+            additional_point_vertices.append(element._z);
 
-    for(const auto& element : latest_data){
-        DEBUG(element);
-        additional_point_vertices.append(element._x);
-        additional_point_vertices.append(element._y);
-        additional_point_vertices.append(element._z);
+            // Count points; stop counting points after one wrap
+            // (because after a wrap the point count stays the same)
+    //        if (!_dataseries_wrapped_once) {
+//                _point_count += data.size() / 3;
+    //        }
+        }
+        // Write data to the vbo
+        WriteToVbo(additional_point_vertices);
     }
-
-    // Write data to the vbo
-    WriteToVbo(additional_point_vertices);
 }
 
-
+// MAke sure the buffer is bound to the current context before calling this function
 void OGLChart_C::WriteToVbo(const QVector<float>& data)
 {
-    int number_of_new_coordinates = data.size();
-
     // Write data to the vbo
     if (_vbo_series_idx <= _vbo_buffer_size) {
-
-        _chart_vbo.write(_vbo_series_idx, data.data(), number_of_new_coordinates * sizeof(float));
+        int number_of_new_data_bytes = static_cast<int>(data.size()) * static_cast<int>(sizeof(float));
+        _chart_vbo.write(static_cast<int>(_vbo_series_idx), data.data(), number_of_new_data_bytes);
         // new write offset in bytes
-        _vbo_series_idx += data.size() * sizeof(float);
-        // stop counting points after one wrap (because after a wrap the point count stays the same)
-        if (!_dataseries_wrapped_once) {
-            _point_count += number_of_new_coordinates / 3;
+        _vbo_series_idx += number_of_new_data_bytes;
 
+        // Count points; stop counting points after one wrap
+        // (because after a wrap the point count stays the same)
+        if (!_dataseries_wrapped_once) {
+            _point_count += data.size() / 3;
+        }else{
+//        _point_count = _max_x_axis_val_ms;
+//            _point_count = (_chart_vbo.size() / 3) - 1;
         }
     } else {
-        //buffer is full; reset buffer index and start overwriting data at the beginning
-        std::cout << "chart data buffer full, number of datapoints(floats): " << _point_count
+        // buffer is full; reset buffer index and start overwriting data at the beginning
+        std::cout << "chart data buffer full, number of datapoints(floats): " << _point_count << " || "
+                  << "number of datapoints according to the vbo size:" << (_chart_vbo.size() / 3) << std::endl
                   << "..restart writing at beginning" << std::endl;
         _vbo_series_idx = 0;
-    }
 
+//      _point_count = 0;
+    }
 }
 
 
@@ -184,7 +193,7 @@ void OGLChart_C::Draw()
     // each point (GL_POINT) consists of 3 components (x, y, z)
 	f->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
     // to get the abs number of points-> divide through count of each Point
-    f->glDrawArrays(GL_POINTS, 0, _point_count);
+    f->glDrawArrays(GL_LINE_STRIP, 0, _point_count);
 	//f->glDisableVertexAttribArray(1);
 	f->glDisableVertexAttribArray(0);
     _chart_vbo.release();
@@ -209,7 +218,7 @@ void OGLChart_C::SetupAxes() {
 	f->glEnableVertexAttribArray(0);
     // 3 positions for x and y and z data coordinates
     f->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
-    _x_axis_vbo.allocate(x_axis_vertices .constData(), x_axis_vertices .size() * sizeof(float));
+    _x_axis_vbo.allocate(x_axis_vertices .constData(), x_axis_vertices.size() * static_cast<int>(sizeof(float)) );
     _x_axis_vbo.setUsagePattern(QOpenGLBuffer::StaticDraw);
 	f->glDisableVertexAttribArray(0);
     _x_axis_vbo.release();
@@ -219,7 +228,7 @@ void OGLChart_C::SetupAxes() {
     _y_axis_vbo.bind();
 	f->glEnableVertexAttribArray(0);
     f->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
-    _y_axis_vbo.allocate(y_axis_vertices.constData(), y_axis_vertices.size() * sizeof(float));
+    _y_axis_vbo.allocate(y_axis_vertices.constData(), y_axis_vertices.size() * static_cast<int>(sizeof(float)) );
     _y_axis_vbo.setUsagePattern(QOpenGLBuffer::StaticDraw);
 	f->glDisableVertexAttribArray(0);
     _y_axis_vbo.release();

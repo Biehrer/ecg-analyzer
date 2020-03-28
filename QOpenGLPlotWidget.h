@@ -3,9 +3,6 @@
 // Project includes
 #include "OGLChart.h"
 
-#include <ShapeData.h>
-#include <ShapeGenerator.h>
-
 // STL includes
 #include <iostream>
 #include <string>
@@ -103,13 +100,14 @@ private:
     //! OpenGL far plane parameter
 	float _farZ;
 
-	int _pointcount;
-
     //! Issues the opengl render call at around 30 - 60 Hz
     QTimer* paint_update_timer;
 
     //! Adds new data to the chart through signal and slot system
     QTimer* dataUpdate_timer;
+
+    //! Variable used as pseudo-timestamp
+    int _pointcount;
 
 public slots:
 	void on_dataUpdate();

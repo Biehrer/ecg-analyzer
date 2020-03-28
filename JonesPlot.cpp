@@ -34,6 +34,6 @@ JonesPlotApplication_C::JonesPlotApplication_C(QWidget *parent)
     //    }
 
     // Start thread to add data to the plots
-//    std::thread dataThread(&QOpenGLPlotter::dataThreadFunc, singlePlot);
-//    dataThread.detach();
+    std::thread dataThread(&QOpenGLPlotWidget::dataThreadFunc, plot_widget);
+    dataThread.detach();
 }
