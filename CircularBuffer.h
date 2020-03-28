@@ -8,10 +8,10 @@
 #include <vector>
 #include <iostream>
 #include <assert.h>
+#include <mutex>
 
 // Interface types of the CircularBuffer
-
-// Representation of a position in 3d space containing three components: x, y and z
+//! Representation of a position in 3d space containing three components: x, y and z
 template<typename ElementType_TP>
 class Position3D_TC {
 
@@ -68,10 +68,16 @@ public:
     void InsertAtHead(ElementType_TP x, ElementType_TP y, ElementType_TP z)
     {
         assert(_head_idx <= _size && _head_idx >= 0 );
-        _data_series_buffer[_head_idx] = x;
-        _data_series_buffer[_head_idx + 1] = y;
-        _data_series_buffer[_head_idx + 2] = z;
-        _head_idx += 3;
+        std::unique_lock<std::mutex> lck (_lock);
+
+       if( _head_idx <= _size - 3 ) {
+            _data_series_buffer[_head_idx] = x;
+            _data_series_buffer[_head_idx + 1] = y;
+            _data_series_buffer[_head_idx + 2] = z;
+            _head_idx += 3;
+       }else{
+            std::cout << "---BUFFER FULL---" << std::endl;
+        }
     }
 
     void InsertAtHead(Position3D_TC<ElementType_TP> element)
@@ -88,8 +94,9 @@ public:
     std::vector<Position3D_TC<ElementType_TP>> ReadLatest() {
 
         std::vector<Position3D_TC<ElementType_TP>> latest_data;
-
         if( NewDataToRead() ){
+           std::unique_lock<std::mutex> lck (_lock);
+
             // Because we reset the head index each time, we know
             int last_read_idx = 0;
             while (_head_idx > last_read_idx) {
@@ -106,6 +113,7 @@ public:
     }
 
     bool NewDataToRead(){
+       std::unique_lock<std::mutex> lck (_lock);
         return _head_idx > _last_read_idx;
     }
 
@@ -124,4 +132,7 @@ private:
 
     //! The idx from which the buffer was read the last time
     int _last_read_idx = 0;
+
+    //! Protects shared access
+    std::mutex _lock;
 };
