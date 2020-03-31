@@ -87,6 +87,12 @@ private:
     //! from which the function is called
     void DrawXYAxes();
 
+    //! Draws the border bounding box of the plot area inside the opengl context
+    void DrawBoundingBox();
+
+    void CreateBoundingBox();
+
+
     //! Creates vertices used to draw the x and y axis
     //!
     //! \param size_S the size of the x and y axis.
@@ -97,8 +103,6 @@ private:
 
     //! Creates and fills vertex buffer objects used for the axes of the chart
     void SetupAxes();
-
-
 
 // Private attributes
 private:
@@ -111,6 +115,9 @@ private:
     //! Vertex buffer object for the y axis vertices
     QOpenGLBuffer _y_axis_vbo;
 
+    //! Vertex buffer object for the bounding box
+    QOpenGLBuffer _bb_vbo;
+
     //! x-position of the left top corner of the chart
     //! inside the ogl context in screen coordinates
     int _screen_pos_x_S;
@@ -119,6 +126,9 @@ private:
     //! inside the ogl context in screen coordinates
     int _screen_pos_y_S;
 
+    //! z-position of the "...
+    float _screen_pos_z_S = 1.0f;
+    
     //! width of the chart
     int _width_S;
 

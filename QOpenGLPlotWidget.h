@@ -32,8 +32,8 @@
 #include <thread>
 #include <mutex>
 #include <chrono>
-#define SREENWIDTH 1680
-#define SCREENHEIGHT 1050
+#define SREENWIDTH 1440
+#define SCREENHEIGHT 800
 
 //coding convention : _var = member Variable
 
@@ -66,8 +66,8 @@ private:
     QMatrix4x4* _projection_mat;
 
     //! Model matrix
-
     QMatrix4x4* _model_mat;
+
     //! View matrix
     QMatrix4x4* _view_mat;
 
@@ -77,13 +77,8 @@ private:
     // OpenGL shader
     QOpenGLShaderProgram _prog;
 
-	OGLChart_C* plot1;
-	OGLChart_C* plot2;
-	OGLChart_C* plot3;
-
-	OGLChart_C* plot4;
-	OGLChart_C* plot5;
-	OGLChart_C* plot6;
+    //! All plots contained in the current instance of this widget
+    std::vector<OGLChart_C*> _plots;
 
     // Keep track of game timing and to implement bullets with different flying speed
 	double last_time = 0;
@@ -101,10 +96,10 @@ private:
 	float _farZ;
 
     //! Issues the opengl render call at around 30 - 60 Hz
-    QTimer* paint_update_timer;
+    QTimer* _paint_update_timer;
 
     //! Adds new data to the chart through signal and slot system
-    QTimer* dataUpdate_timer;
+    QTimer* _data_update_timer;
 
     //! Variable used as pseudo-timestamp
     int _pointcount;

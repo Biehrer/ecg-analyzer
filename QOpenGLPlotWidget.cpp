@@ -15,17 +15,16 @@ QOpenGLPlotWidget::~QOpenGLPlotWidget() {
     delete _view_mat;
     delete _MVP;
 	
-    delete paint_update_timer;
-    dataUpdate_timer->deleteLater();
+    _paint_update_timer->deleteLater();
+    delete _paint_update_timer;
 
-	delete dataUpdate_timer;
-
-	delete plot1;
-	delete plot2;
-//	delete plot3;
-//	delete plot4;
-//	delete plot5;
-//	delete plot6;
+    _data_update_timer->deleteLater();
+	delete _data_update_timer;
+    
+    // Delete plots
+    for ( int chart_idx = _plots.size() - 1; chart_idx > 0; --chart_idx ) {
+        delete _plots[chart_idx];
+    }
 }
 
 QOpenGLPlotWidget::QOpenGLPlotWidget(QWidget* parent)
@@ -50,19 +49,18 @@ QOpenGLPlotWidget::QOpenGLPlotWidget(QWidget* parent)
     _framecounter = 0;
     _pointcount = 0;
 
-    paint_update_timer = new QTimer();
-    connect(paint_update_timer, SIGNAL(timeout()), this, SLOT(update()));
-    paint_update_timer->setInterval(30);
+    _paint_update_timer = new QTimer();
+    connect(_paint_update_timer, SIGNAL(timeout()), this, SLOT(update()));
+    _paint_update_timer->setInterval(30);
 
-    dataUpdate_timer = new QTimer();
-    connect(dataUpdate_timer, SIGNAL(timeout()), this, SLOT(on_dataUpdate()));
-    dataUpdate_timer->setInterval(1);
-//   dataUpdate_timer->start(1);
+    _data_update_timer = new QTimer();
+    connect(_data_update_timer, SIGNAL(timeout()), this, SLOT(on_dataUpdate()));
+    _data_update_timer->setInterval(1);
+    _data_update_timer->start(1);
 }
 
 void QOpenGLPlotWidget::dataThreadFunc()
 {
-//    std::this_thread::sleep_for(std::chrono::milliseconds(2000));
     while(true){
         // duplicate for testing
         double pi_ = 3.1415026589;
@@ -70,12 +68,9 @@ void QOpenGLPlotWidget::dataThreadFunc()
         double data_value = 10 * std::sin(val_in_radians);
         double data_value_cos = 10 * std::cos(val_in_radians);
 
-        plot1->AddDataToSeries(data_value, _pointcount); //assume pointcount is in ms
-        plot2->AddDataToSeries(data_value, _pointcount); //assume pointcount is in ms
-//        plot3->AddDataToSeries(data_value, _pointcount); //assume pointcount is in ms
-//        plot4->AddDataToSeries(data_value_cos, _pointcount); //assume pointcount is in ms
-//        plot5->AddDataToSeries(data_value, _pointcount); //assume pointcount is in ms
-//        plot6->AddDataToSeries(data_value_cos, _pointcount); //assume pointcount is in ms
+        for ( auto& plot : _plots ) {
+            plot->AddDataToSeries(data_value, _pointcount);
+        }
 
         _pointcount++;
         DEBUG("Thread added point (# " << _pointcount << "): " << data_value);
@@ -91,9 +86,10 @@ void QOpenGLPlotWidget::on_dataUpdate()
     float data_value = 10.0 * std::sin(val_in_radians);
 
     DEBUG("Added data value (# " << _pointcount << "): " << data_value);
-    plot1->AddDataToSeries(data_value, _pointcount); //assume pointcount is some value in ms
-    plot2->AddDataToSeries(data_value, _pointcount); //assume pointcount is some value in ms
-
+    for ( auto& plot : _plots ) {
+        // assume that _pointcount is an incrementing value with the unit milliseconds
+        plot->AddDataToSeries(data_value, _pointcount);
+    }
 	_pointcount++;	
 }
 
@@ -145,38 +141,44 @@ void QOpenGLPlotWidget::initializeGL()
 	f->glEnable(GL_POINT_SIZE);
 	f->glEnable(GL_PROGRAM_POINT_SIZE);
 
-
     InitializeShaderProgramms();
 
-    int screenwidth_fraction = SREENWIDTH / 6;
+    int number_of_plots = 2;
 
-    int chart_to_chart_distance_S = 40;
+    ++number_of_plots;
+    int screenwidth_fraction = SREENWIDTH / 6;
     int chart_width = SREENWIDTH - screenwidth_fraction;
-    int chart_height = SCREENHEIGHT / 6;
+    int chart_height = SCREENHEIGHT / number_of_plots;
 
     int max_point_count = 10000;
 
     // Chart is aligned at the right side of the screen
     int chart_pos_x = 0;
 
-    plot1 = new OGLChart_C(max_point_count, chart_pos_x, (SCREENHEIGHT / 6) * 1, chart_width, chart_height ); //space for 10000 Points (each point consists of 3 floats)
+    int chart_to_chart_offset_S = 10;
 
-    plot2 = new OGLChart_C(max_point_count, chart_pos_x, (SCREENHEIGHT / 6) * 2 + chart_height + chart_to_chart_distance_S, chart_width, chart_height ); //space for 10000 Points (each point consists of 3 floats)
-//    plot3 = new OGLChart_C(10000, 0, (SCREENHEIGHT / 6) * 3 + 10, SREENWIDTH - screenwidth_fraction, SCREENHEIGHT / 6); //space for 10000 Points (each point consists of 3 floats)
-//    plot4 = new OGLChart_C(10000, 0, (SCREENHEIGHT / 6) * 4 + 10, SREENWIDTH - screenwidth_fraction, SCREENHEIGHT / 6); //space for 10000 Points (each point consists of 3 floats)
-//    plot5 = new OGLChart_C(10000, 0, (SCREENHEIGHT / 6) * 5 + 10, SREENWIDTH - screenwidth_fraction, SCREENHEIGHT / 6); //space for 10000 Points (each point consists of 3 floats)
-//    plot6 = new OGLChart_C(10000, 0, (SCREENHEIGHT / 6) * 6 + 10, SREENWIDTH - screenwidth_fraction, SCREENHEIGHT / 6);
+    for ( int chart_idx = 1; chart_idx < number_of_plots; ++chart_idx) {
 
-    paint_update_timer->start();
+        //if ( chart_idx % 2 == 0 ) {
+        //    chart_to_chart_offset_S = 30;
+        //}
+        //else {
+        //    chart_to_chart_offset_S = 0;
+        //}
+
+        _plots.push_back(new OGLChart_C(max_point_count, chart_pos_x, chart_height * chart_idx + chart_to_chart_offset_S, chart_width, chart_height));
+    }
+    _paint_update_timer->start();
 }
 
 void QOpenGLPlotWidget::resizeGL(int width, int height){
-    // execute when window gets resized
 	QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
 
     _projection_mat->setToIdentity();
     _view_mat->setToIdentity();
-// This window is neber resized. only JonesPlot.h is resized
+
+    // This window is never resized. only JonesPlot.h is resized.
+    // If this event should be triggered, it needs to be passed to this widget.
     _projection_mat->ortho(QRect(0, 0, this->width(),this->height()));
 
 	f->glViewport(0, 0, this->width(), this->height());
@@ -249,8 +251,12 @@ void QOpenGLPlotWidget::paintGL(){
     _prog.setUniformValue("point_scale", 2.0f);
     _prog.setUniformValue("u_Color", QVector3D(1.0f, 1.0f, 1.0f));
 
-	plot1->Draw();
-	plot2->Draw();
+
+    for ( const auto& plot : _plots ) {
+        plot->Draw();
+    }
+	//plot1->Draw();
+	//plot2->Draw();
 //	plot3->Draw();
 //	plot4->Draw();
 //	plot5->Draw();

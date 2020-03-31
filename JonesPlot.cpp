@@ -27,13 +27,14 @@ JonesPlotApplication_C::JonesPlotApplication_C(QWidget *parent)
     ui.setupUi(this);
 	
     plot_widget = new QOpenGLPlotWidget(this);
-    plot_widget->show();
+    plot_widget->showFullScreen();
+    //plot_widget->show();
 
     //    if( !singlePlot->IsActive() ){
     //        abort!
     //    }
 
     // Start thread to add data to the plots
-    std::thread dataThread(&QOpenGLPlotWidget::dataThreadFunc, plot_widget);
-    dataThread.detach();
+    //std::thread dataThread(&QOpenGLPlotWidget::dataThreadFunc, plot_widget);
+    //dataThread.detach();
 }

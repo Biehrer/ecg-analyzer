@@ -26,6 +26,7 @@ OGLChart_C::OGLChart_C(int max_num_of_points_in_buffer,
       _chart_vbo(QOpenGLBuffer::VertexBuffer),
       _x_axis_vbo(QOpenGLBuffer::VertexBuffer),
       _y_axis_vbo(QOpenGLBuffer::VertexBuffer),
+     _bb_vbo(QOpenGLBuffer::VertexBuffer),
       _input_buffer(max_num_of_points_in_buffer)
 {
 
@@ -59,8 +60,11 @@ OGLChart_C::OGLChart_C(int max_num_of_points_in_buffer,
     // Allocate a vertex buffer object to store data for visualization
     AllocateSeriesVbo();
 
-    // Allocate vertex buffer objects for the x and y axis
+    // Create vbo for the x and y axis
     SetupAxes();
+
+    // Create vbo for the bounding box of the chart
+    CreateBoundingBox();
 }
 
 
@@ -82,7 +86,7 @@ void OGLChart_C::AllocateSeriesVbo()
 
 void OGLChart_C::AddDataToSeries(float y, float x_ms)
 {
-    // cheap: dont add the value if its not inside the range..because its not visible eitherway
+    // cheap: dont add the value if its not inside the range..because its not visible eitherway -> better solution would be: Add it to the series but don't draw it!
     // if ( y > _max_y_axis_value || y < _min_y_axis_value ){return;}
 
     // wrapp value around x-axis if the 'x_ms' value is bigger than maximum value of the x-axis
@@ -198,7 +202,9 @@ void OGLChart_C::Draw()
 	f->glDisableVertexAttribArray(0);
     _chart_vbo.release();
 
-    DrawXYAxes();
+    //DrawXYAxes();
+
+    DrawBoundingBox();
 }
 
 
@@ -208,11 +214,11 @@ void OGLChart_C::SetupAxes() {
 
     const auto axes_vertices = CreateAxesVertices(5.0);
 
-    // Todo dont create another copy...this is a scope problem! because the struct does not exist outside the function
+    // Todo dont create another copy...this is a scope problem! because the struct does not exist outside the function -> solution-> store axes in members
     auto x_axis_vertices = axes_vertices._x_axis_vertices;
     auto y_axis_vertices = axes_vertices._y_axis_vertices;
 
-	//Setup OGL Chart buffer - empty 
+	// Setup OGL Chart buffer - empty 
     _x_axis_vbo.create();
     _x_axis_vbo.bind();
 	f->glEnableVertexAttribArray(0);
@@ -223,7 +229,7 @@ void OGLChart_C::SetupAxes() {
 	f->glDisableVertexAttribArray(0);
     _x_axis_vbo.release();
 
-	//Setup OGL Chart buffer - empty 
+	// Setup OGL Chart buffer - empty 
     _y_axis_vbo.create();
     _y_axis_vbo.bind();
 	f->glEnableVertexAttribArray(0);
@@ -254,6 +260,80 @@ void OGLChart_C::DrawXYAxes()
     _x_axis_vbo.release();
 
 }
+
+void OGLChart_C::DrawBoundingBox()
+{
+    QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
+
+    _bb_vbo.bind();
+    f->glEnableVertexAttribArray(0);
+    f->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+    f->glDrawArrays(GL_LINES, 0, 6);
+    f->glDisableVertexAttribArray(0);
+    _bb_vbo.release();
+
+}
+
+void OGLChart_C::CreateBoundingBox()
+{
+    // Create vertices to draw four lines inside the opengl z-plane
+    QVector<float> bb_vertices;
+
+    float offset_y = _height_S;
+
+    // Draw bottom side
+    // Bottom right corner
+    bb_vertices.push_back(_screen_pos_x_S + _width_S);
+    bb_vertices.push_back(_screen_pos_y_S + _height_S - offset_y);
+    bb_vertices.push_back(_screen_pos_z_S);
+    // Bottom left corner
+    bb_vertices.push_back(_screen_pos_x_S);
+    bb_vertices.push_back(_screen_pos_y_S + _height_S - offset_y);
+    bb_vertices.push_back(_screen_pos_z_S);
+
+    // Draw right side 
+    // Bottom right corner
+    bb_vertices.push_back(_screen_pos_x_S + _width_S);
+    bb_vertices.push_back(_screen_pos_y_S + _height_S - offset_y);
+    bb_vertices.push_back(_screen_pos_z_S);
+    // Top right corner
+    bb_vertices.push_back(_screen_pos_x_S + _width_S);
+    bb_vertices.push_back(_screen_pos_y_S - offset_y);
+    bb_vertices.push_back(_screen_pos_z_S);
+
+    // Draw top side
+    // Top left corner
+    bb_vertices.push_back(_screen_pos_x_S);
+    bb_vertices.push_back(_screen_pos_y_S - offset_y);
+    bb_vertices.push_back(_screen_pos_z_S);
+    // Top right corner
+    bb_vertices.push_back(_screen_pos_x_S + _width_S);
+    bb_vertices.push_back(_screen_pos_y_S - offset_y);
+    bb_vertices.push_back(_screen_pos_z_S);
+
+    // Draw left side 
+    // Top left corner
+    bb_vertices.push_back(_screen_pos_x_S);
+    bb_vertices.push_back(_screen_pos_y_S - offset_y);
+    bb_vertices.push_back(_screen_pos_z_S);
+    // Bottom left corner
+    bb_vertices.push_back(_screen_pos_x_S);
+    bb_vertices.push_back(_screen_pos_y_S + _height_S - offset_y);
+    bb_vertices.push_back(_screen_pos_z_S);
+
+    // Setup vbo
+    QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
+    _bb_vbo.create();
+    _bb_vbo.bind();
+    f->glEnableVertexAttribArray(0);
+    // 3 positions for x and y and z data coordinates
+    f->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+    _bb_vbo.allocate(bb_vertices.constData(), bb_vertices.size() * static_cast<int>(sizeof(float)));
+    _bb_vbo.setUsagePattern(QOpenGLBuffer::StaticDraw);
+    f->glDisableVertexAttribArray(0);
+    _bb_vbo.release();
+}
+
 
 const XYAxisVertices_TP OGLChart_C::CreateAxesVertices(float size_S)
 {
@@ -287,7 +367,7 @@ const XYAxisVertices_TP OGLChart_C::CreateAxesVertices(float size_S)
     x_axis_vertices.push_back(_screen_pos_y_S);
     x_axis_vertices.push_back(axis_pos_z);
 
-    //second triang P3 - P4 - P2
+    // second triang P3 - P4 - P2
     // P3
     x_axis_vertices.push_back(_screen_pos_x_S + x_axis_width_S);
     x_axis_vertices.push_back(_screen_pos_y_S + x_axis_height_S);
