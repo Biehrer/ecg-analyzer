@@ -166,7 +166,8 @@ void QOpenGLPlotWidget::initializeGL()
         //    chart_to_chart_offset_S = 0;
         //}
 
-        _plots.push_back(new OGLChart_C(max_point_count, chart_pos_x, chart_height * chart_idx + chart_to_chart_offset_S, chart_width, chart_height));
+        int chart_pos_y = chart_height * chart_idx + chart_to_chart_offset_S;
+        _plots.push_back(new OGLChart_C(max_point_count, chart_pos_x, chart_pos_y, chart_width, chart_height));
     }
     _paint_update_timer->start();
 }
@@ -251,16 +252,9 @@ void QOpenGLPlotWidget::paintGL(){
     _prog.setUniformValue("point_scale", 2.0f);
     _prog.setUniformValue("u_Color", QVector3D(1.0f, 1.0f, 1.0f));
 
-
     for ( const auto& plot : _plots ) {
         plot->Draw();
     }
-	//plot1->Draw();
-	//plot2->Draw();
-//	plot3->Draw();
-//	plot4->Draw();
-//	plot5->Draw();
-//	plot6->Draw();
 
     _prog.release();
 }
@@ -269,12 +263,10 @@ void QOpenGLPlotWidget::paintGL(){
 void QOpenGLPlotWidget::mouseMoveEvent(QMouseEvent* evt) {
     float x  = evt->x();
     float y = evt->y();
-   // plot1->addData(x, y);
 }
 
 
 void QOpenGLPlotWidget::mousePressEvent(QMouseEvent* evt) {
     float x = evt->x();
     float y = evt->y();
-   // plot1->addData(x, y);
 }
