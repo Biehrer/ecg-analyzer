@@ -53,20 +53,24 @@ QOpenGLPlotWidget::QOpenGLPlotWidget(QWidget* parent)
     connect(_paint_update_timer, SIGNAL(timeout()), this, SLOT(update()));
     _paint_update_timer->setInterval(30);
 
+    double data_gen_frequency_hz = 1000.0;
+    double data_gen_frequency_s = 1.0 / data_gen_frequency_hz;
+    double data_gren_frequency_ms = data_gen_frequency_s * 1000.0;
+
     _data_update_timer = new QTimer();
-    connect(_data_update_timer, SIGNAL(timeout()), this, SLOT(on_dataUpdate()));
-    _data_update_timer->setInterval(1);
-    _data_update_timer->start(1);
+    connect(_data_update_timer, SIGNAL(timeout()), this, SLOT(OnDataUpdate()));
+    _data_update_timer->setInterval(data_gren_frequency_ms);
+    //_data_update_timer->start(data_gren_frequency_ms);
 }
 
-void QOpenGLPlotWidget::dataThreadFunc()
+void QOpenGLPlotWidget::OnDataUpdateThreadFunction()
 {
     while(true){
         // duplicate for testing
         double pi_ = 3.1415026589;
-        double val_in_radians = _pointcount * (2 * pi_) / 360;
-        double data_value = 10 * std::sin(val_in_radians);
-        double data_value_cos = 10 * std::cos(val_in_radians);
+        double val_in_radians = _pointcount * (2.0 * pi_) / 360.0;
+        double data_value = 10.0 * std::sin(val_in_radians);
+        double data_value_cos = 10.0 * std::cos(val_in_radians);
 
         for ( auto& plot : _plots ) {
             plot->AddDataToSeries(data_value, _pointcount);
@@ -79,17 +83,18 @@ void QOpenGLPlotWidget::dataThreadFunc()
 }
 
 
-void QOpenGLPlotWidget::on_dataUpdate()
+void QOpenGLPlotWidget::OnDataUpdate()
 {
     double pi_ = 3.1415026589;
     double val_in_radians = _pointcount * (2.0 * pi_) / 360.0;
     float data_value = 10.0 * std::sin(val_in_radians);
 
-    DEBUG("Added data value (# " << _pointcount << "): " << data_value);
     for ( auto& plot : _plots ) {
         // assume that _pointcount is an incrementing value with the unit milliseconds
         plot->AddDataToSeries(data_value, _pointcount);
     }
+
+    DEBUG("Added data value (# " << _pointcount << "): " << data_value);
 	_pointcount++;	
 }
 
@@ -143,7 +148,7 @@ void QOpenGLPlotWidget::initializeGL()
 
     InitializeShaderProgramms();
 
-    int number_of_plots = 2;
+    int number_of_plots = 1;
 
     ++number_of_plots;
     int screenwidth_fraction = SREENWIDTH / 6;
@@ -155,7 +160,7 @@ void QOpenGLPlotWidget::initializeGL()
     // Chart is aligned at the right side of the screen
     int chart_pos_x = 0;
 
-    int chart_to_chart_offset_S = 10;
+    int chart_to_chart_offset_S = 10;// +chart_height / 2;
 
     for ( int chart_idx = 1; chart_idx < number_of_plots; ++chart_idx) {
 
@@ -169,19 +174,19 @@ void QOpenGLPlotWidget::initializeGL()
         int chart_pos_y = chart_height * chart_idx + chart_to_chart_offset_S;
         _plots.push_back(new OGLChart_C(max_point_count, chart_pos_x, chart_pos_y, chart_width, chart_height));
     }
+
     _paint_update_timer->start();
 }
 
-void QOpenGLPlotWidget::resizeGL(int width, int height){
-	QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
-
+void QOpenGLPlotWidget::resizeGL(int width, int height)
+{
     _projection_mat->setToIdentity();
     _view_mat->setToIdentity();
-
     // This window is never resized. only JonesPlot.h is resized.
     // If this event should be triggered, it needs to be passed to this widget.
     _projection_mat->ortho(QRect(0, 0, this->width(),this->height()));
 
+    QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
 	f->glViewport(0, 0, this->width(), this->height());
 	this->update();
 }
@@ -236,18 +241,16 @@ bool QOpenGLPlotWidget::InitializeShaderProgramms()
 }
 
 
-void QOpenGLPlotWidget::paintGL(){
+void QOpenGLPlotWidget::paintGL()
+{
 	QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
-
     f->glClearColor(1.0f, 0.0f, 0.0f, 0.5f);
 	f->glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
     ++_framecounter;
 
     *_MVP = *(_projection_mat) * *(_view_mat) * *(_model_mat);
 
     _prog.bind();
-
     _prog.setUniformValue("u_MVP", *_MVP);
     _prog.setUniformValue("point_scale", 2.0f);
     _prog.setUniformValue("u_Color", QVector3D(1.0f, 1.0f, 1.0f));
@@ -260,13 +263,15 @@ void QOpenGLPlotWidget::paintGL(){
 }
 
 
-void QOpenGLPlotWidget::mouseMoveEvent(QMouseEvent* evt) {
+void QOpenGLPlotWidget::mouseMoveEvent(QMouseEvent* evt) 
+{
     float x  = evt->x();
     float y = evt->y();
 }
 
 
-void QOpenGLPlotWidget::mousePressEvent(QMouseEvent* evt) {
+void QOpenGLPlotWidget::mousePressEvent(QMouseEvent* evt) 
+{
     float x = evt->x();
     float y = evt->y();
 }

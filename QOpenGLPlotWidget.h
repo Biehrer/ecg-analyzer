@@ -46,7 +46,7 @@ public:
     ~QOpenGLPlotWidget();
 
     bool InitializeShaderProgramms();
-	void dataThreadFunc();
+	void OnDataUpdateThreadFunction();
 	
 protected:
     // Initialize shader and models for drawing
@@ -105,7 +105,7 @@ private:
     int _pointcount;
 
 public slots:
-	void on_dataUpdate();
+	void OnDataUpdate();
 };
 
 
