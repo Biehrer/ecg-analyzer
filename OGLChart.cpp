@@ -197,12 +197,12 @@ void OGLChart_C::Draw()
     // each point (GL_POINT) consists of 3 components (x, y, z)
 	f->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
     // to get the abs number of points-> divide through count of each Point
-    f->glDrawArrays(GL_LINE_STRIP, 0, _point_count);
+    f->glDrawArrays(GL_POINTS, 0, _point_count);
 	//f->glDisableVertexAttribArray(1);
 	f->glDisableVertexAttribArray(0);
     _chart_vbo.release();
 
-    //DrawXYAxes();
+    DrawXYAxes();
 
     DrawBoundingBox();
 }
@@ -279,47 +279,72 @@ void OGLChart_C::CreateBoundingBox()
     // Create vertices to draw four lines inside the opengl z-plane
     QVector<float> bb_vertices;
 
-    float offset_y = _height_S;
+
+    // calculate corner points of the bounding box
+    //float bottom_left_x = _screen_pos_x_S;
+    //float bottom_left_y = _screen_pos_y_S + _height_S - offset_y;
+
+    //float bottom_right_x = _screen_pos_x_S + _width_S;
+    //float bottom_right_y = _screen_pos_y_S + _height_S - offset_y;
+
+    //float top_left_x = _screen_pos_x_S;
+    //float top_left_y = _screen_pos_y_S - offset_y;
+
+    //float top_right_x = _screen_pos_x_S + _width_S;
+    //float top_right_y = _screen_pos_y_S - offset_y;
+
+    float bottom_left_x = _screen_pos_x_S;
+    float bottom_left_y = _screen_pos_y_S + _height_S;
+
+    float bottom_right_x = _screen_pos_x_S + _width_S;
+    float bottom_right_y = _screen_pos_y_S + _height_S;
+
+    float top_left_x = _screen_pos_x_S;
+    float top_left_y = _screen_pos_y_S - _height_S;
+
+    float top_right_x = _screen_pos_x_S + _width_S;
+    float top_right_y = _screen_pos_y_S - _height_S;
 
     // Draw bottom side
     // Bottom right corner
-    bb_vertices.push_back(_screen_pos_x_S + _width_S);
-    bb_vertices.push_back(_screen_pos_y_S + _height_S - offset_y);
+    bb_vertices.push_back(bottom_right_x);
+    bb_vertices.push_back(bottom_right_y);
     bb_vertices.push_back(_screen_pos_z_S);
     // Bottom left corner
-    bb_vertices.push_back(_screen_pos_x_S);
-    bb_vertices.push_back(_screen_pos_y_S + _height_S - offset_y);
+    bb_vertices.push_back(bottom_left_x);
+    bb_vertices.push_back(bottom_left_y);
     bb_vertices.push_back(_screen_pos_z_S);
 
     // Draw right side 
     // Bottom right corner
-    bb_vertices.push_back(_screen_pos_x_S + _width_S);
-    bb_vertices.push_back(_screen_pos_y_S + _height_S - offset_y);
+    bb_vertices.push_back(bottom_right_x);
+    bb_vertices.push_back(bottom_right_y);
     bb_vertices.push_back(_screen_pos_z_S);
     // Top right corner
-    bb_vertices.push_back(_screen_pos_x_S + _width_S);
-    bb_vertices.push_back(_screen_pos_y_S - offset_y);
+    bb_vertices.push_back(top_right_x);
+    bb_vertices.push_back(top_right_y);
     bb_vertices.push_back(_screen_pos_z_S);
 
     // Draw top side
     // Top left corner
-    bb_vertices.push_back(_screen_pos_x_S);
-    bb_vertices.push_back(_screen_pos_y_S - offset_y);
+    bb_vertices.push_back(top_left_x);
+    bb_vertices.push_back(top_left_y);
     bb_vertices.push_back(_screen_pos_z_S);
     // Top right corner
-    bb_vertices.push_back(_screen_pos_x_S + _width_S);
-    bb_vertices.push_back(_screen_pos_y_S - offset_y);
+    bb_vertices.push_back(top_right_x);
+    bb_vertices.push_back(top_right_y);
     bb_vertices.push_back(_screen_pos_z_S);
 
     // Draw left side 
     // Top left corner
-    bb_vertices.push_back(_screen_pos_x_S);
-    bb_vertices.push_back(_screen_pos_y_S - offset_y);
+    bb_vertices.push_back(top_left_x);
+    bb_vertices.push_back(top_left_y);
     bb_vertices.push_back(_screen_pos_z_S);
     // Bottom left corner
-    bb_vertices.push_back(_screen_pos_x_S);
-    bb_vertices.push_back(_screen_pos_y_S + _height_S - offset_y);
+    bb_vertices.push_back(bottom_left_x);
+    bb_vertices.push_back(bottom_left_y);
     bb_vertices.push_back(_screen_pos_z_S);
+
 
     // Setup vbo
     QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
