@@ -19,7 +19,6 @@
 #include <qopenglextrafunctions.h>
 #include <qopenglshaderprogram.h>
 
-#define TEMP_BUFFER_SIZE 10000
 
 struct XYAxisVertices_TP
 {
@@ -70,7 +69,6 @@ public:
 
     void addRange(int, QVector<double>);
 
-
     //! Binds and writes the data from the circular buffer to the vbo
     void UpdateVbo();
 
@@ -90,6 +88,7 @@ private:
     //! Draws the border bounding box of the plot area inside the opengl context
     void DrawBoundingBox();
 
+    //! Creates the vbo used to draw the bounding box of the chart
     void CreateBoundingBox();
 
 
@@ -118,43 +117,52 @@ private:
     //! Vertex buffer object for the bounding box
     QOpenGLBuffer _bb_vbo;
 
-    //! x-position of the left top corner of the chart
+    //! x-position of the left top corner of the chart (the chart origin)
     //! inside the ogl context in screen coordinates
     int _screen_pos_x_S;
 
-    //! y-position of the left top corner of the chart
+    //! y-position of the left top corner of the chart (the chart origin)
     //! inside the ogl context in screen coordinates
     int _screen_pos_y_S;
 
-    //! z-position of the "...
+    //! z-position of the ...
     float _screen_pos_z_S = 1.0f;
     
-    //! width of the chart
+    //! width of the chart in screen coordinates
     int _width_S;
 
-    //! height of the chart
+    //! height of the chart in screen coordinates
     int _height_S;
 
+    //! write position for the vbo
     int64_t _vbo_series_idx;
+    //! size of the vbo
     int64_t _vbo_buffer_size;
 
     int _point_count = 0;
 	
+    //! The maximum value of the y axis 
     int _max_y_axis_value;
+    //! The minimum value of the y axis 
     int _min_y_axis_value;
 
-    int _min_x_axis_val_ms;
+    //! The maximum value of the x axis 
     int _max_x_axis_val_ms;
 
-    // Input buffer
+    //! The minimum value of the x axis 
+    int _min_x_axis_val_ms;
+
+    //! Input buffer used to store user data
     CircularBuffer_TC<float> _input_buffer;
 
-    // Sweep chart parameters
-    // counts how often the point series reached the left side of the screen and was wrapped to the left side again
+// Sweep chart parameters
+    //! counts how often the point series reached the left side of the screen and was wrapped to the left side again
     int _number_of_wraps;
-    // Indicates if the chart needs to wrap
+
+    //! Indicates if the chart needs to wrap
     bool _need_to_wrap_series;
-    // Indicates if the dataseries was already wrapped one time from the right  to the left screen
+    
+    //! Indicates if the dataseries was already wrapped one time from the right to the left screen
     bool _dataseries_wrapped_once;
 };
 

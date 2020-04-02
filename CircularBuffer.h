@@ -126,8 +126,8 @@ private:
     ElementType_TP* _data_series_buffer;
 
     //! Current write position inside the buffer
-    // Is incremented each time new data was added via AddData(...)
-    // Is resetted ( set to zero ) when the data is written into the charts vertex buffer object _chart_vbo
+    //! Is incremented each time new data was added via AddData(...)
+    //! Is resetted ( set to zero ) when the data is written into the charts vertex buffer object _chart_vbo
     int _head_idx = 0;
 
     //! The idx from which the buffer was read the last time

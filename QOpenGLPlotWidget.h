@@ -63,7 +63,9 @@ protected:
     // Private helper functions
 private:
 
-    void InitializePlots();
+    void InitializePlots(int number_of_plots);
+
+    void InitializeGLParameters();
 
 
 private:

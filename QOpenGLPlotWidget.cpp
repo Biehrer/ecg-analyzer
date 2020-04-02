@@ -100,25 +100,23 @@ void QOpenGLPlotWidget::OnDataUpdate()
 
 
 
-void QOpenGLPlotWidget::InitializePlots()
+void QOpenGLPlotWidget::InitializePlots(int number_of_plots)
 {
-    int number_of_plots = 3;
-
-    // equals the displayable milliseconds
+    // This value equals the displayable milliseconds
     int max_point_count = 2000;
 
     int screenwidth_fraction = SREENWIDTH / 6;
     int chart_width = SREENWIDTH - screenwidth_fraction;
-    int chart_height = SCREENHEIGHT / (number_of_plots) - 3;
+    int chart_height = SCREENHEIGHT / number_of_plots;
     // Chart is aligned at the right side of the screen
     int chart_pos_x = 0;
 
     std::cout << "initialize plots: " << std::endl;
     int chart_to_chart_offset_S = 10;
+    // origin = _screenpos_x/y
     int chart_offset_from_origin_S = 4;
 
     for ( int chart_idx = 0; chart_idx < number_of_plots; ++chart_idx ) {
-        // origin = _screenpos_x/y
         int chart_pos_y = (chart_height + chart_to_chart_offset_S) * chart_idx + chart_offset_from_origin_S; 
         _plots.push_back(new OGLChart_C(max_point_count, chart_pos_x, chart_pos_y, chart_width, chart_height));
         std::cout << "chart pos (idx=" << chart_idx << "): " << chart_pos_y << std::endl;
@@ -128,56 +126,15 @@ void QOpenGLPlotWidget::InitializePlots()
 }
 
 
-
 void QOpenGLPlotWidget::initializeGL()
 {
-	QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
-    // Initialize OGL functions before any other OpenGL call
-	f->initializeOpenGLFunctions();
-
     std::cout << "Start OpenGlPlotter by Jonas Biehrer" << std::endl;
 
-    // Get OpenGL Version from OS
-    char *p = (char*)f->glGetString(GL_VERSION);
-    std::cout << "using OpenGl Version: " << p << std::endl;
-
-    // Check if  OS is able to scale the width of drawn lines(rays) (with standard ogl 'GL_LINES' flag)
-    std::cout << "maximum OGL line width on this operating system" << std::endl;
-    GLfloat linerange[2];
-	f->glGetFloatv(GL_LINE_WIDTH_RANGE, linerange);
-    std::cout << "minimal width: " << linerange[0] << std::endl;
-    std::cout << "maximal width: " << linerange[1] << std::endl;
-
-    std::cout << "maximum OGL point size on this operating system" << std::endl;
-    GLint point_range[2];
-    f->glGetIntegerv(GL_ALIASED_POINT_SIZE_RANGE, point_range);
-    std::cout << "minimal size: " << point_range[0] << std::endl;
-    std::cout << "maximal size: " << point_range[1] << std::endl;
-
-    // OpenGL Settings
-	f->glEnable(GL_TEXTURE_2D_ARRAY);
-	f->glEnable(GL_TEXTURE_2D);
-	f->glEnable(GL_TEXTURE_CUBE_MAP);
-	f->glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
-
-    // Enable Depth Testing to allow overlapping objects
-	f->glEnable(GL_DEPTH);
-	f->glEnable(GL_DEPTH_TEST);
-	f->glDepthFunc(GL_LESS);
-
-    // Enable Blending to create transparency
-	f->glEnable(GL_BLEND);
-	f->glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	f->glDisable(GL_BLEND);
-
-    // f->glEnable(GL_CULL_FACE);
-	f->glEnable(GL_POINT_SMOOTH);
-	f->glEnable(GL_POINT_SIZE);
-	f->glEnable(GL_PROGRAM_POINT_SIZE);
+    InitializeGLParameters();
 
     InitializeShaderProgramms();
 
-    InitializePlots();
+    InitializePlots(3);
 }
 
 void QOpenGLPlotWidget::resizeGL(int width, int height)
@@ -194,56 +151,6 @@ void QOpenGLPlotWidget::resizeGL(int width, int height)
 	f->glViewport(0, 0, this->width(), this->height());
 	this->update();
 }
-
-
-bool QOpenGLPlotWidget::InitializeShaderProgramms()
-{
-    std::cout << std::endl;
-    std::cout << "Shader Compiling Error Log:" << std::endl;
-	std::cout << "Standard Shader error log: ";
-    std::cout << std::endl;
-
-    QString path_of_executable(QDir::currentPath());
-    std::cout << "expected filepath to shaders (make sure it exists): "
-              << path_of_executable.toStdString() << std::endl;
-
-	bool success = false;
-    success = _prog.addShaderFromSourceFile(QOpenGLShader::Vertex, QString(path_of_executable + "//Resources//shaders//vertex.vsh"));
-
-    QString errorLog = _prog.log();
-    std::cout << "Vertex Shader sucess?: " << success << std::endl;
-    std::cout << &errorLog;
-    std::cout << std::endl;
-
-    if( !success ){
-        throw::std::runtime_error("Error while readingv shader");
-    }
-
-    success = _prog.addShaderFromSourceFile(QOpenGLShader::Fragment, QString(path_of_executable + "//Resources//shaders//fragment.fsh"));
-
-    errorLog = _prog.log();
-    std::cout << "Fragment Shader sucess?: " << success << std::endl;
-    std::cout << &errorLog;
-    std::cout << std::endl;
-
-    if( !success ){
-        throw::std::runtime_error("Error while reading shader");
-    }
-
-    success = _prog.link();
-    errorLog = _prog.log();
-    std::cout <<"linkinkg success?: "<< success << std::endl << "shader programm linking errors: ";
-	std::cout << &errorLog;
-    std::cout << std::endl;
-
-    _prog.bind();
-    _prog.bindAttributeLocation("position", 0);
-    _prog.bindAttributeLocation("vertexColor", 1);
-    _prog.release();
-
-	return success;
-}
-
 
 void QOpenGLPlotWidget::paintGL()
 {
@@ -265,6 +172,99 @@ void QOpenGLPlotWidget::paintGL()
 
     _prog.release();
 }
+
+void QOpenGLPlotWidget::InitializeGLParameters()
+{
+    QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
+    // Initialize OGL functions before any other OpenGL call
+    f->initializeOpenGLFunctions();
+    // Get OpenGL Version from OS
+    char *p = (char*)f->glGetString(GL_VERSION);
+    std::cout << "using OpenGl Version: " << p << std::endl;
+
+    // Check if  OS is able to scale the width of drawn lines(rays) (with standard ogl 'GL_LINES' flag)
+    std::cout << "maximum OGL line width on this operating system" << std::endl;
+    GLfloat linerange[2];
+    f->glGetFloatv(GL_LINE_WIDTH_RANGE, linerange);
+    std::cout << "minimal width: " << linerange[0] << std::endl;
+    std::cout << "maximal width: " << linerange[1] << std::endl;
+
+    std::cout << "maximum OGL point size on this operating system" << std::endl;
+    GLint point_range[2];
+    f->glGetIntegerv(GL_ALIASED_POINT_SIZE_RANGE, point_range);
+    std::cout << "minimal size: " << point_range[0] << std::endl;
+    std::cout << "maximal size: " << point_range[1] << std::endl;
+
+    // OpenGL Settings
+    f->glEnable(GL_TEXTURE_2D_ARRAY);
+    f->glEnable(GL_TEXTURE_2D);
+    f->glEnable(GL_TEXTURE_CUBE_MAP);
+    f->glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
+
+    // Enable Depth Testing to allow overlapping objects
+    f->glEnable(GL_DEPTH);
+    f->glEnable(GL_DEPTH_TEST);
+    f->glDepthFunc(GL_LESS);
+
+    // Enable Blending to create transparency
+    f->glEnable(GL_BLEND);
+    f->glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    f->glDisable(GL_BLEND);
+
+    // f->glEnable(GL_CULL_FACE);
+    f->glEnable(GL_POINT_SMOOTH);
+    f->glEnable(GL_POINT_SIZE);
+    f->glEnable(GL_PROGRAM_POINT_SIZE);
+}
+
+bool QOpenGLPlotWidget::InitializeShaderProgramms()
+{
+    std::cout << std::endl;
+    std::cout << "Shader Compiling Error Log:" << std::endl;
+    std::cout << "Standard Shader error log: ";
+    std::cout << std::endl;
+
+    QString path_of_executable(QDir::currentPath());
+    std::cout << "expected filepath to shaders (make sure it exists): "
+        << path_of_executable.toStdString() << std::endl;
+
+    bool success = false;
+    success = _prog.addShaderFromSourceFile(QOpenGLShader::Vertex, QString(path_of_executable + "//Resources//shaders//vertex.vsh"));
+
+    QString errorLog = _prog.log();
+    std::cout << "Vertex Shader sucess?: " << success << std::endl;
+    std::cout << &errorLog;
+    std::cout << std::endl;
+
+    if ( !success ) {
+        throw::std::runtime_error("Error while readingv shader");
+    }
+
+    success = _prog.addShaderFromSourceFile(QOpenGLShader::Fragment, QString(path_of_executable + "//Resources//shaders//fragment.fsh"));
+
+    errorLog = _prog.log();
+    std::cout << "Fragment Shader sucess?: " << success << std::endl;
+    std::cout << &errorLog;
+    std::cout << std::endl;
+
+    if ( !success ) {
+        throw::std::runtime_error("Error while reading shader");
+    }
+
+    success = _prog.link();
+    errorLog = _prog.log();
+    std::cout << "linkinkg success?: " << success << std::endl << "shader programm linking errors: ";
+    std::cout << &errorLog;
+    std::cout << std::endl;
+
+    _prog.bind();
+    _prog.bindAttributeLocation("position", 0);
+    _prog.bindAttributeLocation("vertexColor", 1);
+    _prog.release();
+
+    return success;
+}
+
 
 
 void QOpenGLPlotWidget::mouseMoveEvent(QMouseEvent* evt) 
