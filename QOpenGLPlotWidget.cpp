@@ -65,28 +65,28 @@ QOpenGLPlotWidget::QOpenGLPlotWidget(QWidget* parent)
 
 void QOpenGLPlotWidget::OnDataUpdateThreadFunction()
 {
+    double pi = 3.1415026589;
+
     while(true){
         // duplicate for testing
-        double pi_ = 3.1415026589;
-        double val_in_radians = _pointcount * (2.0 * pi_) / 360.0;
-        double data_value = 10.0 * std::sin(val_in_radians);
-        double data_value_cos = 10.0 * std::cos(val_in_radians);
+        double val_in_radians = _pointcount * (2.0 * pi) / 360.0;
+        double data_value = 5.0 * std::sin(val_in_radians);
 
         for ( auto& plot : _plots ) {
             plot->AddDataToSeries(data_value, _pointcount);
         }
 
-        _pointcount++;
-        DEBUG("Thread added point (# " << _pointcount << "): " << data_value);
-        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        ++_pointcount;
+        //DEBUG("Thread added point (# " << _pointcount << "): " << data_value);
+        std::this_thread::sleep_for(std::chrono::microseconds(500));
 	}
 }
 
 
 void QOpenGLPlotWidget::OnDataUpdate()
 {
-    double pi_ = 3.1415026589;
-    double val_in_radians = _pointcount * (2.0 * pi_) / 360.0;
+    double pi = 3.1415026589;
+    double val_in_radians = _pointcount * (2.0 * pi) / 360.0;
     float data_value = 10.0 * std::sin(val_in_radians);
 
     for ( auto& plot : _plots ) {
@@ -96,6 +96,35 @@ void QOpenGLPlotWidget::OnDataUpdate()
 
     DEBUG("Added data value (# " << _pointcount << "): " << data_value);
 	_pointcount++;	
+}
+
+
+
+void QOpenGLPlotWidget::InitializePlots()
+{
+    int number_of_plots = 3;
+
+    // equals the displayable milliseconds
+    int max_point_count = 2000;
+
+    int screenwidth_fraction = SREENWIDTH / 6;
+    int chart_width = SREENWIDTH - screenwidth_fraction;
+    int chart_height = SCREENHEIGHT / (number_of_plots) - 3;
+    // Chart is aligned at the right side of the screen
+    int chart_pos_x = 0;
+
+    std::cout << "initialize plots: " << std::endl;
+    int chart_to_chart_offset_S = 10;
+    int chart_offset_from_origin_S = 4;
+
+    for ( int chart_idx = 0; chart_idx < number_of_plots; ++chart_idx ) {
+        // origin = _screenpos_x/y
+        int chart_pos_y = (chart_height + chart_to_chart_offset_S) * chart_idx + chart_offset_from_origin_S; 
+        _plots.push_back(new OGLChart_C(max_point_count, chart_pos_x, chart_pos_y, chart_width, chart_height));
+        std::cout << "chart pos (idx=" << chart_idx << "): " << chart_pos_y << std::endl;
+    }
+
+    _paint_update_timer->start();
 }
 
 
@@ -148,34 +177,7 @@ void QOpenGLPlotWidget::initializeGL()
 
     InitializeShaderProgramms();
 
-    int number_of_plots = 1;
-
-    ++number_of_plots;
-    int screenwidth_fraction = SREENWIDTH / 6;
-    int chart_width = SREENWIDTH - screenwidth_fraction;
-    int chart_height = SCREENHEIGHT / number_of_plots;
-
-    int max_point_count = 10000;
-
-    // Chart is aligned at the right side of the screen
-    int chart_pos_x = 0;
-
-    int chart_to_chart_offset_S = 10;// +chart_height / 2;
-
-    for ( int chart_idx = 1; chart_idx < number_of_plots; ++chart_idx) {
-
-        //if ( chart_idx % 2 == 0 ) {
-        //    chart_to_chart_offset_S = 30;
-        //}
-        //else {
-        //    chart_to_chart_offset_S = 0;
-        //}
-
-        int chart_pos_y = chart_height * chart_idx + chart_to_chart_offset_S;
-        _plots.push_back(new OGLChart_C(max_point_count, chart_pos_x, chart_pos_y, chart_width, chart_height));
-    }
-
-    _paint_update_timer->start();
+    InitializePlots();
 }
 
 void QOpenGLPlotWidget::resizeGL(int width, int height)
@@ -185,6 +187,8 @@ void QOpenGLPlotWidget::resizeGL(int width, int height)
     // This window is never resized. only JonesPlot.h is resized.
     // If this event should be triggered, it needs to be passed to this widget.
     _projection_mat->ortho(QRect(0, 0, this->width(),this->height()));
+
+    //_projection_mat->ortho(QRect(-(this->width() / 2), -(this->height()/2), this->width() / 2, this->height() / 2));
 
     QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
 	f->glViewport(0, 0, this->width(), this->height());
@@ -268,7 +272,6 @@ void QOpenGLPlotWidget::mouseMoveEvent(QMouseEvent* evt)
     float x  = evt->x();
     float y = evt->y();
 }
-
 
 void QOpenGLPlotWidget::mousePressEvent(QMouseEvent* evt) 
 {

@@ -35,9 +35,6 @@
 #define SREENWIDTH 1440
 #define SCREENHEIGHT 800
 
-//coding convention : _var = member Variable
-
-
 class QOpenGLPlotWidget : public QOpenGLWidget
 {
 	Q_OBJECT
@@ -46,20 +43,28 @@ public:
     ~QOpenGLPlotWidget();
 
     bool InitializeShaderProgramms();
-	void OnDataUpdateThreadFunction();
+	
+    void OnDataUpdateThreadFunction();
 	
 protected:
-    // Initialize shader and models for drawing
+    //! Initialize shader and models for drawing
 	virtual void initializeGL();
 
-    // Called when the window is resized
+    //! Called when the window is resized
 	virtual void resizeGL(int width, int height);
 
-    // "Render-loop" - draws the scene
+    //! "Render-loop" - draws the scene
 	virtual void paintGL();
 
 	virtual void mousePressEvent(QMouseEvent* evt);
 	virtual void mouseMoveEvent(QMouseEvent* evt);
+
+
+    // Private helper functions
+private:
+
+    void InitializePlots();
+
 
 private:
     //! Projection matrix
@@ -74,7 +79,7 @@ private:
     //! Model-View-Projection matrix
     QMatrix4x4* _MVP;
 
-    // OpenGL shader
+    //! OpenGL shader
     QOpenGLShaderProgram _prog;
 
     //! All plots contained in the current instance of this widget
