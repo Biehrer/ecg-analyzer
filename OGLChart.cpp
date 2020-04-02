@@ -13,6 +13,7 @@ OGLChart_C::~OGLChart_C()
     _chart_vbo.destroy();
     _y_axis_vbo.destroy();
     _x_axis_vbo.destroy();
+    _bb_vbo.destroy();
 }
 
 // This is the specialization - pointchart realtime
@@ -48,14 +49,14 @@ OGLChart_C::OGLChart_C(int max_num_of_points_in_buffer,
     _height_S = chart_height_S;
 
     // chart values x and y axes
-    _min_y_axis_value = 0;
+    _min_y_axis_value = -10;
     _max_y_axis_value = 10;
 
     _min_x_axis_val_ms = 0;
     // 10 secs of data - buffersize(OGL buffer) needs to be this big!
     // NEEDS TO MATCH WITH THE BUFFER SIZE THE USER USES AS INPUT(NUMBER OF VALUES IN BUFFER)
     // -> therefore create the buffer variable dependent on how many ms should be displayed
-    _max_x_axis_val_ms = 10000;
+    _max_x_axis_val_ms = max_num_of_points_in_buffer; // 10000
 
     // Allocate a vertex buffer object to store data for visualization
     AllocateSeriesVbo();
@@ -86,8 +87,11 @@ void OGLChart_C::AllocateSeriesVbo()
 
 void OGLChart_C::AddDataToSeries(float y, float x_ms)
 {
-    // cheap: dont add the value if its not inside the range..because its not visible eitherway -> better solution would be: Add it to the series but don't draw it!
-    // if ( y > _max_y_axis_value || y < _min_y_axis_value ){return;}
+    // Don't add the value if its not inside the range, 
+    // because its not visible eitherway -> better solution would be: Add it to the series but don't draw it!
+     if ( y > _max_y_axis_value || y < _min_y_axis_value ){
+         return;
+     }
 
     // wrapp value around x-axis if the 'x_ms' value is bigger than maximum value of the x-axis
     if (_need_to_wrap_series) {
@@ -102,23 +106,19 @@ void OGLChart_C::AddDataToSeries(float y, float x_ms)
         _dataseries_wrapped_once = true;
 	}
 
-    // chart_pos_screen_coords * scale_factor_screen_cords
     // - (minus) because then the positive y axis is directing at the top of the screen
-//    float y_val_scaled_S = static_cast<float>(_screen_pos_y_S) - (y * ( static_cast<float>(_height_S) / (_max_y_axis_value - _min_y_axis_value) ) );
-
-    float y_val_scaled_S = static_cast<float>(_screen_pos_y_S) - (y * ( static_cast<float>(_height_S) / (_max_y_axis_value - _min_y_axis_value) ) );
-
-//    assert( y_val_scaled_S < _max_y_axis_value && y_val_scaled_S > _min_y_axis_value);
-
-
-    DEBUG("Scaled y value: "<< y_val_scaled_S);
+    float y_val_scaled_S = static_cast<float>(_screen_pos_y_S + _height_S) - 
+        ( (y - _min_y_axis_value) / (_max_y_axis_value - _min_y_axis_value) ) * _height_S;
+    // assert( y_val_scaled_S < _max_y_axis_value && y_val_scaled_S > _min_y_axis_value);
+    DEBUG("Scaled y value: "<< y_val_scaled_S << ", to value: " << y);
 
     // + so the data value runs from left to right side
     // calculate new x-index when the dataseries has reached the left border of the plot
-    float x_val_wrap_corrected_ms = static_cast<float>(x_ms) - static_cast<float>(_max_x_axis_val_ms) * static_cast<float>(_number_of_wraps - 1);
+    float x_val_wrap_corrected_ms = x_ms - static_cast<float>(_max_x_axis_val_ms) * static_cast<float>(_number_of_wraps - 1);
 
-    // calculate value after wrapping-> -1 because we start wrapped number at 1 -
-    float x_val_scaled_S = static_cast<float>(_screen_pos_x_S) + (x_val_wrap_corrected_ms * (static_cast<float>(_width_S) / (_max_x_axis_val_ms - _min_x_axis_val_ms)));
+    // calculate x-value after wrapping
+    float x_val_scaled_S = static_cast<float>(_screen_pos_x_S) + 
+        ( (x_val_wrap_corrected_ms - _min_x_axis_val_ms) / (_max_x_axis_val_ms - _min_x_axis_val_ms) ) * _width_S;
 
     _input_buffer.InsertAtHead(x_val_scaled_S, y_val_scaled_S, 1.0f);
 }
@@ -137,7 +137,7 @@ void OGLChart_C::UpdateVbo()
         // Todo: Spare this transformation to QVector by returning QVector directly from the input buffer
         QVector<float> additional_point_vertices;
         for (const auto& element : latest_data) {
-            DEBUG(element);
+            //DEBUG(element);
             additional_point_vertices.append(element._x);
             additional_point_vertices.append(element._y);
             additional_point_vertices.append(element._z);
@@ -203,7 +203,6 @@ void OGLChart_C::Draw()
     _chart_vbo.release();
 
     DrawXYAxes();
-
     DrawBoundingBox();
 }
 
@@ -224,7 +223,7 @@ void OGLChart_C::SetupAxes() {
 	f->glEnableVertexAttribArray(0);
     // 3 positions for x and y and z data coordinates
     f->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
-    _x_axis_vbo.allocate(x_axis_vertices .constData(), x_axis_vertices.size() * static_cast<int>(sizeof(float)) );
+    _x_axis_vbo.allocate(x_axis_vertices.constData(), x_axis_vertices.size() * static_cast<int>(sizeof(float)) );
     _x_axis_vbo.setUsagePattern(QOpenGLBuffer::StaticDraw);
 	f->glDisableVertexAttribArray(0);
     _x_axis_vbo.release();
@@ -243,7 +242,6 @@ void OGLChart_C::SetupAxes() {
 void OGLChart_C::DrawXYAxes()
 {
 	QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
-
     _y_axis_vbo.bind();
     f->glEnableVertexAttribArray(0);
     f->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
@@ -258,13 +256,11 @@ void OGLChart_C::DrawXYAxes()
 	f->glDrawArrays(GL_TRIANGLES, 0, 6);
 	f->glDisableVertexAttribArray(0);
     _x_axis_vbo.release();
-
 }
 
 void OGLChart_C::DrawBoundingBox()
 {
     QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
-
     _bb_vbo.bind();
     f->glEnableVertexAttribArray(0);
     f->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
@@ -276,23 +272,7 @@ void OGLChart_C::DrawBoundingBox()
 
 void OGLChart_C::CreateBoundingBox()
 {
-    // Create vertices to draw four lines inside the opengl z-plane
-    QVector<float> bb_vertices;
-
-
     // calculate corner points of the bounding box
-    //float bottom_left_x = _screen_pos_x_S;
-    //float bottom_left_y = _screen_pos_y_S + _height_S - offset_y;
-
-    //float bottom_right_x = _screen_pos_x_S + _width_S;
-    //float bottom_right_y = _screen_pos_y_S + _height_S - offset_y;
-
-    //float top_left_x = _screen_pos_x_S;
-    //float top_left_y = _screen_pos_y_S - offset_y;
-
-    //float top_right_x = _screen_pos_x_S + _width_S;
-    //float top_right_y = _screen_pos_y_S - offset_y;
-
     float bottom_left_x = _screen_pos_x_S;
     float bottom_left_y = _screen_pos_y_S + _height_S;
 
@@ -300,10 +280,13 @@ void OGLChart_C::CreateBoundingBox()
     float bottom_right_y = _screen_pos_y_S + _height_S;
 
     float top_left_x = _screen_pos_x_S;
-    float top_left_y = _screen_pos_y_S - _height_S;
+    float top_left_y = _screen_pos_y_S;// -_height_S;
 
     float top_right_x = _screen_pos_x_S + _width_S;
-    float top_right_y = _screen_pos_y_S - _height_S;
+    float top_right_y = _screen_pos_y_S;// -_height_S;
+
+    // Create vertices to draw four lines inside the opengl z-plane
+    QVector<float> bb_vertices;
 
     // Draw bottom side
     // Bottom right corner
@@ -345,7 +328,6 @@ void OGLChart_C::CreateBoundingBox()
     bb_vertices.push_back(bottom_left_y);
     bb_vertices.push_back(_screen_pos_z_S);
 
-
     // Setup vbo
     QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
     _bb_vbo.create();
@@ -367,7 +349,7 @@ const XYAxisVertices_TP OGLChart_C::CreateAxesVertices(float size_S)
     // But the openGl code depends on the chart type (hist, lines, points,..)
     float x_axis_width_S = _width_S;
     float x_axis_height_S = size_S;
-    float y_axis_height = _height_S * 2;
+    float y_axis_height = _height_S;
     float y_axis_width = size_S;
     float axis_pos_z = 1.0f;
 
@@ -378,32 +360,44 @@ const XYAxisVertices_TP OGLChart_C::CreateAxesVertices(float size_S)
     // |													| <- height
     //P2--------------------------------------------------- P3
     //						width
+
+    float p1_x = _screen_pos_x_S;
+    float p1_y = _screen_pos_y_S + _height_S / 2;
+
+    float p2_x = _screen_pos_x_S;
+    float p2_y = p1_y + x_axis_height_S;
+
+    float p3_x = p2_x + x_axis_width_S;;
+    float p3_y = p2_y;
+
+    float p4_x = p1_x + x_axis_width_S;
+    float p4_y = p1_y;
     // first triang P1-P2-P4
     // P1
-    x_axis_vertices.push_back(_screen_pos_x_S);
-    x_axis_vertices.push_back(_screen_pos_y_S);
+    x_axis_vertices.push_back(p1_x);
+    x_axis_vertices.push_back(p1_y);
     x_axis_vertices.push_back(axis_pos_z);
     // P2
-    x_axis_vertices.push_back(_screen_pos_x_S);
-    x_axis_vertices.push_back(_screen_pos_y_S + x_axis_height_S);
+    x_axis_vertices.push_back(p2_x);
+    x_axis_vertices.push_back(p2_y);
     x_axis_vertices.push_back(axis_pos_z);
     // P4
-    x_axis_vertices.push_back(_screen_pos_x_S + x_axis_width_S);
-    x_axis_vertices.push_back(_screen_pos_y_S);
+    x_axis_vertices.push_back(p4_x);
+    x_axis_vertices.push_back(p4_y);
     x_axis_vertices.push_back(axis_pos_z);
 
     // second triang P3 - P4 - P2
     // P3
-    x_axis_vertices.push_back(_screen_pos_x_S + x_axis_width_S);
-    x_axis_vertices.push_back(_screen_pos_y_S + x_axis_height_S);
+    x_axis_vertices.push_back(p3_x);
+    x_axis_vertices.push_back(p3_y);
     x_axis_vertices.push_back(axis_pos_z);
     // P4
-    x_axis_vertices.push_back(_screen_pos_x_S + x_axis_width_S);
-    x_axis_vertices.push_back(_screen_pos_y_S);
+    x_axis_vertices.push_back(p4_x);
+    x_axis_vertices.push_back(p4_y);
     x_axis_vertices.push_back(axis_pos_z);
     // P2
-    x_axis_vertices.push_back(_screen_pos_x_S);
-    x_axis_vertices.push_back(_screen_pos_y_S + x_axis_height_S);
+    x_axis_vertices.push_back(p2_x);
+    x_axis_vertices.push_back(p2_y);
     x_axis_vertices.push_back(axis_pos_z);
 
     // Triangles
@@ -419,36 +413,41 @@ const XYAxisVertices_TP OGLChart_C::CreateAxesVertices(float size_S)
     //	 |  |
     //	 |  |
     // P2|--|P3
-
-    // offset because _screen_pos_x/y refer to the mid of the chart where the value zero is
-    float y_offset = _height_S;
-
+    // Calculate points for y axis
+    p1_x = _screen_pos_x_S;
+    p1_y = _screen_pos_y_S;
+    p2_x = p1_x;
+    p2_y = _screen_pos_y_S + y_axis_height;
+    p3_x = p1_x + y_axis_width;
+    p3_y = p2_y;
+    p4_x = p1_x + y_axis_width;
+    p4_y = p1_y;
     // first triang: P1 - P2 - P4
     // P1
-    y_axis_vertices.push_back(_screen_pos_x_S);
-    y_axis_vertices.push_back(_screen_pos_y_S - y_offset);
+    y_axis_vertices.push_back(p1_x);
+    y_axis_vertices.push_back(p1_y);
     y_axis_vertices.push_back(axis_pos_z);
     // P2
-    y_axis_vertices.push_back(_screen_pos_x_S);
-    y_axis_vertices.push_back(_screen_pos_y_S + y_axis_height - y_offset);
+    y_axis_vertices.push_back(p2_x);
+    y_axis_vertices.push_back(p2_y);
     y_axis_vertices.push_back(axis_pos_z);
     // P4
-    y_axis_vertices.push_back(_screen_pos_x_S + y_axis_width);
-    y_axis_vertices.push_back(_screen_pos_y_S  - y_offset);
+    y_axis_vertices.push_back(p4_x);
+    y_axis_vertices.push_back(p4_y);
     y_axis_vertices.push_back(axis_pos_z);
 
     // second triang: P3 - P4 - P2
     // P3
-    y_axis_vertices.push_back(_screen_pos_x_S + y_axis_width);
-    y_axis_vertices.push_back(_screen_pos_y_S + y_axis_height  - y_offset);
+    y_axis_vertices.push_back(p3_x);
+    y_axis_vertices.push_back(p3_y);
     y_axis_vertices.push_back(axis_pos_z);
     // P4
-    y_axis_vertices.push_back(_screen_pos_x_S + y_axis_width);
-    y_axis_vertices.push_back(_screen_pos_y_S  - y_offset);
+    y_axis_vertices.push_back(p4_x);
+    y_axis_vertices.push_back(p4_y);
     y_axis_vertices.push_back(axis_pos_z);
     // P2
-    y_axis_vertices.push_back(_screen_pos_x_S);
-    y_axis_vertices.push_back(_screen_pos_y_S + y_axis_height - y_offset);
+    y_axis_vertices.push_back(p2_x);
+    y_axis_vertices.push_back(p2_y);
     y_axis_vertices.push_back(axis_pos_z);
 
    return XYAxisVertices_TP(x_axis_vertices, y_axis_vertices);
