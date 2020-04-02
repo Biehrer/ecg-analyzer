@@ -78,7 +78,8 @@ private:
     //! Creates and allocates an empty OpenGL vertex buffer object used to store data for visualization
     void AllocateSeriesVbo();
 
-    //! Write data to the vbo
+    //! Write data to the vbo for visualization of data points
+    //! \param data the data to write to the vbo
     void WriteToVbo(const QVector<float>& data);
 
     //! Draws the x- and y-axis inside the opengl context
@@ -143,6 +144,7 @@ private:
 	
     //! The maximum value of the y axis 
     int _max_y_axis_value;
+
     //! The minimum value of the y axis 
     int _min_y_axis_value;
 
