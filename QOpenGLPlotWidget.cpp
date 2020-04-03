@@ -228,8 +228,10 @@ bool QOpenGLPlotWidget::InitializeShaderProgramms()
     std::cout << "expected filepath to shaders (make sure it exists): "
         << path_of_executable.toStdString() << std::endl;
 
+    QString path_of_shader_dir = path_of_executable + "//Resources//shaders//";
+
     bool success = false;
-    success = _prog.addShaderFromSourceFile(QOpenGLShader::Vertex, QString(path_of_executable + "//Resources//shaders//vertex.vsh"));
+    success = _prog.addShaderFromSourceFile(QOpenGLShader::Vertex, QString(path_of_shader_dir +"vertex.vsh"));
 
     QString errorLog = _prog.log();
     std::cout << "Vertex Shader sucess?: " << success << std::endl;
@@ -240,7 +242,7 @@ bool QOpenGLPlotWidget::InitializeShaderProgramms()
         throw::std::runtime_error("Error while readingv shader");
     }
 
-    success = _prog.addShaderFromSourceFile(QOpenGLShader::Fragment, QString(path_of_executable + "//Resources//shaders//fragment.fsh"));
+    success = _prog.addShaderFromSourceFile(QOpenGLShader::Fragment, QString(path_of_shader_dir + "fragment.fsh"));
 
     errorLog = _prog.log();
     std::cout << "Fragment Shader sucess?: " << success << std::endl;
