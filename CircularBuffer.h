@@ -76,7 +76,7 @@ public:
             _data_series_buffer[_head_idx + 2] = z;
             _head_idx += 3;
        }else{
-            std::cout << "---BUFFER FULL---" << std::endl;
+            //std::cout << "---BUFFER FULL---" << std::endl;
         }
     }
 
