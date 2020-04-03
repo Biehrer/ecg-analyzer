@@ -67,7 +67,7 @@ private:
 
     void InitializeGLParameters();
 
-
+    // Private attributes
 private:
     //! Projection matrix
     QMatrix4x4* _projection_mat;

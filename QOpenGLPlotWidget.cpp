@@ -78,7 +78,7 @@ void QOpenGLPlotWidget::OnDataUpdateThreadFunction()
 
         ++_pointcount;
         //DEBUG("Thread added point (# " << _pointcount << "): " << data_value);
-        std::this_thread::sleep_for(std::chrono::microseconds(500));
+        std::this_thread::sleep_for(std::chrono::microseconds(10));
 	}
 }
 
@@ -134,7 +134,7 @@ void QOpenGLPlotWidget::initializeGL()
 
     InitializeShaderProgramms();
 
-    InitializePlots(3);
+    InitializePlots(1);
 }
 
 void QOpenGLPlotWidget::resizeGL(int width, int height)
@@ -145,7 +145,7 @@ void QOpenGLPlotWidget::resizeGL(int width, int height)
     // If this event should be triggered, it needs to be passed to this widget.
     _projection_mat->ortho(QRect(0, 0, this->width(),this->height()));
 
-    //_projection_mat->ortho(QRect(-(this->width() / 2), -(this->height()/2), this->width() / 2, this->height() / 2));
+    //_projection_mat->ortho(QRect(-(this->width() / 2), -(this->height()/2), this->width(), this->height() ));
 
     QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
 	f->glViewport(0, 0, this->width(), this->height());
@@ -224,7 +224,7 @@ bool QOpenGLPlotWidget::InitializeShaderProgramms()
     std::cout << "Standard Shader error log: ";
     std::cout << std::endl;
 
-    QString path_of_executable(QDir::currentPath());
+    QString path_of_executable( QDir::currentPath() );
     std::cout << "expected filepath to shaders (make sure it exists): "
         << path_of_executable.toStdString() << std::endl;
 
