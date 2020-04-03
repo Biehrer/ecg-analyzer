@@ -156,9 +156,15 @@ void OGLChart_C::UpdateVbo()
 // MAke sure the buffer is bound to the current context before calling this function
 void OGLChart_C::WriteToVbo(const QVector<float>& data)
 {
-    // Write data to the vbo
-    if (_vbo_series_idx <= _vbo_buffer_size) {
-        int number_of_new_data_bytes = static_cast<int>(data.size()) * static_cast<int>(sizeof(float));
+    int number_of_new_data_bytes = static_cast<int>(data.size()) * static_cast<int>(sizeof(float));
+    //std::cout << "write to vbo(size = " << _vbo_buffer_size <<")" << "\n";
+    //std::cout << "data: size:" << data.size() << "( in bytes: " << number_of_new_data_bytes << " )" << "\n";
+    //std::cout << "idx:" << _vbo_series_idx 
+    //    << ",vbo buffer size after new data was added: " << _vbo_buffer_size + number_of_new_data_bytes << "\n" << "\n";
+
+    // The data can completely fit into the vbo => Write data to the vbo
+    if (_vbo_series_idx <=_vbo_buffer_size - number_of_new_data_bytes/* (_vbo_buffer_size + data.size()/3)*/) 
+    {
         _chart_vbo.write(static_cast<int>(_vbo_series_idx), data.data(), number_of_new_data_bytes);
         // new write offset in bytes
         _vbo_series_idx += number_of_new_data_bytes;
@@ -172,12 +178,50 @@ void OGLChart_C::WriteToVbo(const QVector<float>& data)
 //            _point_count = (_chart_vbo.size() / 3) - 1;
         }
     } else {
-        // buffer is full; reset buffer index and start overwriting data at the beginning
+        // buffer is full or not all new data can fit into it; reset buffer index and start overwriting data at the beginning
         std::cout << "chart data buffer full, number of datapoints(floats): " << _point_count << " || "
                   << "number of datapoints according to the vbo size:" << (_chart_vbo.size() / 3) << std::endl
                   << "..restart writing at beginning" << std::endl;
+
+        std::cout << "\n" << "writing: " << number_of_new_data_bytes << " bytes" << "\n";
+        // Calculate how much bytes can fit into the buffer until the end is reached
+        int number_of_free_bytes_until_end = _vbo_buffer_size - _vbo_series_idx;
+        int bytes_to_write_at_beginning = number_of_new_data_bytes - number_of_free_bytes_until_end;
+        int bytes_to_write_until_end = number_of_new_data_bytes - bytes_to_write_at_beginning;
+
+        std::cout << "bytes to write at beginning =" << bytes_to_write_at_beginning << "\n" << "bytes to write until end: " << bytes_to_write_until_end << "\n";
+        if( number_of_free_bytes_until_end > 0 ) {
+            // Write data until the end of the buffer is reached
+           _chart_vbo.write(static_cast<int>(_vbo_series_idx), data.data(), bytes_to_write_until_end);
+        }
+
+        std::cout << "vbo index (before writing at beginning) = " << _vbo_series_idx << "\n";
+        assert(_vbo_series_idx + number_of_free_bytes_until_end == _vbo_buffer_size);
+
+        // Reset the index to continue writing the rest of the data at the beginning
+        //_vbo_series_idx += number_of_free_bytes_until_end;
         _vbo_series_idx = 0;
 
+        // If there is still data which was not written into the vbo 
+        // => Continue writing the rest of the data at the beginning of the vbo
+        int number_of_bytes_left = number_of_new_data_bytes - number_of_free_bytes_until_end;
+        std::cout << "num of bytes left to write at the beginning=" << number_of_bytes_left << "\n";
+        if ( number_of_bytes_left > 0 ) {
+                            // number of points - data.size()
+            int data_offset = data.size() - ( bytes_to_write_until_end / sizeof(float) );
+
+            std::cout << "Write at beginning (still bytes left for beginning) = " << data_offset
+                << ", starting at position (inside data): " << data.size() - data_offset <<"\n";
+
+            _chart_vbo.write(static_cast<int>(_vbo_series_idx), data.data() + data_offset - 1, number_of_free_bytes_until_end);
+            _vbo_series_idx += number_of_bytes_left;
+
+        }
+
+        //std::cout << "vbo size = " << _vbo_buffer_size << "\n"
+        //    << "bytes till end = " << number_of_free_bytes_until_end << "\n"
+        //    << "num bytes left = " << number_of_bytes_left << "\n"
+        //    << "vbo series idx(after writing at beginning) =" << _vbo_series_idx << "\n" << "\n";
 //      _point_count = 0;
     }
 }
@@ -197,7 +241,7 @@ void OGLChart_C::Draw()
     // each point (GL_POINT) consists of 3 components (x, y, z)
 	f->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
     // to get the abs number of points-> divide through count of each Point
-    f->glDrawArrays(GL_POINTS, 0, _point_count);
+    f->glDrawArrays(GL_LINE_STRIP, 0, _point_count);
 	//f->glDisableVertexAttribArray(1);
 	f->glDisableVertexAttribArray(0);
     _chart_vbo.release();
@@ -208,15 +252,14 @@ void OGLChart_C::Draw()
 
 
 // Todo: x-axes should always be at the position where the chart hast the value zero at the y axis.
-void OGLChart_C::SetupAxes() {
-	QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
-
+void OGLChart_C::SetupAxes() 
+{
     const auto axes_vertices = CreateAxesVertices(5.0);
-
     // Todo dont create another copy...this is a scope problem! because the struct does not exist outside the function -> solution-> store axes in members
     auto x_axis_vertices = axes_vertices._x_axis_vertices;
     auto y_axis_vertices = axes_vertices._y_axis_vertices;
 
+    QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
 	// Setup OGL Chart buffer - empty 
     _x_axis_vbo.create();
     _x_axis_vbo.bind();
@@ -280,10 +323,10 @@ void OGLChart_C::CreateBoundingBox()
     float bottom_right_y = _screen_pos_y_S + _height_S;
 
     float top_left_x = _screen_pos_x_S;
-    float top_left_y = _screen_pos_y_S;// -_height_S;
+    float top_left_y = _screen_pos_y_S;
 
     float top_right_x = _screen_pos_x_S + _width_S;
-    float top_right_y = _screen_pos_y_S;// -_height_S;
+    float top_right_y = _screen_pos_y_S;
 
     // Create vertices to draw four lines inside the opengl z-plane
     QVector<float> bb_vertices;
