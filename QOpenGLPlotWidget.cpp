@@ -134,7 +134,7 @@ void QOpenGLPlotWidget::initializeGL()
 
     InitializeShaderProgramms();
 
-    InitializePlots(1);
+    InitializePlots(5);
 }
 
 void QOpenGLPlotWidget::resizeGL(int width, int height)

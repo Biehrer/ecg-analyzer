@@ -89,6 +89,10 @@ private:
     //! Draws the border bounding box of the plot area inside the opengl context
     void DrawBoundingBox();
 
+    //! Draws the data series to the opengl context inside the plot-area
+    void DrawSeries();
+
+
     //! Creates the vbo used to draw the bounding box of the chart
     void CreateBoundingBox();
 

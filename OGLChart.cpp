@@ -229,23 +229,7 @@ void OGLChart_C::WriteToVbo(const QVector<float>& data)
 
 void OGLChart_C::Draw()
 {
-    auto *f = QOpenGLContext::currentContext()->functions();
-
-    // Bind buffer and send data to the gpu
-    _chart_vbo.bind();
-    this->UpdateVbo();
-
-    // Draw inside the current context
-	f->glEnableVertexAttribArray(0);
-	//f->glEnableVertexAttribArray(1);
-    // each point (GL_POINT) consists of 3 components (x, y, z)
-	f->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
-    // to get the abs number of points-> divide through count of each Point
-    f->glDrawArrays(GL_LINE_STRIP, 0, _point_count);
-	//f->glDisableVertexAttribArray(1);
-	f->glDisableVertexAttribArray(0);
-    _chart_vbo.release();
-
+    DrawSeries();
     DrawXYAxes();
     DrawBoundingBox();
 }
@@ -303,14 +287,32 @@ void OGLChart_C::DrawXYAxes()
 
 void OGLChart_C::DrawBoundingBox()
 {
-    QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
+    auto* f = QOpenGLContext::currentContext()->functions();
     _bb_vbo.bind();
     f->glEnableVertexAttribArray(0);
     f->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
     f->glDrawArrays(GL_LINES, 0, 6);
     f->glDisableVertexAttribArray(0);
     _bb_vbo.release();
+}
 
+void OGLChart_C::DrawSeries() 
+{
+    auto* f = QOpenGLContext::currentContext()->functions();
+    // Bind buffer and send data to the gpu
+    _chart_vbo.bind();
+    this->UpdateVbo();
+
+    // Draw inside the current context
+    f->glEnableVertexAttribArray(0);
+    //f->glEnableVertexAttribArray(1);
+    // each point (GL_POINT) consists of 3 components (x, y, z)
+    f->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+    // to get the abs number of points-> divide through count of each Point
+    f->glDrawArrays(GL_LINE_STRIP, 0, _point_count);
+    //f->glDisableVertexAttribArray(1);
+    f->glDisableVertexAttribArray(0);
+    _chart_vbo.release();
 }
 
 void OGLChart_C::CreateBoundingBox()
