@@ -72,7 +72,7 @@ OGLChart_C::OGLChart_C(int max_num_of_points_in_buffer,
     // Create vbo for the bounding box of the chart
     CreateBoundingBox();
 
-    CreateSurfaceGrid(1000, 2);
+    CreateSurfaceGrid(1000, 5);
 }
 
 
@@ -252,7 +252,7 @@ void OGLChart_C::Draw()
     DrawSeries();
     DrawXYAxes();
     DrawBoundingBox();
-    // DrawSurfaceGrid();
+     DrawSurfaceGrid();
     DrawLeadLine();
 }
 
