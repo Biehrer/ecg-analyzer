@@ -18,7 +18,8 @@
 #include <qopenglwidget.h>
 #include <qopenglextrafunctions.h>
 #include <qopenglshaderprogram.h>
-
+#include <qpainter.h>
+#include <qopenglwidget.h>
 
 struct XYAxisVertices_TP
 {
@@ -52,7 +53,8 @@ public:
              int screen_pos_x_S,
              int screen_pos_y_S,
              int width_S,
-             int height_S);
+             int height_S,
+             QOpenGLWidget& parent);
 
     ~OGLChart_C();
 
@@ -141,9 +143,16 @@ private:
 
     //! Vertex buffer object for the lead line 
     QOpenGLBuffer _lead_line_vbo;
-
+    
+    //! Vertices for the lead line
     QVector<float> _lead_line_vertices;
+
+    //! Number of bytes for the lead line used by the vbo. 
+    //! This should be equal to six, when the lead line is a line and no point or other shape.
     int _number_of_bytes_lead_line;
+
+    //! QPainter object for simple rendering of text inside the ogl context
+    QPainter* _text_painter;
 
     //! x-position of the left top corner of the chart (the chart origin)
     //! inside the ogl context in screen coordinates
@@ -198,6 +207,8 @@ private:
 
     float _last_plotted_y_value = 0;
     float _last_plotted_x_value = 0;
+
+    QOpenGLWidget& _parent_widget;
 };
 
 // old func headers

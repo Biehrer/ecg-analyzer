@@ -14,6 +14,7 @@ OGLChart_C::~OGLChart_C()
     _y_axis_vbo.destroy();
     _x_axis_vbo.destroy();
     _bb_vbo.destroy();
+    delete _text_painter;
 }
 
 // This is the specialization - pointchart realtime
@@ -21,7 +22,8 @@ OGLChart_C::OGLChart_C(int max_num_of_points_in_buffer,
                        int screen_pos_x,
                        int screen_pos_y,
                        int chart_width_S,
-                       int chart_height_S)
+                       int chart_height_S, 
+                       QOpenGLWidget& parent)
     : _vbo_buffer_size( max_num_of_points_in_buffer * 3 * sizeof(float) ),    // vbo buffer size(3 times the point buffer size) each point consists of 3 floats - i could make this template but then i can only do header files.
       _vbo_series_idx(0),
       _chart_vbo(QOpenGLBuffer::VertexBuffer),
@@ -30,7 +32,8 @@ OGLChart_C::OGLChart_C(int max_num_of_points_in_buffer,
      _bb_vbo(QOpenGLBuffer::VertexBuffer),
      _surface_grid_vbo(QOpenGLBuffer::VertexBuffer),
      _lead_line_vbo(QOpenGLBuffer::VertexBuffer),
-      _input_buffer(max_num_of_points_in_buffer)
+     _input_buffer(max_num_of_points_in_buffer),
+     _parent_widget(parent)
 {
 
     DEBUG("Initialize OGLChart");
@@ -73,6 +76,8 @@ OGLChart_C::OGLChart_C(int max_num_of_points_in_buffer,
     CreateBoundingBox();
 
     CreateSurfaceGrid(1000, 5);
+
+    _text_painter = new QPainter();
 }
 
 
@@ -248,12 +253,13 @@ void OGLChart_C::WriteToVbo(const QVector<float>& data)
 
 void OGLChart_C::Draw()
 {
-
     DrawSeries();
     DrawXYAxes();
     DrawBoundingBox();
-     DrawSurfaceGrid();
+    DrawSurfaceGrid();
     DrawLeadLine();
+
+
 }
 
 
@@ -297,6 +303,25 @@ void OGLChart_C::DrawSurfaceGrid()
     f->glDrawArrays(GL_LINES, 0, 20);
     f->glDisableVertexAttribArray(0);
     _surface_grid_vbo.release();
+
+
+    // Draw the axis details (units)
+    bool success = _text_painter->begin(&_parent_widget);
+    if ( success ) {
+        _text_painter->beginNativePainting();
+        _text_painter->setRenderHint(QPainter::TextAntialiasing);
+
+        QPen pen; pen.setColor(QColor(255, 255, 255));
+        _text_painter->setPen(pen);
+        _text_painter->setFont(QFont("times", 18));
+
+        //Draw FPS Counter
+        _text_painter->drawText(QPoint(1, 25), QString(QString::number(100000)) );
+
+        //Draw Hit Counter
+        _text_painter->endNativePainting();
+        _text_painter->end();
+    }
 }
 
 void OGLChart_C::CreateSurfaceGrid(int x_dist_unit, int y_dist_unit)

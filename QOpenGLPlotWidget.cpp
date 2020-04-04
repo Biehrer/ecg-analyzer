@@ -112,8 +112,10 @@ void QOpenGLPlotWidget::InitializePlots(int number_of_plots)
     int chart_offset_from_origin_S = 4;
 
     for ( int chart_idx = 0; chart_idx < number_of_plots; ++chart_idx ) {
+        
         int chart_pos_y = (chart_height + chart_to_chart_offset_S) * chart_idx + chart_offset_from_origin_S; 
-        _plots.push_back(new OGLChart_C(max_point_count, chart_pos_x, chart_pos_y, chart_width, chart_height));
+        _plots.push_back(new OGLChart_C(max_point_count, chart_pos_x, chart_pos_y, chart_width, chart_height, *this));
+
         std::cout << "chart pos (idx=" << chart_idx << "): " << chart_pos_y << std::endl;
     }
 
