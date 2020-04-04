@@ -28,6 +28,8 @@ OGLChart_C::OGLChart_C(int max_num_of_points_in_buffer,
       _x_axis_vbo(QOpenGLBuffer::VertexBuffer),
       _y_axis_vbo(QOpenGLBuffer::VertexBuffer),
      _bb_vbo(QOpenGLBuffer::VertexBuffer),
+     _surface_grid_vbo(QOpenGLBuffer::VertexBuffer),
+     _lead_line_vbo(QOpenGLBuffer::VertexBuffer),
       _input_buffer(max_num_of_points_in_buffer)
 {
 
@@ -61,11 +63,16 @@ OGLChart_C::OGLChart_C(int max_num_of_points_in_buffer,
     // Allocate a vertex buffer object to store data for visualization
     AllocateSeriesVbo();
 
+    // Allocate a vertex buffer object to store data for the lead line
+    CreateLeadLineVbo();
+
     // Create vbo for the x and y axis
     SetupAxes();
 
     // Create vbo for the bounding box of the chart
     CreateBoundingBox();
+
+    CreateSurfaceGrid(1000, 2);
 }
 
 
@@ -124,6 +131,15 @@ void OGLChart_C::AddDataToSeries(float y, float x_ms)
 }
 
 
+float OGLChart_C::GetScreenCoordsFromYChartValue(float y_value) 
+{
+   float y_value_S =  static_cast<float>(_screen_pos_y_S + _height_S) -
+        ((y_value - _min_y_axis_value) / (_max_y_axis_value - _min_y_axis_value)) * _height_S;
+
+   return y_value_S;
+}
+
+
 void OGLChart_C::UpdateVbo()
 {
     if( !_input_buffer.NewDataToRead() ){
@@ -148,6 +164,9 @@ void OGLChart_C::UpdateVbo()
 //                _point_count += data.size() / 3;
     //        }
         }
+
+        _last_plotted_y_value = (latest_data.end()-1)->_y;
+        _last_plotted_x_value = (latest_data.end()-1)->_x;
         // Write data to the vbo
         WriteToVbo(additional_point_vertices);
     }
@@ -229,9 +248,12 @@ void OGLChart_C::WriteToVbo(const QVector<float>& data)
 
 void OGLChart_C::Draw()
 {
+
     DrawSeries();
     DrawXYAxes();
     DrawBoundingBox();
+    // DrawSurfaceGrid();
+    DrawLeadLine();
 }
 
 
@@ -264,8 +286,120 @@ void OGLChart_C::SetupAxes()
     _y_axis_vbo.setUsagePattern(QOpenGLBuffer::StaticDraw);
 	f->glDisableVertexAttribArray(0);
     _y_axis_vbo.release();
-
 }
+
+void OGLChart_C::DrawSurfaceGrid() 
+{
+    QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
+    _surface_grid_vbo.bind();
+    f->glEnableVertexAttribArray(0);
+    f->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+    f->glDrawArrays(GL_LINES, 0, 20);
+    f->glDisableVertexAttribArray(0);
+    _surface_grid_vbo.release();
+}
+
+void OGLChart_C::CreateSurfaceGrid(int x_dist_unit, int y_dist_unit)
+{
+    // x_dist_unit and y_dist_unit = major ticks in the same unit like the member values : min_y_axis_value and max_y_axis_value
+    //p1(from)--------------------------------------------->>>>
+    // |                                            |
+    // |                                            |
+    // ----------------------------------------------
+    int number_of_vertical_grid_lines = (_max_y_axis_value- _min_y_axis_value) / y_dist_unit;
+
+    float p1_x_from = _screen_pos_x_S;
+    float p1_y_from = _screen_pos_y_S;
+    float chart_z_value = 1.0f;
+
+    QVector<float> vertical_grid_lines;
+
+    float y_axis_value = _max_y_axis_value;
+    for ( int line_idx = 0; line_idx < number_of_vertical_grid_lines; ++line_idx ) {
+        float line_y_pos = GetScreenCoordsFromYChartValue(y_axis_value);
+        y_axis_value -= y_dist_unit;
+         // Point from
+        vertical_grid_lines.push_back(p1_x_from);
+        vertical_grid_lines.push_back(line_y_pos);
+        vertical_grid_lines.push_back(chart_z_value);
+        // Point to
+        vertical_grid_lines.push_back(p1_x_from + _width_S);
+        vertical_grid_lines.push_back(line_y_pos);
+        vertical_grid_lines.push_back(chart_z_value);
+    }
+
+    QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
+    // Setup OGL Chart buffer - empty 
+    _surface_grid_vbo.create();
+    _surface_grid_vbo.bind();
+    f->glEnableVertexAttribArray(0);
+    // 3 positions for x and y and z data coordinates
+    f->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+    _surface_grid_vbo.allocate(vertical_grid_lines.constData(), vertical_grid_lines.size() * static_cast<int>(sizeof(float)));
+    _surface_grid_vbo.setUsagePattern(QOpenGLBuffer::StaticDraw);
+    f->glDisableVertexAttribArray(0);
+    _surface_grid_vbo.release();
+
+    //QVector<float> horizontal_grid_lines_x;
+}
+
+void OGLChart_C::CreateLeadLineVbo() 
+{
+    int buffer_size = 2 * 3;
+    _number_of_bytes_lead_line = buffer_size * sizeof(float);
+
+    QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
+    // Setup OGL-Chart buffer - empty
+    _lead_line_vbo.create();
+    _lead_line_vbo.bind();
+    f->glEnableVertexAttribArray(0);
+    // 3 coordinates make one point  (x, y, z)
+    f->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+    // the lead line consists of one line -> 2 points, each 3 vertices of the type float
+    _lead_line_vbo.allocate(nullptr, buffer_size * sizeof(float));
+    _lead_line_vbo.setUsagePattern(QOpenGLBuffer::DynamicDraw);
+    f->glDisableVertexAttribArray(0);
+    _lead_line_vbo.release();
+
+    // setup the buffer: The most vertices are fixed and only the x value of the vertices needs to be adapted when new data was added.
+    // The only value that changes when adding new data, is the x value of the lead line. 
+    // The y values are fixed because the lead line is a vertical line, which is always drawn through the whole chart.
+    // The z values are fixed anyway
+    float z_pos = 1.0f;
+    _lead_line_vertices.resize(buffer_size);
+    // point from:
+    // y value
+    _lead_line_vertices[1] = _screen_pos_y_S;
+    // z value
+    _lead_line_vertices[2] = z_pos;
+    // point to:
+    // y value
+    _lead_line_vertices[4] = _screen_pos_y_S + _height_S;
+    // z value
+    _lead_line_vertices[5] = z_pos;
+}
+
+void OGLChart_C::UpdateLeadLinePosition(float x_value_new) 
+{
+    _lead_line_vertices[0] = x_value_new;
+    _lead_line_vertices[3] = x_value_new;
+    // Write the whole vbo...alternative: write just two values, but because of caching this should not really result in differences..
+    _lead_line_vbo.write(0, _lead_line_vertices.data(), _number_of_bytes_lead_line);
+}
+
+void OGLChart_C::DrawLeadLine() 
+{
+    QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
+    _lead_line_vbo.bind();
+    UpdateLeadLinePosition(_last_plotted_x_value);
+    f->glEnableVertexAttribArray(0);
+    f->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+    f->glDrawArrays(GL_LINES, 0, 2);
+    f->glDisableVertexAttribArray(0);
+    _lead_line_vbo.release();
+}
+
+
 void OGLChart_C::DrawXYAxes()
 {
 	QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();

@@ -72,15 +72,11 @@ public:
     //! Binds and writes the data from the circular buffer to the vbo
     void UpdateVbo();
 
+    float GetScreenCoordsFromYChartValue(float y_value);
+
+
 // Private helper functions
 private:
-
-    //! Creates and allocates an empty OpenGL vertex buffer object used to store data for visualization
-    void AllocateSeriesVbo();
-
-    //! Write data to the vbo for visualization of data points
-    //! \param data the data to write to the vbo
-    void WriteToVbo(const QVector<float>& data);
 
     //! Draws the x- and y-axis inside the opengl context
     //! from which the function is called
@@ -92,10 +88,19 @@ private:
     //! Draws the data series to the opengl context inside the plot-area
     void DrawSeries();
 
+    void DrawSurfaceGrid();
 
     //! Creates the vbo used to draw the bounding box of the chart
     void CreateBoundingBox();
 
+    //! Creates a vbo used to draw the grid of the chart
+    void CreateSurfaceGrid(int x_dist_unit, int y_dist_unit);
+
+    void CreateLeadLineVbo();
+
+    void UpdateLeadLinePosition(float x_value_new);
+
+    void DrawLeadLine();
 
     //! Creates vertices used to draw the x and y axis
     //!
@@ -105,9 +110,18 @@ private:
     //! \returns a struct containing the vertices for the x- and y-axis
     const XYAxisVertices_TP CreateAxesVertices(float size_S);
 
+    //! Creates and allocates an empty OpenGL vertex buffer object used to store data for visualization
+    void AllocateSeriesVbo();
+
+    //! Write data to the vbo for visualization of data points
+    //! \param data the data to write to the vbo
+    void WriteToVbo(const QVector<float>& data);
+
+
     //! Creates and fills vertex buffer objects used for the axes of the chart
     void SetupAxes();
 
+    
 // Private attributes
 private:
     //! Vertex buffer object which contains the data series added by AddData..(..)
@@ -121,6 +135,15 @@ private:
 
     //! Vertex buffer object for the bounding box
     QOpenGLBuffer _bb_vbo;
+
+    //! Vertex buffer object for the background vertical and horizontal grid lines
+    QOpenGLBuffer _surface_grid_vbo;
+
+    //! Vertex buffer object for the lead line 
+    QOpenGLBuffer _lead_line_vbo;
+
+    QVector<float> _lead_line_vertices;
+    int _number_of_bytes_lead_line;
 
     //! x-position of the left top corner of the chart (the chart origin)
     //! inside the ogl context in screen coordinates
@@ -141,6 +164,7 @@ private:
 
     //! write position for the vbo
     int64_t _vbo_series_idx;
+
     //! size of the vbo
     int64_t _vbo_buffer_size;
 
@@ -170,6 +194,10 @@ private:
     
     //! Indicates if the dataseries was already wrapped one time from the right to the left screen
     bool _dataseries_wrapped_once;
+
+
+    float _last_plotted_y_value = 0;
+    float _last_plotted_x_value = 0;
 };
 
 // old func headers
