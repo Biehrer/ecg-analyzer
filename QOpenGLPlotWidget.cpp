@@ -66,34 +66,29 @@ QOpenGLPlotWidget::QOpenGLPlotWidget(QWidget* parent)
 void QOpenGLPlotWidget::OnDataUpdateThreadFunction()
 {
     double pi = 3.1415026589;
-
+    double data_val_static = 5;
     while(true){
         // duplicate for testing
         double val_in_radians = _pointcount * (2.0 * pi) / 360.0;
         double data_value = 5.0 * std::sin(val_in_radians);
-
         for ( auto& plot : _plots ) {
             plot->AddDataToSeries(data_value, _pointcount);
         }
-
         ++_pointcount;
         //DEBUG("Thread added point (# " << _pointcount << "): " << data_value);
         std::this_thread::sleep_for(std::chrono::microseconds(10));
 	}
 }
 
-
 void QOpenGLPlotWidget::OnDataUpdate()
 {
     double pi = 3.1415026589;
     double val_in_radians = _pointcount * (2.0 * pi) / 360.0;
     float data_value = 10.0 * std::sin(val_in_radians);
-
     for ( auto& plot : _plots ) {
         // assume that _pointcount is an incrementing value with the unit milliseconds
         plot->AddDataToSeries(data_value, _pointcount);
     }
-
     DEBUG("Added data value (# " << _pointcount << "): " << data_value);
 	_pointcount++;	
 }
@@ -134,7 +129,7 @@ void QOpenGLPlotWidget::initializeGL()
 
     InitializeShaderProgramms();
 
-    InitializePlots(5);
+    InitializePlots(1);
 }
 
 void QOpenGLPlotWidget::resizeGL(int width, int height)
@@ -263,7 +258,6 @@ bool QOpenGLPlotWidget::InitializeShaderProgramms()
     _prog.bindAttributeLocation("position", 0);
     _prog.bindAttributeLocation("vertexColor", 1);
     _prog.release();
-
     return success;
 }
 
