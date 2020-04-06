@@ -75,7 +75,7 @@ OGLChart_C::OGLChart_C(int max_num_of_points_in_buffer,
     // Create vbo for the bounding box of the chart
     CreateBoundingBox();
 
-    CreateSurfaceGrid(1000, 5);
+    CreateSurfaceGrid(200, 5);
 
     _text_painter = new QPainter();
 }
@@ -144,6 +144,18 @@ float OGLChart_C::GetScreenCoordsFromYChartValue(float y_value)
    return y_value_S;
 }
 
+float OGLChart_C::GetScreenCoordsFromXChartValue(float x_value_ms)
+{
+    // calculate new x-index when the dataseries has reached the left border of the plot
+    float x_val_wrap_corrected_ms = x_value_ms - static_cast<float>(_max_x_axis_val_ms) * static_cast<float>(_number_of_wraps - 1);
+
+    // calculate x-value after wrapping
+    float x_value_S = static_cast<float>(_screen_pos_x_S) +
+        ((x_val_wrap_corrected_ms - _min_x_axis_val_ms) / (_max_x_axis_val_ms - _min_x_axis_val_ms)) * _width_S;
+
+    return x_value_S;
+}
+
 
 void OGLChart_C::UpdateVbo()
 {
@@ -162,12 +174,6 @@ void OGLChart_C::UpdateVbo()
             additional_point_vertices.append(element._x);
             additional_point_vertices.append(element._y);
             additional_point_vertices.append(element._z);
-
-            // Count points; stop counting points after one wrap
-            // (because after a wrap the point count stays the same)
-    //        if (!_dataseries_wrapped_once) {
-//                _point_count += data.size() / 3;
-    //        }
         }
 
         _last_plotted_y_value = (latest_data.end()-1)->_y;
@@ -181,72 +187,48 @@ void OGLChart_C::UpdateVbo()
 void OGLChart_C::WriteToVbo(const QVector<float>& data)
 {
     int number_of_new_data_bytes = static_cast<int>(data.size()) * static_cast<int>(sizeof(float));
-    //std::cout << "write to vbo(size = " << _vbo_buffer_size <<")" << "\n";
-    //std::cout << "data: size:" << data.size() << "( in bytes: " << number_of_new_data_bytes << " )" << "\n";
-    //std::cout << "idx:" << _vbo_series_idx 
-    //    << ",vbo buffer size after new data was added: " << _vbo_buffer_size + number_of_new_data_bytes << "\n" << "\n";
-
     // The data can completely fit into the vbo => Write data to the vbo
-    if (_vbo_series_idx <=_vbo_buffer_size - number_of_new_data_bytes/* (_vbo_buffer_size + data.size()/3)*/) 
-    {
+    if (_vbo_series_idx <=_vbo_buffer_size - number_of_new_data_bytes) {
         _chart_vbo.write(static_cast<int>(_vbo_series_idx), data.data(), number_of_new_data_bytes);
         // new write offset in bytes
         _vbo_series_idx += number_of_new_data_bytes;
-
         // Count points; stop counting points after one wrap
-        // (because after a wrap the point count stays the same)
+        // (because after a wrap the point count stays the same-> _max_x_axis_value)
         if (!_dataseries_wrapped_once) {
             _point_count += data.size() / 3;
-        }else{
-//        _point_count = _max_x_axis_val_ms;
-//            _point_count = (_chart_vbo.size() / 3) - 1;
         }
     } else {
-        // buffer is full or not all new data can fit into it; reset buffer index and start overwriting data at the beginning
-        std::cout << "chart data buffer full, number of datapoints(floats): " << _point_count << " || "
-                  << "number of datapoints according to the vbo size:" << (_chart_vbo.size() / 3) << std::endl
-                  << "..restart writing at beginning" << std::endl;
-
-        std::cout << "\n" << "writing: " << number_of_new_data_bytes << " bytes" << "\n";
+        // buffer is full or not all new data can fit into it; 
+        // reset buffer index and start overwriting data at the beginning
         // Calculate how much bytes can fit into the buffer until the end is reached
         int number_of_free_bytes_until_end = _vbo_buffer_size - _vbo_series_idx;
         int bytes_to_write_at_beginning = number_of_new_data_bytes - number_of_free_bytes_until_end;
         int bytes_to_write_until_end = number_of_new_data_bytes - bytes_to_write_at_beginning;
 
-        std::cout << "bytes to write at beginning =" << bytes_to_write_at_beginning << "\n" << "bytes to write until end: " << bytes_to_write_until_end << "\n";
+        std::cout << "chart data buffer full, number of datapoints(floats): " << _point_count
+            << "..restart writing at beginning" << "\n"
+            << "\n" << "writing: " << number_of_new_data_bytes << " bytes" << "\n"
+            << "bytes to write at beginning =" << bytes_to_write_at_beginning << "\n" 
+            << "bytes to write until end =" << bytes_to_write_until_end << "\n"
+            << "vbo index (before writing at beginning) =" << _vbo_series_idx << "\n";
+
         if( number_of_free_bytes_until_end > 0 ) {
             // Write data until the end of the buffer is reached
            _chart_vbo.write(static_cast<int>(_vbo_series_idx), data.data(), bytes_to_write_until_end);
         }
-
-        std::cout << "vbo index (before writing at beginning) = " << _vbo_series_idx << "\n";
         assert(_vbo_series_idx + number_of_free_bytes_until_end == _vbo_buffer_size);
-
         // Reset the index to continue writing the rest of the data at the beginning
         //_vbo_series_idx += number_of_free_bytes_until_end;
         _vbo_series_idx = 0;
-
-        // If there is still data which was not written into the vbo 
+        // If there is still data which was not written into the vbo because it did not fit at the end
         // => Continue writing the rest of the data at the beginning of the vbo
-        int number_of_bytes_left = number_of_new_data_bytes - number_of_free_bytes_until_end;
-        std::cout << "num of bytes left to write at the beginning=" << number_of_bytes_left << "\n";
-        if ( number_of_bytes_left > 0 ) {
-                            // number of points - data.size()
-            int data_offset = data.size() - ( bytes_to_write_until_end / sizeof(float) );
-
-            std::cout << "Write at beginning (still bytes left for beginning) = " << data_offset
-                << ", starting at position (inside data): " << data.size() - data_offset <<"\n";
-
-            _chart_vbo.write(static_cast<int>(_vbo_series_idx), data.data() + data_offset - 1, number_of_free_bytes_until_end);
-            _vbo_series_idx += number_of_bytes_left;
-
+        if ( bytes_to_write_at_beginning > 0 ) {
+            int data_memory_offset = data.size() - ( bytes_to_write_until_end / sizeof(float) ) - 1;
+            _chart_vbo.write(static_cast<int>(_vbo_series_idx), data.data() + data_memory_offset, number_of_free_bytes_until_end);
+            _vbo_series_idx += bytes_to_write_at_beginning;
+            std::cout << "Write at beginning (still bytes left for beginning) = " << data_memory_offset
+                << ", starting at position (inside data): " << data.size() - data_memory_offset << "\n";
         }
-
-        //std::cout << "vbo size = " << _vbo_buffer_size << "\n"
-        //    << "bytes till end = " << number_of_free_bytes_until_end << "\n"
-        //    << "num bytes left = " << number_of_bytes_left << "\n"
-        //    << "vbo series idx(after writing at beginning) =" << _vbo_series_idx << "\n" << "\n";
-//      _point_count = 0;
     }
 }
 
@@ -256,10 +238,8 @@ void OGLChart_C::Draw()
     DrawSeries();
     DrawXYAxes();
     DrawBoundingBox();
-    DrawSurfaceGrid();
     DrawLeadLine();
-
-
+    DrawSurfaceGrid();
 }
 
 
@@ -271,6 +251,11 @@ void OGLChart_C::SetupAxes()
     auto x_axis_vertices = axes_vertices._x_axis_vertices;
     auto y_axis_vertices = axes_vertices._y_axis_vertices;
 
+    //// Combined vertices
+    //QVector<float> axis_vertices(x_axis_vertices);
+    //for ( const auto& vertice : y_axis_vertices ) {
+    //    axis_vertices.push_back(vertice);
+    //}
     QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
 	// Setup OGL Chart buffer - empty 
     _x_axis_vbo.create();
@@ -300,59 +285,79 @@ void OGLChart_C::DrawSurfaceGrid()
     _surface_grid_vbo.bind();
     f->glEnableVertexAttribArray(0);
     f->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
-    f->glDrawArrays(GL_LINES, 0, 20);
+    f->glDrawArrays(GL_LINES, 0, _num_of_surface_grid_vertices);
     f->glDisableVertexAttribArray(0);
     _surface_grid_vbo.release();
 
-
-    // Draw the axis details (units)
-    bool success = _text_painter->begin(&_parent_widget);
-    if ( success ) {
-        _text_painter->beginNativePainting();
-        _text_painter->setRenderHint(QPainter::TextAntialiasing);
-
-        QPen pen; pen.setColor(QColor(255, 255, 255));
-        _text_painter->setPen(pen);
-        _text_painter->setFont(QFont("times", 18));
-
-        //Draw FPS Counter
-        _text_painter->drawText(QPoint(1, 25), QString(QString::number(100000)) );
-
-        //Draw Hit Counter
-        _text_painter->endNativePainting();
-        _text_painter->end();
-    }
+    //// Draw the axis details (units)
+//bool success = _text_painter->begin(&_parent_widget);
+//if ( success ) {
+//    _text_painter->beginNativePainting();
+//    _text_painter->setRenderHint(QPainter::TextAntialiasing);
+//    QPen pen; pen.setColor(QColor(255, 255, 255));
+//    _text_painter->setPen(pen);
+//    _text_painter->setFont(QFont("times", 18));
+//    //Draw FPS Counter
+//    _text_painter->drawText(QPoint(1, 25), QString(QString::number(100000)) );
+//    //Draw Hit Counter
+//    _text_painter->endNativePainting();
+//    //_text_painter->end();
+//}
+//_text_painter->end();
 }
 
-void OGLChart_C::CreateSurfaceGrid(int x_dist_unit, int y_dist_unit)
+void OGLChart_C::CreateSurfaceGrid(int x_major_tick_dist_ms, int y_major_tick_dist_unit)
 {
-    // x_dist_unit and y_dist_unit = major ticks in the same unit like the member values : min_y_axis_value and max_y_axis_value
+    // x_major_tick_dist_ms and y_major_tick_dist_unit = major ticks in the same unit like the member values : min_y_axis_value and max_y_axis_value
     //p1(from)--------------------------------------------->>>>
     // |                                            |
     // |                                            |
     // ----------------------------------------------
-    int number_of_vertical_grid_lines = (_max_y_axis_value- _min_y_axis_value) / y_dist_unit;
+    int number_of_vertical_grid_lines = (_max_y_axis_value- _min_y_axis_value) / y_major_tick_dist_unit;
 
     float p1_x_from = _screen_pos_x_S;
     float p1_y_from = _screen_pos_y_S;
     float chart_z_value = 1.0f;
 
+    // Creaete vertices
     QVector<float> vertical_grid_lines;
-
-    float y_axis_value = _max_y_axis_value;
+    float y_axis_major_tick_value = _max_y_axis_value;
     for ( int line_idx = 0; line_idx < number_of_vertical_grid_lines; ++line_idx ) {
-        float line_y_pos = GetScreenCoordsFromYChartValue(y_axis_value);
-        y_axis_value -= y_dist_unit;
+        float major_tick_y_pos_S = GetScreenCoordsFromYChartValue(y_axis_major_tick_value);
+        y_axis_major_tick_value -= y_major_tick_dist_unit;
          // Point from
         vertical_grid_lines.push_back(p1_x_from);
-        vertical_grid_lines.push_back(line_y_pos);
+        vertical_grid_lines.push_back(major_tick_y_pos_S);
         vertical_grid_lines.push_back(chart_z_value);
         // Point to
         vertical_grid_lines.push_back(p1_x_from + _width_S);
-        vertical_grid_lines.push_back(line_y_pos);
+        vertical_grid_lines.push_back(major_tick_y_pos_S);
         vertical_grid_lines.push_back(chart_z_value);
     }
 
+    // Create horizontal line vertices
+    // unit - in milliseconds
+    int number_of_horizontal_grid_lines = (_max_x_axis_val_ms - _min_x_axis_val_ms) / x_major_tick_dist_ms;
+    
+    float x_axis_major_tick_value = _max_x_axis_val_ms;
+    for ( int line_idx = 0; line_idx < number_of_horizontal_grid_lines; ++line_idx ) {
+        float major_tick_x_pos_S = GetScreenCoordsFromXChartValue(x_axis_major_tick_value);
+        x_axis_major_tick_value -= x_major_tick_dist_ms;
+        // Point from
+        vertical_grid_lines.push_back(major_tick_x_pos_S);
+        vertical_grid_lines.push_back(p1_y_from);
+        vertical_grid_lines.push_back(chart_z_value);
+        // Point to
+        vertical_grid_lines.push_back(major_tick_x_pos_S);
+        vertical_grid_lines.push_back(p1_y_from + _height_S);
+        vertical_grid_lines.push_back(chart_z_value);
+    }
+
+    _num_of_surface_grid_vertices = vertical_grid_lines.size() / 3;
+
+    //_num_of_surface_grid_vertices += horizontal_grid_lines.size() / 3;
+
+    // Create VBO
     QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
     // Setup OGL Chart buffer - empty 
     _surface_grid_vbo.create();
@@ -365,7 +370,6 @@ void OGLChart_C::CreateSurfaceGrid(int x_dist_unit, int y_dist_unit)
     f->glDisableVertexAttribArray(0);
     _surface_grid_vbo.release();
 
-    //QVector<float> horizontal_grid_lines_x;
 }
 
 void OGLChart_C::CreateLeadLineVbo() 
@@ -409,7 +413,7 @@ void OGLChart_C::UpdateLeadLinePosition(float x_value_new)
     _lead_line_vertices[0] = x_value_new;
     _lead_line_vertices[3] = x_value_new;
     // Write the whole vbo...alternative: write just two values, but because of caching this should not really result in differences..
-    _lead_line_vbo.write(0, _lead_line_vertices.data(), _number_of_bytes_lead_line);
+    _lead_line_vbo.write(0, _lead_line_vertices.constData(), _number_of_bytes_lead_line);
 }
 
 void OGLChart_C::DrawLeadLine() 

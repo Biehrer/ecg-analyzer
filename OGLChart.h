@@ -74,8 +74,11 @@ public:
     //! Binds and writes the data from the circular buffer to the vbo
     void UpdateVbo();
 
+    //! Returns the screen coordinates of a given plot y-value
     float GetScreenCoordsFromYChartValue(float y_value);
 
+    //! Returns the screen coordinates of a given plot x-value
+    float GetScreenCoordsFromXChartValue(float x_value);
 
 // Private helper functions
 private:
@@ -89,8 +92,12 @@ private:
 
     //! Draws the data series to the opengl context inside the plot-area
     void DrawSeries();
-
+    
+    //! Draws the surface grid
     void DrawSurfaceGrid();
+
+    //! Draws the lead line
+    void DrawLeadLine();
 
     //! Creates the vbo used to draw the bounding box of the chart
     void CreateBoundingBox();
@@ -102,7 +109,6 @@ private:
 
     void UpdateLeadLinePosition(float x_value_new);
 
-    void DrawLeadLine();
 
     //! Creates vertices used to draw the x and y axis
     //!
@@ -190,6 +196,9 @@ private:
 
     //! The minimum value of the x axis 
     int _min_x_axis_val_ms;
+
+    //! Number of vertices used to draw the vertical surface grid lines
+    int _num_of_surface_grid_vertices;
 
     //! Input buffer used to store user data
     CircularBuffer_TC<float> _input_buffer;
