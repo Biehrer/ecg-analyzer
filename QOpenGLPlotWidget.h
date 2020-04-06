@@ -2,7 +2,8 @@
 
 // Project includes
 #include "OGLChart.h"
-
+#include "ShapeData.h"
+#include <ShapeGenerator.h>
 // STL includes
 #include <iostream>
 #include <string>
@@ -67,6 +68,8 @@ private:
 
     void InitializeGLParameters();
 
+    void CreateLightSource();
+
     // Private attributes
 private:
     //! Projection matrix
@@ -86,6 +89,8 @@ private:
 
     //! All plots contained in the current instance of this widget
     std::vector<OGLChart_C*> _plots;
+
+    Quad _light_source;
 
     // Keep track of game timing and to implement bullets with different flying speed
 	double last_time = 0;

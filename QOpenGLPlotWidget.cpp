@@ -132,6 +132,8 @@ void QOpenGLPlotWidget::initializeGL()
     InitializeShaderProgramms();
 
     InitializePlots(2);
+
+    CreateLightSource();
 }
 
 void QOpenGLPlotWidget::resizeGL(int width, int height)
@@ -152,7 +154,7 @@ void QOpenGLPlotWidget::resizeGL(int width, int height)
 void QOpenGLPlotWidget::paintGL()
 {
 	QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
-    f->glClearColor(1.0f, 0.0f, 0.0f, 0.5f);
+    f->glClearColor(0.0f, 0.0f, 0.0f, 0.8f);
 	f->glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     ++_framecounter;
 
@@ -163,10 +165,12 @@ void QOpenGLPlotWidget::paintGL()
     _prog.setUniformValue("point_scale", 2.0f);
     _prog.setUniformValue("u_Color", QVector3D(1.0f, 1.0f, 1.0f));
 
+
     for ( const auto& plot : _plots ) {
         plot->Draw();
     }
 
+    //_light_source.Draw();
     _prog.release();
 }
 
@@ -212,6 +216,18 @@ void QOpenGLPlotWidget::InitializeGLParameters()
     f->glEnable(GL_POINT_SMOOTH);
     f->glEnable(GL_POINT_SIZE);
     f->glEnable(GL_PROGRAM_POINT_SIZE);
+}
+
+void QOpenGLPlotWidget::CreateLightSource()
+{
+    float light_source_x_pos = 0.0f;
+    float light_source_y_pos = 0.0f;
+    float light_source_z_pos = -1.5f;
+    float cube_size = this->width();
+
+    ShapeGenerator_C shape_gen;
+    auto light_source_vertices = shape_gen.makeQuadAtPos_(light_source_x_pos, light_source_y_pos, light_source_z_pos, cube_size);
+    _light_source.CreateVBO(light_source_vertices);
 }
 
 bool QOpenGLPlotWidget::InitializeShaderProgramms()
