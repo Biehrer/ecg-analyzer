@@ -14,8 +14,8 @@ add_executable(${PROJECT_NAME} "main.cpp"
                                 "JonesPlot.h" "JonesPlot.cpp"
                                 "OGLChart.h" "OGLChart.cpp"
                                 "QOpenGLPlotWidget.h" "QOpenGLPlotWidget.cpp"
-                                # "ShapeGenerator.h" "ShapeGenerator.cpp"
-                                # "ShapeData.h" "ShapeData.cpp"
+                                 "ShapeGenerator.h" #"ShapeGenerator.cpp"
+                                 "ShapeData.h" #"ShapeData.cpp"
                                 "CircularBuffer.h"
                                 )
 
