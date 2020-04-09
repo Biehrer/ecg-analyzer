@@ -20,6 +20,7 @@
 #include <qopenglshaderprogram.h>
 #include <qpainter.h>
 #include <qopenglwidget.h>
+#include <qdatetime.h>
 
 struct XYAxisVertices_TP
 {
@@ -33,6 +34,40 @@ public:
     }
     QVector<float> _x_axis_vertices;
     QVector<float> _y_axis_vertices;
+};
+
+struct Timestamp_TP {
+
+public:
+
+    Timestamp_TP() 
+        : _timestamp(std::chrono::high_resolution_clock::now())
+    {
+    }
+
+    void Now(){ _timestamp = std::chrono::high_resolution_clock::now(); }
+    size_t GetMilliseconds() { return std::chrono::duration_cast<std::chrono::milliseconds>(_timestamp.time_since_epoch()).count(); }
+    size_t GetNanoseconds(){ return std::chrono::duration_cast<std::chrono::nanoseconds>(_timestamp.time_since_epoch()).count(); }
+    size_t GetSeconds() { return std::chrono::duration_cast<std::chrono::seconds>(_timestamp.time_since_epoch()).count(); }
+
+    std::chrono::time_point<std::chrono::high_resolution_clock>* GetTimestampPtr() { return &_timestamp; }
+
+private:
+    std::chrono::time_point<std::chrono::high_resolution_clock> _timestamp;
+};
+
+template<typename Datatype_TP>
+struct ChartPoint_TP {
+
+    ChartPoint_TP(Datatype_TP value, const Timestamp_TP& timestamp) 
+        : _value(value),
+        _timestamp(timestamp)
+    {
+    }
+
+// Timestamp_TP _timestamp;
+    Datatype_TP _value;
+    Timestamp_TP _timestamp;
 };
 
 //! Description
@@ -65,6 +100,9 @@ public:
     //! This function maps data to a plot point which means data is mapped to a specific position in the plot itself (not the window the plot is placed in)
     //!
     void AddDataToSeries(float y, float x_ms);
+
+    // Todo template the chart class for different datatypes
+    void AddData(float value, Timestamp_TP& timestamp);
 
     //! Draws the chart inside the opengl context from which this function is called
     void Draw();
@@ -123,7 +161,7 @@ private:
 
     //! Write data to the vbo for visualization of data points
     //! \param data the data to write to the vbo
-    void WriteToVbo(const QVector<float>& data);
+    void WriteToVbo(/*const*/ QVector<float>& data);
 
 
     //! Creates and fills vertex buffer objects used for the axes of the chart
@@ -203,6 +241,16 @@ private:
     //! Input buffer used to store user data
     CircularBuffer_TC<float> _input_buffer;
 
+    //! The y component of the last value plotted
+    float _last_plotted_y_value_S = 0;
+
+    //! The x component of the last value plotted
+    float _last_plotted_x_value_S = 0;
+
+    double _last_timestamp = 0.0;
+    //! The parent widget with the opengl context
+    QOpenGLWidget& _parent_widget;
+
 // Sweep chart parameters
     //! counts how often the point series reached the left side of the screen and was wrapped to the left side again
     int _number_of_wraps;
@@ -212,12 +260,6 @@ private:
     
     //! Indicates if the dataseries was already wrapped one time from the right to the left screen
     bool _dataseries_wrapped_once;
-
-
-    float _last_plotted_y_value = 0;
-    float _last_plotted_x_value = 0;
-
-    QOpenGLWidget& _parent_widget;
 };
 
 // old func headers

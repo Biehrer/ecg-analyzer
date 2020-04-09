@@ -115,7 +115,8 @@ void OGLChart_C::AddDataToSeries(float y, float x_ms)
     if (x_ms >= static_cast<float>(_max_x_axis_val_ms) * static_cast<float>(_number_of_wraps) ) {
 		//calculate new x value at most left chart position
         _need_to_wrap_series = true;
-        _dataseries_wrapped_once = true;
+        //_input_buffer.InsertAtHead(NAN, NAN, NAN);
+        //_dataseries_wrapped_once = true;
 	}
 
     // - (minus) because then the positive y axis is directing at the top of the screen
@@ -132,6 +133,50 @@ void OGLChart_C::AddDataToSeries(float y, float x_ms)
     float x_val_scaled_S = static_cast<float>(_screen_pos_x_S) + 
         ( (x_val_wrap_corrected_ms - _min_x_axis_val_ms) / (_max_x_axis_val_ms - _min_x_axis_val_ms) ) * _width_S;
 
+    _input_buffer.InsertAtHead(x_val_scaled_S, y_val_scaled_S, 1.0f);
+}
+
+void OGLChart_C::AddData(float value, Timestamp_TP & timestamp)
+{
+    // Don't add the value if its not inside the range, 
+   // because its not visible eitherway -> better solution would be: Add it to the series but don't draw it!
+    if ( value > _max_y_axis_value || value < _min_y_axis_value ) {
+        return;
+    }
+
+    // wrapp value around x-axis if the 'x_ms' value is bigger than maximum value of the x-axis
+    if ( _need_to_wrap_series ) {
+        _number_of_wraps++;
+        _need_to_wrap_series = false;
+    }
+
+   int x_ms = timestamp.GetMilliseconds();
+   int timeRange = (_max_x_axis_val_ms - _min_x_axis_val_ms);
+       
+    // check if we need to wrap the data (when data series reached the right border of the screen)
+    //if ( x_ms >= static_cast<float>(_max_x_axis_val_ms) * static_cast<float>(_number_of_wraps) ) {
+   if ( x_ms >= static_cast<float>(_max_x_axis_val_ms) * static_cast<float>(_number_of_wraps) ) {
+        // Calculate new x value at most left chart position
+        _need_to_wrap_series = true;
+        _dataseries_wrapped_once = true;
+    }
+
+    // - (minus) because then the positive y axis is directing at the top of the screen
+    float y_val_scaled_S = static_cast<float>(_screen_pos_y_S + _height_S) -
+        ((value - _min_y_axis_value) / (_max_y_axis_value - _min_y_axis_value)) * _height_S;
+
+    // assert( y_val_scaled_S < _max_y_axis_value && y_val_scaled_S > _min_y_axis_value);
+    DEBUG("Scaled y value: " << y_val_scaled_S << ", to value: " << value);
+    
+    // + so the data value runs from left to right side
+    // calculate new x-index when the dataseries has reached the left border of the plot
+    float x_val_wrap_corrected_ms = x_ms - static_cast<float>(_max_x_axis_val_ms) * static_cast<float>(_number_of_wraps - 1);
+
+    // calculate x-value after wrapping
+    float x_val_scaled_S = static_cast<float>(_screen_pos_x_S) +
+        ((x_val_wrap_corrected_ms - _min_x_axis_val_ms) / (_max_x_axis_val_ms - _min_x_axis_val_ms)) * _width_S;
+
+    DEBUG("Scaled x value: " << x_val_scaled_S << ", to value: " << x_ms);
     _input_buffer.InsertAtHead(x_val_scaled_S, y_val_scaled_S, 1.0f);
 }
 
@@ -171,24 +216,34 @@ void OGLChart_C::UpdateVbo()
         QVector<float> additional_point_vertices;
         for (const auto& element : latest_data) {
             //DEBUG(element);
+
             additional_point_vertices.append(element._x);
             additional_point_vertices.append(element._y);
             additional_point_vertices.append(element._z);
-        }
 
-        _last_plotted_y_value = (latest_data.end()-1)->_y;
-        _last_plotted_x_value = (latest_data.end()-1)->_x;
+            if ( element._y < _last_plotted_y_value_S * 0.80f || element._y > _last_plotted_y_value_S * 1.2f ) {
+                std::cout << "value out of range:" << "value = " << element._y  
+                                                 << ", last value = " << _last_plotted_y_value_S << std::endl;
+            }
+            _last_plotted_y_value_S = element._y;
+        }
+        _last_plotted_y_value_S = (latest_data.end()-1)->_y;
+        _last_plotted_x_value_S = (latest_data.end()-1)->_x;
+
+
+
         // Write data to the vbo
         WriteToVbo(additional_point_vertices);
     }
 }
 
 // MAke sure the buffer is bound to the current context before calling this function
-void OGLChart_C::WriteToVbo(const QVector<float>& data)
+void OGLChart_C::WriteToVbo(/*const*/ QVector<float>& data)
 {
     int number_of_new_data_bytes = static_cast<int>(data.size()) * static_cast<int>(sizeof(float));
     // The data can completely fit into the vbo => Write data to the vbo
     if (_vbo_series_idx <=_vbo_buffer_size - number_of_new_data_bytes) {
+
         _chart_vbo.write(static_cast<int>(_vbo_series_idx), data.data(), number_of_new_data_bytes);
         // new write offset in bytes
         _vbo_series_idx += number_of_new_data_bytes;
@@ -197,6 +252,7 @@ void OGLChart_C::WriteToVbo(const QVector<float>& data)
         if (!_dataseries_wrapped_once) {
             _point_count += data.size() / 3;
         }
+
     } else {
         // buffer is full or not all new data can fit into it; 
         // reset buffer index and start overwriting data at the beginning
@@ -206,7 +262,6 @@ void OGLChart_C::WriteToVbo(const QVector<float>& data)
         int bytes_to_write_until_end = number_of_new_data_bytes - bytes_to_write_at_beginning;
 
         std::cout << "chart data buffer full, number of datapoints(floats): " << _point_count
-            << "..restart writing at beginning" << "\n"
             << "\n" << "writing: " << number_of_new_data_bytes << " bytes" << "\n"
             << "bytes to write at beginning =" << bytes_to_write_at_beginning << "\n" 
             << "bytes to write until end =" << bytes_to_write_until_end << "\n"
@@ -215,19 +270,35 @@ void OGLChart_C::WriteToVbo(const QVector<float>& data)
         if( number_of_free_bytes_until_end > 0 ) {
             // Write data until the end of the buffer is reached
            _chart_vbo.write(static_cast<int>(_vbo_series_idx), data.data(), bytes_to_write_until_end);
+           if ( !_dataseries_wrapped_once ) {
+               _point_count += number_of_free_bytes_until_end / sizeof(float) / 3;
+               std::cout << "------ Final pointcount = " << _point_count << "------" << std::endl;
+           }
         }
-        assert(_vbo_series_idx + number_of_free_bytes_until_end == _vbo_buffer_size);
+        _dataseries_wrapped_once = true;
+        //assert(_point_count == _max_x_axis_val_ms);
+        //assert(_vbo_series_idx + bytes_to_write_until_end == _vbo_buffer_size);
         // Reset the index to continue writing the rest of the data at the beginning
-        //_vbo_series_idx += number_of_free_bytes_until_end;
         _vbo_series_idx = 0;
+
+        // NAN ends the line strip. otherwise opengl continues to draw the line strip 
+        // from the right side of the screen to the left side of the screen.
+        int offset_in_num_points = ( bytes_to_write_until_end / sizeof(float) ) + 3 ;
+        data.insert(offset_in_num_points, NAN);
+        data.insert(offset_in_num_points, NAN);
+        data.insert(offset_in_num_points, NAN);
+
         // If there is still data which was not written into the vbo because it did not fit at the end
         // => Continue writing the rest of the data at the beginning of the vbo
         if ( bytes_to_write_at_beginning > 0 ) {
-            int data_memory_offset = data.size() - ( bytes_to_write_until_end / sizeof(float) ) - 1;
-            _chart_vbo.write(static_cast<int>(_vbo_series_idx), data.data() + data_memory_offset, number_of_free_bytes_until_end);
+            std::cout << "!!Writing line strip stopp command !!" << std::endl;
+            // Increment because of the end of line strip command ( 3 x NAN )
+            // bytes_to_write_at_beginning += 3 * sizeof(float);
+
+            int data_memory_offset = (bytes_to_write_until_end / sizeof(float)); 
+            _chart_vbo.write(static_cast<int>(_vbo_series_idx), (data.data() + data_memory_offset), bytes_to_write_at_beginning);
             _vbo_series_idx += bytes_to_write_at_beginning;
-            std::cout << "Write at beginning (still bytes left for beginning) = " << data_memory_offset
-                << ", starting at position (inside data): " << data.size() - data_memory_offset << "\n";
+            std::cout << "starting at position (inside data vec): " << data_memory_offset << "\n";
         }
     }
 }
@@ -239,7 +310,7 @@ void OGLChart_C::Draw()
     DrawXYAxes();
     DrawBoundingBox();
     DrawLeadLine();
-    DrawSurfaceGrid();
+    //DrawSurfaceGrid();
 }
 
 
@@ -420,7 +491,7 @@ void OGLChart_C::DrawLeadLine()
 {
     QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
     _lead_line_vbo.bind();
-    UpdateLeadLinePosition(_last_plotted_x_value);
+    UpdateLeadLinePosition(_last_plotted_x_value_S);
     f->glEnableVertexAttribArray(0);
     f->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
     f->glDrawArrays(GL_LINES, 0, 2);
@@ -473,6 +544,8 @@ void OGLChart_C::DrawSeries()
     f->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
     // to get the abs number of points-> divide through count of each Point
     f->glDrawArrays(GL_LINE_STRIP, 0, _point_count);
+   
+    //f->glDrawArrays(GL_LINE_STRIP, 0, _chart_vbo.);
     //f->glDisableVertexAttribArray(1);
     f->glDisableVertexAttribArray(0);
     _chart_vbo.release();
