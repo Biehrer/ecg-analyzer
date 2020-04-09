@@ -4,10 +4,16 @@
 #include "OGLChart.h"
 #include "ShapeData.h"
 #include <ShapeGenerator.h>
+
 // STL includes
 #include <iostream>
 #include <string>
 #include <cstdlib>
+#include <math.h>
+#include <time.h>
+#include <thread>
+#include <mutex>
+#include <chrono>
 
 // Qt includes
 #include <qmessagebox.h>
@@ -25,14 +31,9 @@
 #include <qopenglshaderprogram.h>
 #include <qopengltexture.h>
 #include <qopenglvertexarrayobject.h>
+#include <qdatetime.h>
 
-// Project includes
-
-#include <math.h>
-#include <time.h>
-#include <thread>
-#include <mutex>
-#include <chrono>
+// Project defines
 #define SREENWIDTH 1440
 #define SCREENHEIGHT 800
 
@@ -86,6 +87,9 @@ private:
 
     //! OpenGL shader
     QOpenGLShaderProgram _prog;
+
+    //! OpenGl light shader
+    QOpenGLShaderProgram _light_shader;
 
     //! All plots contained in the current instance of this widget
     std::vector<OGLChart_C*> _plots;

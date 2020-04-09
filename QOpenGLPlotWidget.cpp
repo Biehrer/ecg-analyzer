@@ -1,5 +1,10 @@
 #include "QOpenGLPlotWidget.h"
 
+#include <qglobal.h>
+#include <qglobalstatic.h>
+
+#include <chrono>
+#include <iostream>
 //#define DEBUG_INFO
 
 #ifdef DEBUG_INFO
@@ -67,12 +72,17 @@ void QOpenGLPlotWidget::OnDataUpdateThreadFunction()
 {
     double pi = 3.1415026589;
     double data_val_static = 5;
+
+    Timestamp_TP timestamp;
+    
     while(true){
+        timestamp.Now();
         // duplicate for testing
         double val_in_radians = _pointcount * (2.0 * pi) / 360.0;
         double data_value = 5.0 * std::sin(val_in_radians);
         for ( auto& plot : _plots ) {
             plot->AddDataToSeries(data_value, _pointcount);
+            //plot->AddData(data_value, timestamp);
         }
         ++_pointcount;
         //DEBUG("Thread added point (# " << _pointcount << "): " << data_value);
@@ -160,18 +170,35 @@ void QOpenGLPlotWidget::paintGL()
 
     *_MVP = *(_projection_mat) * *(_view_mat) * *(_model_mat);
 
-    _prog.bind();
-    _prog.setUniformValue("u_MVP", *_MVP);
-    _prog.setUniformValue("point_scale", 2.0f);
-    _prog.setUniformValue("u_Color", QVector3D(1.0f, 1.0f, 1.0f));
+    //_prog.bind();
+    //_prog.setUniformValue("u_MVP", *_MVP);
+    //_prog.setUniformValue("point_scale", 2.0f);
+    //_prog.setUniformValue("u_Color", QVector3D(1.0f, 1.0f, 1.0f));
 
+    _light_shader.bind();
+    _light_shader.setUniformValue("u_MVP", *_MVP);
+    _light_shader.setUniformValue("point_scale", 2.0f);
+    _light_shader.setUniformValue("u_object_color", QVector3D(1.0f, 1.0f, 1.0f));
+    _light_shader.setUniformValue("u_light_color", QVector3D(1.0f, 1.0f, 1.0f));
 
+    //float color_counter = 2;
     for ( const auto& plot : _plots ) {
+        //float red_val = std::sinf(color_counter * 10.0);
+        //float blue_val = std::cosf(color_counter * 10.0);
+        //_prog.setUniformValue("u_Color", QVector3D(red_val, blue_val, 1.0f));
+        //++color_counter;
         plot->Draw();
     }
 
+    //_prog.release();
+
+    //_light_shader.bind();
+    //_light_shader.setUniformValue("u_MVP", *_MVP);
+    //_light_shader.setUniformValue("point_scale", 2.0f);
+    //_light_shader.setUniformValue("u_object_color", QVector3D(1.0f, 1.0f, 1.0f));
+    //_light_shader.setUniformValue("u_light_color", QVector3D(1.0f, 0.0f, 1.0f));
     //_light_source.Draw();
-    _prog.release();
+    _light_shader.release();
 }
 
 void QOpenGLPlotWidget::InitializeGLParameters()
@@ -242,7 +269,7 @@ bool QOpenGLPlotWidget::InitializeShaderProgramms()
         << path_of_executable.toStdString() << std::endl;
 
     QString path_of_shader_dir = path_of_executable + "//Resources//shaders//";
-
+    // Standard color shader
     bool success = false;
     success = _prog.addShaderFromSourceFile(QOpenGLShader::Vertex, QString(path_of_shader_dir +"vertex.vsh"));
 
@@ -276,6 +303,39 @@ bool QOpenGLPlotWidget::InitializeShaderProgramms()
     _prog.bindAttributeLocation("position", 0);
     _prog.bindAttributeLocation("vertexColor", 1);
     _prog.release();
+
+    // Light shader
+    success = _light_shader.addShaderFromSourceFile(QOpenGLShader::Vertex, QString(path_of_shader_dir + "vertex.vsh"));
+    errorLog = _light_shader.log();
+    std::cout << "Light vertex shader sucess?: " << success << std::endl;
+    std::cout << &errorLog;
+    std::cout << std::endl;
+    if ( !success ) {
+        throw::std::runtime_error("Error while reading light vertex shader");
+    }
+
+    success = _light_shader.addShaderFromSourceFile(QOpenGLShader::Fragment, QString(path_of_shader_dir + "fragment_light.fsh"));
+    errorLog = _light_shader.log();
+    std::cout << "Light fragment shader sucess?: " << success << std::endl;
+    std::cout << &errorLog;
+    std::cout << std::endl;
+    if ( !success ) {
+        throw::std::runtime_error("Error while reading light fragment shader");
+    }
+
+    success = _light_shader.link();
+    errorLog = _light_shader.log();
+    std::cout << "linkinkg success?: " << success << std::endl << "shader programm linking errors: ";
+    std::cout << &errorLog;
+    std::cout << std::endl;
+
+    _light_shader.bind();
+    _light_shader.bindAttributeLocation("position", 0);
+    _light_shader.bindAttributeLocation("vertexColor", 1);
+    _light_shader.release();
+
+   
+
     return success;
 }
 
