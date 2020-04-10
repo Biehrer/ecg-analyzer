@@ -259,12 +259,11 @@ void QOpenGLPlotWidget::CreateLightSource()
 
 bool QOpenGLPlotWidget::InitializeShaderProgramms()
 {
-    std::cout << std::endl;
-    std::cout << "Shader Compiling Error Log:" << std::endl;
-    std::cout << "Standard Shader error log: ";
-    std::cout << std::endl;
+    std::cout << std::endl << "Shader Compiling Error Log:" << std::endl
+     << "Standard Shader error log: " << std::endl;
 
     QString path_of_executable( QDir::currentPath() );
+
     std::cout << "expected filepath to shaders (make sure it exists): "
         << path_of_executable.toStdString() << std::endl;
 
@@ -279,44 +278,6 @@ bool QOpenGLPlotWidget::InitializeShaderProgramms()
         QString(path_of_shader_dir + "fragment.fsh"),
         std_shader_uniforms);
 
-    //if ( !result ) {
-    //    throw std::runtime_error("Error while linking std shader");
-    //}
-
-    //bool success = false;
-    //success = _prog.addShaderFromSourceFile(QOpenGLShader::Vertex, QString(path_of_shader_dir +"vertex.vsh"));
-
-    //QString errorLog = _prog.log();
-    //std::cout << "Vertex Shader sucess?: " << success << std::endl;
-    //std::cout << &errorLog;
-    //std::cout << std::endl;
-
-    //if ( !success ) {
-    //    throw::std::runtime_error("Error while readingv shader");
-    //}
-
-    //success = _prog.addShaderFromSourceFile(QOpenGLShader::Fragment, QString(path_of_shader_dir + "fragment.fsh"));
-
-    //errorLog = _prog.log();
-    //std::cout << "Fragment Shader sucess?: " << success << std::endl;
-    //std::cout << &errorLog;
-    //std::cout << std::endl;
-
-    //if ( !success ) {
-    //    throw::std::runtime_error("Error while reading shader");
-    //}
-
-    //success = _prog.link();
-    //errorLog = _prog.log();
-    //std::cout << "linkinkg success?: " << success << std::endl << "shader programm linking errors: ";
-    //std::cout << &errorLog;
-    //std::cout << std::endl;
-
-    //_prog.bind();
-    //_prog.bindAttributeLocation("position", 0);
-    //_prog.bindAttributeLocation("vertexColor", 1);
-    //_prog.release();
-
     // Light shader
     std::vector<QString> light_shader_uniforms;
     // Must be pushed in the right order ! 
@@ -327,39 +288,13 @@ bool QOpenGLPlotWidget::InitializeShaderProgramms()
         QString(path_of_shader_dir + "vertex.vsh"),
         QString(path_of_shader_dir + "fragment_light.fsh"), light_shader_uniforms);
 
-    /*success = _light_shader.addShaderFromSourceFile(QOpenGLShader::Vertex, QString(path_of_shader_dir + "vertex.vsh"));
-    errorLog = _light_shader.log();
-    std::cout << "Light vertex shader sucess?: " << success << std::endl;
-    std::cout << &errorLog;
-    std::cout << std::endl;
-    if ( !success ) {
-        throw::std::runtime_error("Error while reading light vertex shader");
-    }
-
-    success = _light_shader.addShaderFromSourceFile(QOpenGLShader::Fragment, QString(path_of_shader_dir + "fragment_light.fsh"));
-    errorLog = _light_shader.log();
-    std::cout << "Light fragment shader sucess?: " << success << std::endl;
-    std::cout << &errorLog;
-    std::cout << std::endl;
-    if ( !success ) {
-        throw::std::runtime_error("Error while reading light fragment shader");
-    }
-
-    success = _light_shader.link();
-    errorLog = _light_shader.log();
-    std::cout << "linkinkg success?: " << success << std::endl << "shader programm linking errors: ";
-    std::cout << &errorLog;
-    std::cout << std::endl;
-
-    _light_shader.bind();
-    _light_shader.bindAttributeLocation("position", 0);
-    _light_shader.bindAttributeLocation("vertexColor", 1);
-    _light_shader.release();*/
-
     return result;
 }
 
-bool QOpenGLPlotWidget::CreateShader(QOpenGLShaderProgram& shader, QString vertex_path, QString fragment_path, std::vector<QString>& uniforms)
+bool QOpenGLPlotWidget::CreateShader(QOpenGLShaderProgram& shader, 
+                                     QString vertex_path, 
+                                     QString fragment_path,
+                                     std::vector<QString>& uniforms)
 {   
     bool success = false;
     success = shader.addShaderFromSourceFile(QOpenGLShader::Vertex, vertex_path);
