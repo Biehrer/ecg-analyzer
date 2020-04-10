@@ -27,7 +27,7 @@ QOpenGLPlotWidget::~QOpenGLPlotWidget() {
 	delete _data_update_timer;
     
     // Delete plots
-    for ( int chart_idx = _plots.size() - 1; chart_idx > 0; --chart_idx ) {
+    for ( int chart_idx = _plots.size() - 1; chart_idx >= 0; --chart_idx ) {
         delete _plots[chart_idx];
     }
 }
@@ -179,7 +179,7 @@ void QOpenGLPlotWidget::paintGL()
     _light_shader.setUniformValue("u_MVP", *_MVP);
     _light_shader.setUniformValue("point_scale", 2.0f);
     _light_shader.setUniformValue("u_object_color", QVector3D(1.0f, 1.0f, 1.0f));
-    _light_shader.setUniformValue("u_light_color", QVector3D(1.0f, 1.0f, 1.0f));
+    _light_shader.setUniformValue("u_light_color", QVector3D(0.0f, 1.0f, 1.0f));
 
     //float color_counter = 2;
     for ( const auto& plot : _plots ) {
@@ -269,43 +269,65 @@ bool QOpenGLPlotWidget::InitializeShaderProgramms()
         << path_of_executable.toStdString() << std::endl;
 
     QString path_of_shader_dir = path_of_executable + "//Resources//shaders//";
+
     // Standard color shader
-    bool success = false;
-    success = _prog.addShaderFromSourceFile(QOpenGLShader::Vertex, QString(path_of_shader_dir +"vertex.vsh"));
+    std::vector<QString> std_shader_uniforms;
+    std_shader_uniforms.push_back("position");
+    std_shader_uniforms.push_back("vertexColor");
+    bool result = CreateShader(_prog,
+        QString(path_of_shader_dir + "vertex.vsh"),
+        QString(path_of_shader_dir + "fragment.fsh"),
+        std_shader_uniforms);
 
-    QString errorLog = _prog.log();
-    std::cout << "Vertex Shader sucess?: " << success << std::endl;
-    std::cout << &errorLog;
-    std::cout << std::endl;
+    //if ( !result ) {
+    //    throw std::runtime_error("Error while linking std shader");
+    //}
 
-    if ( !success ) {
-        throw::std::runtime_error("Error while readingv shader");
-    }
+    //bool success = false;
+    //success = _prog.addShaderFromSourceFile(QOpenGLShader::Vertex, QString(path_of_shader_dir +"vertex.vsh"));
 
-    success = _prog.addShaderFromSourceFile(QOpenGLShader::Fragment, QString(path_of_shader_dir + "fragment.fsh"));
+    //QString errorLog = _prog.log();
+    //std::cout << "Vertex Shader sucess?: " << success << std::endl;
+    //std::cout << &errorLog;
+    //std::cout << std::endl;
 
-    errorLog = _prog.log();
-    std::cout << "Fragment Shader sucess?: " << success << std::endl;
-    std::cout << &errorLog;
-    std::cout << std::endl;
+    //if ( !success ) {
+    //    throw::std::runtime_error("Error while readingv shader");
+    //}
 
-    if ( !success ) {
-        throw::std::runtime_error("Error while reading shader");
-    }
+    //success = _prog.addShaderFromSourceFile(QOpenGLShader::Fragment, QString(path_of_shader_dir + "fragment.fsh"));
 
-    success = _prog.link();
-    errorLog = _prog.log();
-    std::cout << "linkinkg success?: " << success << std::endl << "shader programm linking errors: ";
-    std::cout << &errorLog;
-    std::cout << std::endl;
+    //errorLog = _prog.log();
+    //std::cout << "Fragment Shader sucess?: " << success << std::endl;
+    //std::cout << &errorLog;
+    //std::cout << std::endl;
 
-    _prog.bind();
-    _prog.bindAttributeLocation("position", 0);
-    _prog.bindAttributeLocation("vertexColor", 1);
-    _prog.release();
+    //if ( !success ) {
+    //    throw::std::runtime_error("Error while reading shader");
+    //}
+
+    //success = _prog.link();
+    //errorLog = _prog.log();
+    //std::cout << "linkinkg success?: " << success << std::endl << "shader programm linking errors: ";
+    //std::cout << &errorLog;
+    //std::cout << std::endl;
+
+    //_prog.bind();
+    //_prog.bindAttributeLocation("position", 0);
+    //_prog.bindAttributeLocation("vertexColor", 1);
+    //_prog.release();
 
     // Light shader
-    success = _light_shader.addShaderFromSourceFile(QOpenGLShader::Vertex, QString(path_of_shader_dir + "vertex.vsh"));
+    std::vector<QString> light_shader_uniforms;
+    // Must be pushed in the right order ! 
+    light_shader_uniforms.push_back("position");
+    light_shader_uniforms.push_back("vertexColor");
+
+    result = CreateShader(_light_shader,
+        QString(path_of_shader_dir + "vertex.vsh"),
+        QString(path_of_shader_dir + "fragment_light.fsh"), light_shader_uniforms);
+
+    /*success = _light_shader.addShaderFromSourceFile(QOpenGLShader::Vertex, QString(path_of_shader_dir + "vertex.vsh"));
     errorLog = _light_shader.log();
     std::cout << "Light vertex shader sucess?: " << success << std::endl;
     std::cout << &errorLog;
@@ -332,9 +354,54 @@ bool QOpenGLPlotWidget::InitializeShaderProgramms()
     _light_shader.bind();
     _light_shader.bindAttributeLocation("position", 0);
     _light_shader.bindAttributeLocation("vertexColor", 1);
-    _light_shader.release();
+    _light_shader.release();*/
 
-   
+    return result;
+}
+
+bool QOpenGLPlotWidget::CreateShader(QOpenGLShaderProgram& shader, QString vertex_path, QString fragment_path, std::vector<QString>& uniforms)
+{   
+    bool success = false;
+    success = shader.addShaderFromSourceFile(QOpenGLShader::Vertex, vertex_path);
+
+    QString errorLog = shader.log();
+    std::cout << "Vertex Shader sucess?: " << success << std::endl;
+    std::cout << &errorLog;
+    std::cout << std::endl;
+
+    if ( !success ) {
+        throw::std::runtime_error("Error while readingv shader");
+    }
+
+    success = shader.addShaderFromSourceFile(QOpenGLShader::Fragment, fragment_path);
+
+    errorLog = shader.log();
+    std::cout << "Fragment Shader sucess?: " << success << std::endl;
+    std::cout << &errorLog;
+    std::cout << std::endl;
+
+    if ( !success ) {
+        throw::std::runtime_error("Error while reading shader");
+    }
+
+    success = shader.link();
+    errorLog = shader.log();
+    std::cout << "linkinkg success?: " << success << std::endl << "shader programm linking errors: ";
+    std::cout << &errorLog;
+    std::cout << std::endl;
+
+    shader.bind();
+    //shader.bindAttributeLocation("position", 0);
+    //shader.bindAttributeLocation("vertexColor", 1);
+
+    // Set the uniforms in the order they are inside the vector. Alternative to manual uniform
+    int position_idx = 0;
+    for ( const auto& uniform_str : uniforms ) {
+        shader.bindAttributeLocation(uniform_str, position_idx);
+        ++position_idx;
+    }
+
+    shader.release();
 
     return success;
 }

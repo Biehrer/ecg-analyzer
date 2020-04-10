@@ -29,6 +29,8 @@
 #include <qopenglextrafunctions.h>
 #include <qopenglbuffer.h>
 #include <qopenglshaderprogram.h>
+#include <qopengl.h>
+
 #include <qopengltexture.h>
 #include <qopenglvertexarrayobject.h>
 #include <qdatetime.h>
@@ -42,10 +44,9 @@ class QOpenGLPlotWidget : public QOpenGLWidget
 	Q_OBJECT
 public:
     QOpenGLPlotWidget(QWidget* parent = 0);
+
     ~QOpenGLPlotWidget();
 
-    bool InitializeShaderProgramms();
-	
     void OnDataUpdateThreadFunction();
 	
 protected:
@@ -71,6 +72,10 @@ private:
 
     void CreateLightSource();
 
+    bool InitializeShaderProgramms();
+
+    bool CreateShader(QOpenGLShaderProgram& shader, QString vertex_path, QString fragment_path, std::vector<QString>& uniforms);
+
     // Private attributes
 private:
     //! Projection matrix
@@ -88,8 +93,11 @@ private:
     //! OpenGL shader
     QOpenGLShaderProgram _prog;
 
-    //! OpenGl light shader
+    //! OpenGl light shader ( objects which are illuminated with light )
     QOpenGLShaderProgram _light_shader;
+
+    //! OpenGL shader for light sources
+    QOpenGLShaderProgram _light_source_shader;
 
     //! All plots contained in the current instance of this widget
     std::vector<OGLChart_C*> _plots;
