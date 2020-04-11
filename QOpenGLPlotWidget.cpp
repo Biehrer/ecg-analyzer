@@ -144,6 +144,12 @@ void QOpenGLPlotWidget::initializeGL()
     InitializePlots(2);
 
     CreateLightSource();
+
+    _text_box.Initialize();
+    //_text_box.SetText("Hello World", 540.0f, 570.0f, 0.5f); // slow variant, works with RenderTextCustom()
+
+    //_text_box.SetTextCustom("Hello", 540.0f, 570.0f, 1.0f); // fast variant, works with RenderTextFastest()
+
 }
 
 void QOpenGLPlotWidget::resizeGL(int width, int height)
@@ -199,6 +205,22 @@ void QOpenGLPlotWidget::paintGL()
     //_light_shader.setUniformValue("u_light_color", QVector3D(1.0f, 0.0f, 1.0f));
     //_light_source.Draw();
     _light_shader.release();
+
+
+    //QVector3D color(0.3f, 0.7f, 0.9f);
+    QVector3D color(1.0f, 1.0f, 1.0f);
+
+    _text_box.RenderText(_text_shader, "Hello World!", 540.0f, 570.0f, 0.5f, color, *_MVP);
+    _text_box.RenderText(_text_shader, "Hello World!", 54.0f, 57.0f, 0.5f, color, *_MVP);
+
+    // Requires that the text is be set before with SetText(..).
+    // this is not really faster because each character must be pushed in the buffer before the gldraw call can be issued
+    //_text_box.RenderTextCustom(_text_shader, color, *_MVP);
+
+    // Renders directly from the buffer and calls glDraw for each preprocessed character quad. Binds the texture before the draw
+    // Requiers that the text is set before with SetTextCustom(..);
+    //_text_box.RenderTextFastest(_text_shader, color, *_MVP);
+
 }
 
 void QOpenGLPlotWidget::InitializeGLParameters()
@@ -286,7 +308,18 @@ bool QOpenGLPlotWidget::InitializeShaderProgramms()
 
     result = CreateShader(_light_shader,
         QString(path_of_shader_dir + "vertex.vsh"),
-        QString(path_of_shader_dir + "fragment_light.fsh"), light_shader_uniforms);
+        QString(path_of_shader_dir + "fragment_light.fsh"),
+        light_shader_uniforms);
+
+    // Text shader
+    std::vector<QString> text_shader_uniforms;
+    // Must be pushed in the right order ! 
+    text_shader_uniforms.push_back("vertex");
+
+    result = CreateShader(_text_shader,
+        QString(path_of_shader_dir + "vertex_text.vsh"),
+        QString(path_of_shader_dir + "fragment_text.fsh"), 
+        text_shader_uniforms);
 
     return result;
 }
@@ -329,7 +362,7 @@ bool QOpenGLPlotWidget::CreateShader(QOpenGLShaderProgram& shader,
     //shader.bindAttributeLocation("position", 0);
     //shader.bindAttributeLocation("vertexColor", 1);
 
-    // Set the uniforms in the order they are inside the vector. Alternative to manual uniform
+    // Set the uniforms in the order they are positioned inside the vector
     int position_idx = 0;
     for ( const auto& uniform_str : uniforms ) {
         shader.bindAttributeLocation(uniform_str, position_idx);

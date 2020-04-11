@@ -99,6 +99,8 @@ private:
     //! OpenGL shader for light sources
     QOpenGLShaderProgram _light_source_shader;
 
+    QOpenGLShaderProgram _text_shader;
+
     //! All plots contained in the current instance of this widget
     std::vector<OGLChart_C*> _plots;
 
@@ -127,6 +129,8 @@ private:
 
     //! Variable used as pseudo-timestamp
     int _pointcount;
+
+    TextBox _text_box;
 
 public slots:
 	void OnDataUpdate();
