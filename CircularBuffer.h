@@ -3,8 +3,6 @@
 // Project includes
 //#include <ChartTypes.h>
 
-// Qt includes
-
 // STL includes
 #include <vector>
 #include <iostream>
@@ -17,13 +15,31 @@ template<typename ElementType_TP>
 class Position3D_TC {
 
 public:
+    Position3D_TC() 
+        : 
+        _x(0),
+        _y(0),
+        _z(0)
+    {
+    }
+
     Position3D_TC(ElementType_TP x, ElementType_TP y, ElementType_TP z)
-        : _x(x),
+        : 
+        _x(x),
         _y(y),
         _z(z)
     {
     }
 
+    Position3D_TC(Position3D_TC<ElementType_TP>& position)
+        : 
+        _x(position._x),
+        _y(position._y),
+        _z(position._z)
+    {
+    }
+
+public:
     //! x value
     ElementType_TP _x;
 
@@ -33,12 +49,24 @@ public:
     //! z value
     ElementType_TP _z;
 
+public:
+    Position3D_TC<ElementType_TP>& operator=(const Position3D_TC<ElementType_TP>& lhs) {
+        // self-assignment guard
+        //if ( this == &lhs ){
+        //    return *this;
+        //}
+        _x = lhs._x;
+        _y = lhs._y;
+        _z = lhs._z;
+        return *this;
+    }
+
+
     friend std::ostream& operator<<(std::ostream& s, const Position3D_TC& lhs) {
         s << "Element: " << "x: " << lhs._x
             << ", y: " << lhs._y
             << ", z: " << lhs._z
             << std::endl;
-
         return s;
     }
 
@@ -149,61 +177,81 @@ class RingBuffer_TC
     // Construction / Destruction / Copying..
 public:
     RingBuffer_TC(int size)
-        : _size(size)
+        : _size(size),
+         _data_series_buffer(size)
     {
-        _data_series_buffer = new ElementType_TP[_size];
+        //_data_series_buffer.reserve(size);
+        _data_series_buffer.resize(size);
     }
 
-    ~RingBuffer_TC()
-    {
-        delete _data_series_buffer;
+    ~RingBuffer_TC() {
+        //delete _data_series_buffer;
     }
 
     // Public access functions
 public:
 
-    void InsertAtHead(ElementType_TP x, ElementType_TP y, ElementType_TP z)
+    void InsertAtTail(ElementType_TP x, ElementType_TP y, ElementType_TP z)
     {
-        assert(_head_idx <= _size && _head_idx >= 0);
-        std::unique_lock<std::mutex> lck(_lock);
-
-        if ( _head_idx <= _size - 3 ) {
-            _data_series_buffer[_head_idx] = x;
-            _data_series_buffer[_head_idx + 1] = y;
-            _data_series_buffer[_head_idx + 2] = z;
-            _head_idx += 3;
+        //assert(_head_idx <= _size && _head_idx >= 0);
+        if ( ! IsBufferFull() ) {
+            _tail_idx = (_tail_idx + 1) % _size;
+            //Position3D_TC<ElementType_TP> element(x, y, z);
+            std::unique_lock<std::mutex> lck(_lock);
+            //_data_series_buffer[_tail_idx] = element;
+            _data_series_buffer[_tail_idx] = Position3D_TC<ElementType_TP>(x, y, z);
+            //_data_series_buffer->at(_tail_idx) = Position3D_TC<ElementType_TP>(x, y, z);
         }
         else {
-            //std::cout << "---BUFFER FULL---" << std::endl;
+            std::cout << "---BUFFER FULL--- cant insert " << std::endl;
+            // Alternative: start overwriting old values if inserting new items results in an overflow
         }
+    }
+
+    Position3D_TC<ElementType_TP> Pop() {
+        Position3D_TC<ElementType_TP> item;
+        if ( !IsBufferEmpty() ) {
+            item = _data_series_buffer[_head_idx];
+            _head_idx = (_head_idx + 1 ) % _size;
+        }
+        else {
+            std::cout << "buffer empty, nothing to pop" << std::endl;
+        }
+        return item;
+    }
+
+    std::vector<Position3D_TC<ElementType_TP>> PopLatest() {
+
+        std::vector<Position3D_TC<ElementType_TP>> latest_data;
+
+        if ( !IsBufferEmpty() ) {
+            std::unique_lock<std::mutex> lck(_lock);
+            while ( _head_idx % _size < _tail_idx % _size) {
+                latest_data.emplace_back(_data_series_buffer[_head_idx]);
+                _head_idx = (_head_idx + 1) % _size;
+            }
+        } else {
+            std::cout << "noting to pop, buffer is empty" << std::endl;
+        }
+
+        return latest_data;
     }
 
     //! Read latest data from the buffer.
     //! Returns a vector with zero elements if there is no new data to read (Check this with NewDataToRead())
-    std::vector<Position3D_TC<ElementType_TP>> ReadLatest() {
-
-        std::vector<Position3D_TC<ElementType_TP>> latest_data;
-        if ( NewDataToRead() ) {
-            std::unique_lock<std::mutex> lck(_lock);
-
-            // Because we reset the head index each time, we know
-            int last_read_idx = 0;
-            while ( _head_idx > last_read_idx ) {
-
-                latest_data.emplace_back(_data_series_buffer[last_read_idx],
-                    _data_series_buffer[last_read_idx + 1],
-                    _data_series_buffer[last_read_idx + 2]);
-                last_read_idx += 3;
-            }
-            // Reset head to zero because we always read everything and start writing at zero again..
-            _head_idx = 0;
-        }
-        return latest_data;
-    }
-
     bool NewDataToRead() {
         std::unique_lock<std::mutex> lck(_lock);
-        return _head_idx > _last_read_idx;
+        return _head_idx < _last_read_idx;
+    }
+
+    bool IsBufferFull() {
+        std::unique_lock<std::mutex> lck(_lock);
+        return _head_idx == (_tail_idx + 1) % _size;
+    }
+
+   bool IsBufferEmpty() {
+       std::unique_lock<std::mutex> lck(_lock);
+       return _head_idx == _tail_idx;
     }
 
     // Private attributes
@@ -212,7 +260,7 @@ private:
     int _size;
 
     //! The input buffer - use std vector to use memory locality (cache friendly)
-    ElementType_TP* _data_series_buffer;
+    std::vector<Position3D_TC<ElementType_TP>> _data_series_buffer;
 
     //! Current write position inside the buffer
     //! Is incremented each time new data was added via AddData(...)
