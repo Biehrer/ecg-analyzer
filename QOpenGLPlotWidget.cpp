@@ -148,7 +148,7 @@ void QOpenGLPlotWidget::initializeGL()
     _text_box.Initialize(Font2D_TP::ARIAL);
     //_text_box.SetText("Hello World from second fastest", 540.0f, 570.0f, 0.5f); // slow variant, works with RenderTextCustom()
 
-    _text_box.SetTextCustom("Hello", 540.0f, 570.0f, 0.5f); // fast variant, works with RenderTextFastest()
+    _text_box.SetText("Hello", 540.0f, 570.0f, 0.5f); // fast variant, works with RenderTextFastest()
 
 }
 
@@ -209,7 +209,7 @@ void QOpenGLPlotWidget::paintGL()
 
     QVector3D color(1.0f, 1.0f, 1.0f);
 
-    _text_box.RenderTextFastest(_text_shader, color, *_MVP);
+    _text_box.RenderText(_text_shader, color, *_MVP);
 
 }
 
