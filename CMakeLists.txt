@@ -22,6 +22,8 @@ add_executable(${PROJECT_NAME} "main.cpp"
                                  "ShapeGenerator.h" 
                                  "ShapeData.h"
 								 "CircularBuffer.h"
+								 "text_renderer_2d.h",
+								 "ChartTypes.h"
                                 )
 
  # link libs

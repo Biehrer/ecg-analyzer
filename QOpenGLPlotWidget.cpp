@@ -145,10 +145,10 @@ void QOpenGLPlotWidget::initializeGL()
 
     CreateLightSource();
 
-    _text_box.Initialize();
-    //_text_box.SetText("Hello World", 540.0f, 570.0f, 0.5f); // slow variant, works with RenderTextCustom()
+    _text_box.Initialize(Font2D_TP::ARIAL);
+    //_text_box.SetText("Hello World from second fastest", 540.0f, 570.0f, 0.5f); // slow variant, works with RenderTextCustom()
 
-    //_text_box.SetTextCustom("Hello", 540.0f, 570.0f, 1.0f); // fast variant, works with RenderTextFastest()
+    _text_box.SetTextCustom("Hello", 540.0f, 570.0f, 0.5f); // fast variant, works with RenderTextFastest()
 
 }
 
@@ -156,8 +156,8 @@ void QOpenGLPlotWidget::resizeGL(int width, int height)
 {
     _projection_mat->setToIdentity();
     _view_mat->setToIdentity();
-    // This window is never resized. only JonesPlot.h is resized.
-    // If this event should be triggered, it needs to be passed to this widget.
+    // This window is never resized. only JonesPlot.h is resized (the window this widget is placed in).
+    // If this event should be triggered, it needs to be passed to this widget from JonesPlot
     _projection_mat->ortho(QRect(0, 0, this->width(),this->height()));
 
     //_projection_mat->ortho(QRect(-(this->width() / 2), -(this->height()/2), this->width(), this->height() ));
@@ -207,19 +207,9 @@ void QOpenGLPlotWidget::paintGL()
     _light_shader.release();
 
 
-    //QVector3D color(0.3f, 0.7f, 0.9f);
     QVector3D color(1.0f, 1.0f, 1.0f);
 
-    _text_box.RenderText(_text_shader, "Hello World!", 540.0f, 570.0f, 0.5f, color, *_MVP);
-    _text_box.RenderText(_text_shader, "Hello World!", 54.0f, 57.0f, 0.5f, color, *_MVP);
-
-    // Requires that the text is be set before with SetText(..).
-    // this is not really faster because each character must be pushed in the buffer before the gldraw call can be issued
-    //_text_box.RenderTextCustom(_text_shader, color, *_MVP);
-
-    // Renders directly from the buffer and calls glDraw for each preprocessed character quad. Binds the texture before the draw
-    // Requiers that the text is set before with SetTextCustom(..);
-    //_text_box.RenderTextFastest(_text_shader, color, *_MVP);
+    _text_box.RenderTextFastest(_text_shader, color, *_MVP);
 
 }
 

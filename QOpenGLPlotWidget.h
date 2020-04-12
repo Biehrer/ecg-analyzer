@@ -3,6 +3,7 @@
 // Project includes
 #include "OGLChart.h"
 #include "ShapeData.h"
+#include <text_renderer_2d.h>
 #include <ShapeGenerator.h>
 
 // STL includes
