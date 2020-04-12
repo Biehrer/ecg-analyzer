@@ -112,6 +112,8 @@ public:
     //! Binds and writes the data from the circular buffer to the vbo
     void UpdateVbo();
 
+    void UpdateVBONew();
+
     //! Returns the screen coordinates of a given plot y-value
     float GetScreenCoordsFromYChartValue(float y_value);
 
@@ -240,6 +242,8 @@ private:
 
     //! Input buffer used to store user data
     CircularBuffer_TC<float> _input_buffer;
+
+    RingBuffer_TC<float> _input_buffer_new;
 
     //! The y component of the last value plotted
     float _last_plotted_y_value_S = 0;

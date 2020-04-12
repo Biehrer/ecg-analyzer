@@ -33,6 +33,7 @@ OGLChart_C::OGLChart_C(int max_num_of_points_in_buffer,
      _surface_grid_vbo(QOpenGLBuffer::VertexBuffer),
      _lead_line_vbo(QOpenGLBuffer::VertexBuffer),
      _input_buffer(max_num_of_points_in_buffer),
+     _input_buffer_new(max_num_of_points_in_buffer),
      _parent_widget(parent)
 {
 
@@ -133,7 +134,8 @@ void OGLChart_C::AddDataToSeries(float y, float x_ms)
     float x_val_scaled_S = static_cast<float>(_screen_pos_x_S) + 
         ( (x_val_wrap_corrected_ms - _min_x_axis_val_ms) / (_max_x_axis_val_ms - _min_x_axis_val_ms) ) * _width_S;
 
-    _input_buffer.InsertAtHead(x_val_scaled_S, y_val_scaled_S, 1.0f);
+    //_input_buffer.InsertAtHead(x_val_scaled_S, y_val_scaled_S, 1.0f);
+    _input_buffer_new.InsertAtTail(x_val_scaled_S, y_val_scaled_S, 1.0f);
 }
 
 void OGLChart_C::AddData(float value, Timestamp_TP & timestamp)
@@ -229,6 +231,41 @@ void OGLChart_C::UpdateVbo()
         }
         _last_plotted_y_value_S = (latest_data.end()-1)->_y;
         _last_plotted_x_value_S = (latest_data.end()-1)->_x;
+
+
+
+        // Write data to the vbo
+        WriteToVbo(additional_point_vertices);
+    }
+}
+
+void OGLChart_C::UpdateVBONew() {
+
+    if ( _input_buffer_new.IsBufferEmpty() ) {
+        return;
+    }
+
+    // Get latest data from the input buffer
+    auto latest_data = _input_buffer_new.PopLatest();
+
+    if ( !latest_data.empty() ) {
+        // Todo: Spare this transformation to QVector by returning QVector directly from the input buffer
+        QVector<float> additional_point_vertices;
+
+        for ( const auto& element : latest_data ) {
+            //DEBUG(element);
+            additional_point_vertices.append(element._x);
+            additional_point_vertices.append(element._y);
+            additional_point_vertices.append(element._z);
+            //if ( element._y < _last_plotted_y_value_S * 0.80f || element._y > _last_plotted_y_value_S * 1.2f ) {
+            //    std::cout << "value out of range:" << "value = " << element._y
+            //        << ", last value = " << _last_plotted_y_value_S << std::endl;
+            //}
+            //_last_plotted_y_value_S = element._y;
+        }
+
+        _last_plotted_y_value_S = (latest_data.end() - 1)->_y;
+        _last_plotted_x_value_S = (latest_data.end() - 1)->_x;
 
 
 
@@ -360,7 +397,7 @@ void OGLChart_C::DrawSurfaceGrid()
     f->glDisableVertexAttribArray(0);
     _surface_grid_vbo.release();
 
-    //// Draw the axis details (units)
+//// Draw the axis details (units)
 //bool success = _text_painter->begin(&_parent_widget);
 //if ( success ) {
 //    _text_painter->beginNativePainting();
@@ -535,8 +572,8 @@ void OGLChart_C::DrawSeries()
     auto* f = QOpenGLContext::currentContext()->functions();
     // Bind buffer and send data to the gpu
     _chart_vbo.bind();
-    this->UpdateVbo();
-
+    //this->UpdateVbo();
+    this->UpdateVBONew();
     // Draw inside the current context
     f->glEnableVertexAttribArray(0);
     //f->glEnableVertexAttribArray(1);
