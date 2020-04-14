@@ -22,3 +22,5 @@ Inside the CMakeLists.txt file, adapt the environment variable of the freetype p
 
 Make sure the shaders (files inside the /Resources directory) are inside the BUILD directory you created with CMake.
 The expected path to this directory is printed to the console. Make sure the files are there.
+
+Many of these steps won't be required when CMake is completely setup for this project
