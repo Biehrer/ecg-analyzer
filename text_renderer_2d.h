@@ -16,29 +16,44 @@
 #include <ft2build.h>
 #include FT_FREETYPE_H 
 
+//! Defines the font to use when rendering text
 enum Font2D_TP {
     ARIAL,
     TNR,
     CALIBRI
 };
-
-// Draws text with the freetype library
-class TextBox {
-
+//
+//!  Description: 
+//!  A two dimensional opengl text renderer which 
+//!  renders text with the freetype library and Qt OpenGL (QOpenGLWidget)
+//! 
+//! Usage:
+//! Make sure there is an active OpenGL context (InitializeGLFunctions() was called inside the QOpenGLWidget)
+//! - Call .Initialize() to setup the object internals and set the text font. ! Attention: Requires an active OGL context !
+//! - Call .SetText() to specify the render text and position of the text inside the OGL window.
+//! - Call .RenderText() inside the rendering loop ( paintGL() ) to draw the previously specified text onscreen
+//!
+//! Requires an fragment shader which can manage textures (Sampler2D)
+//
+class OGLTextBox {
     // Construction / Destruction / Copying..
 public:
-    TextBox()
+    OGLTextBox()
     {
+        _current_text.clear();
     }
 
-    ~TextBox()
-    {
-        // DELETE THE VAO/ VBO
+    ~OGLTextBox()
+    {   
+        if( _text_set ) {
+            QOpenGLExtraFunctions* f = QOpenGLContext::currentContext()->extraFunctions();
+            f->glDeleteVertexArrays(1, &_VAO);
+            f->glDeleteBuffers(GetVBOSize(), &_VBO);
+        }
     }
-
 
 private:
-    /// Holds all state information relevant to a character as loaded using FreeType
+    //! Holds all state information relevant to a character as loaded using FreeType
     struct Character {
         GLuint TextureID;   // ID handle of the glyph texture
         QVector<GLfloat> Size;    // Size of glyph
@@ -50,11 +65,14 @@ private:
 
     // Public access functions
 public:
-
-    //! Creates the VAO and Freetype character glyphs and stores them in the member map
-    //! This function requires a active OpenGL context 
+    //! Initialize the freetype library
+    //! Creates the Freetype character glyphs and stores them in the member map
+    //! This function requires an active OpenGL context to work
+    //! 
+    //! \param font the font style to use when loading character glyphs
     void Initialize(Font2D_TP font)
     {
+        _characters.clear();
         QOpenGLFunctions* f = QOpenGLContext::currentContext()->functions();
 
         // FreeType
@@ -130,34 +148,34 @@ public:
         // Destroy FreeType once we're finished
         FT_Done_Face(face);
         FT_Done_FreeType(ft);
-
-        // Create the vertex array object
-        //SetupVAO();
     }
 
 
-
-    void SetText(const std::string& text,  GLfloat x, GLfloat y, GLfloat scale)
+    //! Set the text to render via RenderText(..)
+    //! The test must be set before it can be rendered
+    void SetText(const std::string& text, GLfloat x, GLfloat y, GLfloat scale)
     {
         _current_text.clear();
         auto* f = QOpenGLContext::currentContext()->functions();
         auto* extra_f = QOpenGLContext::currentContext()->extraFunctions();
         f->glActiveTexture(GL_TEXTURE0);
-        extra_f->glBindVertexArray(VAO);
+        extra_f->glBindVertexArray(_VAO);
 
         // Iterate through all characters
-        // Create vertices (Quads made from triangles) for the text.
-        std::string::const_iterator c;
-        for ( c = text.begin(); c != text.end(); c++ ) {
+        // Create vertices (quads made from triangles) for the text.
+        for ( std::string::const_iterator c = text.begin(); c != text.end(); c++ ) {
             Character ch = _characters[*c];
+            // Calculate character position
             GLfloat xpos = x + ch.Bearing[0] * scale;
-            // Use the character T as reference to calculate the descent (distance of the letter to some reference line at the top / bottom of the text line )
+            // Use the character T as reference to calculate the descent 
+            // (distance of the letter to some reference line at the top / bottom of the text line )
             // -> because T is always the biggest letter
             GLfloat ypos = y + (_characters['T'].Size[1] - ch.Bearing[1]) * scale;
 
+            // Calculate character width / height. 
+            // Scaling could also be done inside the shader
             GLfloat w = ch.Size[0] * scale;
             GLfloat h = ch.Size[1] * scale;
-            // Update VBO for each character
             QVector<GLfloat> vertices({
                 // Flip UV's second component to flip the texture vertically
                  xpos,     ypos + h,   0.0, 1.0 ,
@@ -167,8 +185,8 @@ public:
                  xpos,     ypos + h,   0.0, 1.0 ,
                  xpos + w, ypos,       1.0, 0.0 ,
                  xpos + w, ypos + h,   1.0, 1.0
-             });
-
+                });
+            // Remember the vertices for later use.
             ch.vertices = vertices;
             ch.character = *c;
             _current_text.push_back(ch);
@@ -177,37 +195,18 @@ public:
             // Bitshift by 6 to get value in pixels (2^6 = 64 (divide amount of 1/64th pixels by 64 to get amount of pixels))
         }
 
-        // Allocate memory for the text
+        // Allocate an vertex buffer which can store the current text
         SetupVAO();
 
-        // Store the quads + texture data for each quad inside the VBO
-        f->glActiveTexture(GL_TEXTURE0);
-        extra_f->glBindVertexArray(VAO);
-        GLint byte_idx = 0;
-        for ( const auto& ch : _current_text ) {
-            // Render glyph texture over quad
-            f->glBindTexture(GL_TEXTURE_2D, ch.TextureID);
-            //extra_f->glBindVertexArray(VAO);
-            // Update content of VBO memory
-            GLint char_glyph_size_bytes = sizeof(GLfloat) * 6 * 4;
-            // Be sure to use glBufferSubData and not glBufferData
-            f->glBindBuffer(GL_ARRAY_BUFFER, VBO);
-            f->glBufferSubData(GL_ARRAY_BUFFER,
-                byte_idx,
-                char_glyph_size_bytes,
-                ch.vertices.constData()
-            );
-            f->glBindBuffer(GL_ARRAY_BUFFER, 0);
-            byte_idx += char_glyph_size_bytes;
-        }
-        extra_f->glBindVertexArray(0);
-        f->glBindTexture(GL_TEXTURE_2D, 0);
-        assert(byte_idx ==  _current_text.size() * 4 * 6 * sizeof(GLfloat) );
+        // Send the data to the graphics card
+        SubmitCurrentText();
+
+        _text_set = true;
     }
 
-    //! Renders directly from the buffer and calls glDraw for each preprocessed character quad. Binds the texture before the draw
-    //! Requiers that the text is set before with SetTextCustom(..);
-    //! Draws all character quads with their corresponding character texture
+    //! Renders directly from the buffer and calls glDraw for each preprocessed character quad.
+    //! Requires, that the text is set before with SetText(..);
+    //! Draws all character quads with their corresponding character texture, each ine one draw call.
     //! 
     //! \param shader a shader which can render text (handle textures)
     //! \param color the color the text will be rendered with
@@ -230,7 +229,7 @@ public:
         int number_of_vertices_per_char = 6; 
         for ( const auto& character : _current_text ) {
             f->glBindTexture(GL_TEXTURE_2D, character.TextureID);
-            extra_f->glBindVertexArray(VAO);
+            extra_f->glBindVertexArray(_VAO);
             f->glDrawArrays(GL_TRIANGLES, offset, number_of_vertices_per_char);
             offset += number_of_vertices_per_char; 
         }
@@ -244,17 +243,15 @@ public:
 private:
     //!  Allocate memory to store the whole text 
     //! this function needs to be called when the text changes because the vbo has to adapt its size
-    //! TODO: Batch all quads with the textures in one single VBO!!!
     void SetupVAO() {
         QOpenGLFunctions* f = QOpenGLContext::currentContext()->functions();
         QOpenGLExtraFunctions* extra_f = QOpenGLContext::currentContext()->extraFunctions();
         // Configure VAO/VBO for texture quads
-        extra_f->glGenVertexArrays(1, &VAO);
-        f->glGenBuffers(1, &VBO);
-        extra_f->glBindVertexArray(VAO);
-        GLint buffer_size = _current_text.size() * 4 * 6 * sizeof(GLfloat);
-        f->glBindBuffer(GL_ARRAY_BUFFER, VBO);
-        f->glBufferData(GL_ARRAY_BUFFER, buffer_size, nullptr, GL_DYNAMIC_DRAW);
+        extra_f->glGenVertexArrays(1, &_VAO);
+        f->glGenBuffers(1, &_VBO);
+        extra_f->glBindVertexArray(_VAO);
+        f->glBindBuffer(GL_ARRAY_BUFFER, _VBO);
+        f->glBufferData(GL_ARRAY_BUFFER, this->GetVBOSize(), nullptr, GL_DYNAMIC_DRAW);
         f->glEnableVertexAttribArray(0);
         f->glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), 0);
         f->glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -262,6 +259,43 @@ private:
     }
 
 
+    //! Writes the current text to the VBO as textured GL_QUADS
+    void SubmitCurrentText()
+    {
+        auto* f = QOpenGLContext::currentContext()->functions();
+        auto* extra_f = QOpenGLContext::currentContext()->extraFunctions();
+        // Store the quads + texture data for each quad inside the VBO
+        f->glActiveTexture(GL_TEXTURE0);
+        extra_f->glBindVertexArray(_VAO);
+
+        // Offset to write each character for itself inside the VBO in bytes
+        GLint byte_write_offset = 0;
+        // The size of one character-glyph in bytes
+        GLint char_glyph_size_bytes = sizeof(GLfloat) * 6 * 4;
+        for ( const auto& ch : _current_text ) {
+            // Render glyph texture over quad
+            f->glBindTexture(GL_TEXTURE_2D, ch.TextureID);
+            // Update content of VBO memory
+            // Be sure to use glBufferSubData and not glBufferData
+            f->glBindBuffer(GL_ARRAY_BUFFER, _VBO);
+            f->glBufferSubData(GL_ARRAY_BUFFER,
+                byte_write_offset,
+                char_glyph_size_bytes,
+                ch.vertices.constData()
+            );
+            f->glBindBuffer(GL_ARRAY_BUFFER, 0);
+            byte_write_offset += char_glyph_size_bytes;
+        }
+
+        extra_f->glBindVertexArray(0);
+        f->glBindTexture(GL_TEXTURE_2D, 0);
+        assert(byte_write_offset == this->GetVBOSize());
+    }
+
+    //! Get a filepath from an Font2D_TP enum 
+    //!
+    //!\param font the font to use for drawing
+    //!\returns üath and filename of the .tff font file
     std::string GetFontPathname(Font2D_TP font) 
     {
         std::string pathname_2_font;
@@ -285,10 +319,21 @@ private:
         return pathname_2_font;
     }
 
+    //! Returns the size of the vertex buffer object in bytes
+    //! Calculation:
+    //! Each Quad (=2 x 3 vertices) requires 
+    //! 4 floats ( 2 position coordinates and 2 texture coorindates)
+    //! One quad can be used to display one letter of text
+    //!
+    //! \returns the size of the vertex buffer object in bytes
+    GLint GetVBOSize() {
+        return _current_text.size() * 4 * 6 * sizeof(GLfloat);
+    }
+
     // Private attributes
 private:
     //! Vertex array and buffer object
-    GLuint VAO, VBO;
+    GLuint _VAO, _VBO;
 
     //! Stores 128 ascii character glyphs
     std::map<GLchar, Character> _characters;
@@ -298,5 +343,8 @@ private:
 
     //! The vertices to the characters inside _current_text
     QVector<GLfloat> _current_vertices;
+
+    //! True when the text of the object was set via SetText(..)
+    bool _text_set = false;
 };
 
