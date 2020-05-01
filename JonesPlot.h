@@ -7,7 +7,7 @@
 // Qt includes
 #include <QtWidgets/QMainWindow>
 #include <qopenglfunctions.h>
-
+#include <QString>
 
 // stl includes
 #include <thread>
@@ -20,7 +20,6 @@ public:
     JonesPlotApplication_C(QWidget *parent = Q_NULLPTR);
     ~JonesPlotApplication_C();
 
-
 protected:
     // Called when the window is resized
     virtual void resizeEvent(QResizeEvent* event);
@@ -28,4 +27,11 @@ protected:
 private:
     QOpenGLPlotWidget* plot_widget;
 	Ui::JonesPlotClass ui;
+
+
+public:
+    void SendDatatToPlots();
+
+
+
 };

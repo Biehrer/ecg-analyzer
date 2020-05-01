@@ -23,18 +23,25 @@ JonesPlotApplication_C::JonesPlotApplication_C(QWidget *parent)
 //    format.setMajorVersion(2);
 //    format.setProfile(QSurfaceFormat::NoProfile);
 //    QSurfaceFormat::setDefaultFormat(format);
-
     ui.setupUi(this);
-	
+    //ui.openGLWidget->show();
+    //ui.openGLWidget = new QOpenGLPlotWidget();
+   
     plot_widget = new QOpenGLPlotWidget(this);
-    //plot_widget->showFullScreen();
     plot_widget->show();
+   
+    connect(ui._btn_add_point, &QPushButton::clicked, this, &JonesPlotApplication_C::SendDatatToPlots);
 
-    //    if( !singlePlot->IsActive() ){
+    //    if( !plot_widget->IsActive() ){
     //        abort!
     //    }
 
     // Start thread to add data to the plots
     std::thread dataThread(&QOpenGLPlotWidget::OnDataUpdateThreadFunction, plot_widget);
     dataThread.detach();
+}
+
+void JonesPlotApplication_C::SendDatatToPlots() {
+
+    plot_widget->AddDataToAllPlots( ui._lineEdit_xVal->text().toFloat() , ui._lineEdit_yVal->text().toFloat()  );
 }
