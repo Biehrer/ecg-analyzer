@@ -96,8 +96,7 @@ public:
         :
         _max_size(size),
         _data_series_buffer(size),
-        _number_of_elements(0), 
-        _timestamps(size)
+        _number_of_elements(0)
     {
         _data_series_buffer.reserve(size);
         _data_series_buffer.resize(size);
