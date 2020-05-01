@@ -45,24 +45,31 @@ class QOpenGLPlotWidget : public QOpenGLWidget
 	Q_OBJECT
 public:
     QOpenGLPlotWidget(QWidget* parent = 0);
-
+    
     ~QOpenGLPlotWidget();
 
+    // Public access functions
+public:
     void OnDataUpdateThreadFunction();
-	
+
+    void AddDataToAllPlots(float value_x, float value_y);
+
+    // Protected functions
 protected:
     //! Initialize shader and models for drawing
-	virtual void initializeGL();
+    virtual void initializeGL();
 
     //! Called when the window is resized
-	virtual void resizeGL(int width, int height);
+    virtual void resizeGL(int width, int height);
 
     //! "Render-loop" - draws the scene
-	virtual void paintGL();
-
-	virtual void mousePressEvent(QMouseEvent* evt);
-	virtual void mouseMoveEvent(QMouseEvent* evt);
-
+    virtual void paintGL();
+    
+    //!
+    virtual void mousePressEvent(QMouseEvent* evt);
+    
+    //!
+    virtual void mouseMoveEvent(QMouseEvent* evt);
 
     // Private helper functions
 private:
@@ -131,7 +138,7 @@ private:
     //! Variable used as pseudo-timestamp
     int _pointcount;
 
-    TextBox _text_box;
+    OGLTextBox _text_box;
 
 public slots:
 	void OnDataUpdate();

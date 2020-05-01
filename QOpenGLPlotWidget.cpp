@@ -70,24 +70,30 @@ QOpenGLPlotWidget::QOpenGLPlotWidget(QWidget* parent)
 
 void QOpenGLPlotWidget::OnDataUpdateThreadFunction()
 {
-    double pi = 3.1415026589;
-    double data_val_static = 5;
-
     Timestamp_TP timestamp;
-    
-    while(true){
+    double pi = 3.1415026589; 
+    double value_rad = 0;
+    double data_value = 0;
+   
+    while(true)
+    {
         timestamp.Now();
-        // duplicate for testing
-        double val_in_radians = _pointcount * (2.0 * pi) / 360.0;
-        double data_value = 5.0 * std::sin(val_in_radians);
+        value_rad = _pointcount * (2.0 * pi) / 360.0;
+        data_value = 5.0 * std::sin(value_rad);
         for ( auto& plot : _plots ) {
-            plot->AddDataToSeries(data_value, _pointcount);
-            //plot->AddData(data_value, timestamp);
+            plot->AddDataTimestamp(data_value, timestamp);
         }
         ++_pointcount;
         //DEBUG("Thread added point (# " << _pointcount << "): " << data_value);
-        std::this_thread::sleep_for(std::chrono::microseconds(10));
+        std::this_thread::sleep_for(std::chrono::microseconds(100));
 	}
+}
+
+void QOpenGLPlotWidget::AddDataToAllPlots(float value_x, float value_y) 
+{
+    for ( auto& plot : _plots ) {
+        plot->AddDataTimestamp(value_y, Timestamp_TP(value_x));
+    }
 }
 
 void QOpenGLPlotWidget::OnDataUpdate()
@@ -103,17 +109,14 @@ void QOpenGLPlotWidget::OnDataUpdate()
 	_pointcount++;	
 }
 
-
-
-void QOpenGLPlotWidget::InitializePlots(int number_of_plots)
-{
+void QOpenGLPlotWidget::InitializePlots(int number_of_plots) {
     // This value equals the displayable milliseconds
-    int max_point_count = 2000;
+    int max_point_count = 10000;
 
     int screenwidth_fraction = SREENWIDTH / 6;
     int chart_width = SREENWIDTH - screenwidth_fraction;
     int chart_height = SCREENHEIGHT / number_of_plots;
-    // Chart is aligned at the right side of the screen
+    // Chart is aligned at the left side of the screen
     int chart_pos_x = 0;
 
     std::cout << "initialize plots: " << std::endl;
@@ -122,10 +125,8 @@ void QOpenGLPlotWidget::InitializePlots(int number_of_plots)
     int chart_offset_from_origin_S = 4;
 
     for ( int chart_idx = 0; chart_idx < number_of_plots; ++chart_idx ) {
-        
         int chart_pos_y = (chart_height + chart_to_chart_offset_S) * chart_idx + chart_offset_from_origin_S; 
         _plots.push_back(new OGLChart_C(max_point_count, chart_pos_x, chart_pos_y, chart_width, chart_height, *this));
-
         std::cout << "chart pos (idx=" << chart_idx << "): " << chart_pos_y << std::endl;
     }
 
@@ -141,7 +142,7 @@ void QOpenGLPlotWidget::initializeGL()
 
     InitializeShaderProgramms();
 
-    InitializePlots(2);
+    InitializePlots(5);
 
     CreateLightSource();
 
@@ -152,16 +153,14 @@ void QOpenGLPlotWidget::initializeGL()
 
 }
 
+
+// This window is never resized. only JonesPlot.h is resized (the window this widget is placed in).
+// If this event should be triggered, it needs to be passed to this widget from JonesPlot
 void QOpenGLPlotWidget::resizeGL(int width, int height)
 {
     _projection_mat->setToIdentity();
     _view_mat->setToIdentity();
-    // This window is never resized. only JonesPlot.h is resized (the window this widget is placed in).
-    // If this event should be triggered, it needs to be passed to this widget from JonesPlot
     _projection_mat->ortho(QRect(0, 0, this->width(),this->height()));
-
-    //_projection_mat->ortho(QRect(-(this->width() / 2), -(this->height()/2), this->width(), this->height() ));
-
     QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
 	f->glViewport(0, 0, this->width(), this->height());
 	this->update();
@@ -206,11 +205,8 @@ void QOpenGLPlotWidget::paintGL()
     //_light_source.Draw();
     _light_shader.release();
 
-
-    QVector3D color(1.0f, 1.0f, 1.0f);
-
-    _text_box.RenderText(_text_shader, color, *_MVP);
-
+    QVector3D text_color(1.0f, 1.0f, 1.0f);
+    //_text_box.RenderText(_text_shader, text_color, *_MVP);
 }
 
 void QOpenGLPlotWidget::InitializeGLParameters()
@@ -351,7 +347,6 @@ bool QOpenGLPlotWidget::CreateShader(QOpenGLShaderProgram& shader,
     shader.bind();
     //shader.bindAttributeLocation("position", 0);
     //shader.bindAttributeLocation("vertexColor", 1);
-
     // Set the uniforms in the order they are positioned inside the vector
     int position_idx = 0;
     for ( const auto& uniform_str : uniforms ) {
@@ -360,7 +355,6 @@ bool QOpenGLPlotWidget::CreateShader(QOpenGLShaderProgram& shader,
     }
 
     shader.release();
-
     return success;
 }
 
