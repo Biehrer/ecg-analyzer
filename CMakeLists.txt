@@ -9,6 +9,7 @@ set(CMAKE_AUTOUIC ON)
 
 find_package(Qt5Core)
 find_package(Qt5Widgets)
+find_package(Qt5Gui)
 
 # temporary hack to include freetype
 set(ENV{FREETYPE_DIR} "C:/Development/libs/freetype-build/")
@@ -24,11 +25,12 @@ add_executable(${PROJECT_NAME} "main.cpp"
 								 "CircularBuffer.h"
 								 "text_renderer_2d.h"
 								 "ChartTypes.h"
+								 "JonesPlot.ui"
                                 )
 
  # link libs
 target_link_libraries(${PROJECT_NAME} Qt5::Widgets)
-
+target_link_libraries(${PROJECT_NAME} Qt5::Gui)
 target_link_libraries(${PROJECT_NAME} Qt5::Core)
 
 # link freetype
