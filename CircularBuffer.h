@@ -101,8 +101,6 @@ public:
     {
         _data_series_buffer.reserve(size);
         _data_series_buffer.resize(size);
-        _timestamps.reserve(size);
-        _timestamps.resize(size);
     }
 
     ~RingBuffer_TC() 
