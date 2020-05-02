@@ -96,23 +96,16 @@ void QOpenGLPlotWidget::AddDataToAllPlots(float value_x, float value_y)
     }
 }
 
-void QOpenGLPlotWidget::OnDataUpdate()
-{
-    double pi = 3.1415026589;
-    double val_in_radians = _pointcount * (2.0 * pi) / 360.0;
-    float data_value = 10.0 * std::sin(val_in_radians);
-    for ( auto& plot : _plots ) {
-        // assume that _pointcount is an incrementing value with the unit milliseconds
-        plot->AddDataToSeries(data_value, _pointcount);
-    }
-    DEBUG("Added data value (# " << _pointcount << "): " << data_value);
-	_pointcount++;	
-}
 
 void QOpenGLPlotWidget::InitializePlots(int number_of_plots) {
-    // This value equals the displayable milliseconds
-    int max_point_count = 10000;
+    
+    // Chart properties
+    int chart_buffer_size = 10000;
+    int time_range_ms = 10000;
+    float max_y_axis_value = 5.0f;
+    float min_y_axis_value = -5.0f;
 
+    // Calculate position of the charts
     int screenwidth_fraction = SREENWIDTH / 6;
     int chart_width = SREENWIDTH - screenwidth_fraction;
     int chart_height = SCREENHEIGHT / number_of_plots;
@@ -121,12 +114,12 @@ void QOpenGLPlotWidget::InitializePlots(int number_of_plots) {
 
     std::cout << "initialize plots: " << std::endl;
     int chart_to_chart_offset_S = 10;
-    // origin = _screenpos_x/y
     int chart_offset_from_origin_S = 4;
 
     for ( int chart_idx = 0; chart_idx < number_of_plots; ++chart_idx ) {
         int chart_pos_y = (chart_height + chart_to_chart_offset_S) * chart_idx + chart_offset_from_origin_S; 
-        _plots.push_back(new OGLChart_C(max_point_count, chart_pos_x, chart_pos_y, chart_width, chart_height, *this));
+        OGLChartGeometry_C geometry(chart_pos_x, chart_pos_y, chart_width, chart_height);
+        _plots.push_back( new OGLChart_C(time_range_ms, chart_buffer_size, max_y_axis_value, min_y_axis_value, geometry, *this) );
         std::cout << "chart pos (idx=" << chart_idx << "): " << chart_pos_y << std::endl;
     }
 

@@ -140,8 +140,6 @@ private:
 
     OGLTextBox _text_box;
 
-public slots:
-	void OnDataUpdate();
 };
 
 
