@@ -17,15 +17,21 @@ find_package(Freetype REQUIRED)
 message(STATUS "FREETYPE_INCLUDE_DIR_ft2build=${FREETYPE_INCLUDE_DIR_ft2build}")
 
 add_executable(${PROJECT_NAME} "main.cpp"
-                                "JonesPlot.h" "JonesPlot.cpp"
-                                "OGLChart.h" "OGLChart.cpp"
-                                "QOpenGLPlotWidget.h" "QOpenGLPlotWidget.cpp"
-                                 "ShapeGenerator.h" 
-                                 "ShapeData.h"
-								 "CircularBuffer.h"
-								 "text_renderer_2d.h"
-								 "ChartTypes.h"
-								 "JonesPlot.ui"
+                                "JonesPlot.h" 
+								"JonesPlot.cpp"
+                                "OGLChart.h" 
+								"OGLChart.cpp"
+                                "QOpenGLPlotWidget.h" 
+								"QOpenGLPlotWidget.cpp"
+                                "ShapeGenerator.h" 
+                                "ShapeData.h"
+								"CircularBuffer.h"
+								"text_renderer_2d.h"
+								"ChartTypes.h"
+								"JonesPlot.ui"
+								"ogl_chart_geometry_c.h"
+								"ogl_chart_geometry_c.cpp"
+								"chart_shapes_c.h"
                                 )
 
  # link libs
