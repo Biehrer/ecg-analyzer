@@ -2,7 +2,8 @@
 
 // Project includes
 #include <CircularBuffer.h>
-//#include <ogl_chart_geometry_c.h>
+#include <ogl_chart_geometry_c.h>
+#include <chart_shapes_c.h>
 
 // STL includes
 #include <iostream>
@@ -27,20 +28,6 @@
 #include <qpainter.h>
 #include <qopenglwidget.h>
 #include <qdatetime.h>
-
-struct XYAxisVertices_TP
-{
-public:
-    XYAxisVertices_TP(QVector<float> x_axis_vertices,
-                      QVector<float> y_axis_vertices )
-        :
-          _x_axis_vertices(x_axis_vertices),
-          _y_axis_vertices(y_axis_vertices)
-    {
-    }
-    QVector<float> _x_axis_vertices;
-    QVector<float> _y_axis_vertices;
-};
 
 //! Defines which clock to use to record timestamps
 using ClockType = std::chrono::system_clock;
@@ -137,6 +124,11 @@ public:
     Timestamp_TP _timestamp;
 };
 
+// Compare function to compare a timestamp_TP with a ChartPoint_TP (comparison is done with the underlying timestamp)
+inline bool CmpTimestamps(const ChartPoint_TP<Position3D_TC<float>>& rhs, const Timestamp_TP& timestamp)
+{
+    return rhs._timestamp.GetMilliseconds() < timestamp.GetMilliseconds();
+}
 
 //! Description
 //! Specialization of a OpenGl point-plot  (GL_POINTS) optimized for visualization of real time data
@@ -163,23 +155,28 @@ class OGLChart_C
 
     // Constructor / Destructor / Copying..
 public:
-    OGLChart_C(int buffer_size,
-             int screen_pos_x_S,
-             int screen_pos_y_S,
-             int width_S,
-             int height_S,
-             const QOpenGLWidget& parent);
+    OGLChart_C(int time_range_ms, 
+               int buffer_size,
+               int screen_pos_x_S,
+               int screen_pos_y_S,
+               int width_S,
+               int height_S,
+               const QOpenGLWidget& parent);
+
+    OGLChart_C(int time_range_ms,
+               int buffer_size,
+               float max_y_Value, 
+               float min_y_value,
+               const OGLChartGeometry_C& geometry,
+               const QOpenGLWidget& parent);
 
     ~OGLChart_C();
 
 // Public access functions
 public:
-    //! Appends a new data value to the chart which consistss of a x-value(ms) and y-value(no unit) component.
-    //! If the buffer of the chart is full, old data is overwritten, starting at the beginning of the buffer.
-    //! This function maps data to a plot point which means data is mapped to a specific position in the plot itself (not the window the plot is placed in)
-    //!
-    void AddDataToSeries(float y, float x_ms);
-
+    
+    //! TODO: ..
+    void Initialize(float max_y_val, float min_y_val);
 
     //! Writes NAN-data inside the vertex buffer to remove data
     //! older than the timerange, for the viewer.
@@ -196,6 +193,10 @@ public:
     //!     If nothing was found the function returns -1.
     int FindIdxToTimestampInsideData(const Timestamp_TP & timestamp, const std::vector<ChartPoint_TP<Position3D_TC<float>>>& data);
 
+    //! Appends a new data value to the chart which consistss of a x-value(ms) and y-value(no unit) component.
+    //! If the buffer of the chart is full, old data is overwritten, starting at the beginning of the buffer.
+    //! This function maps data to a plot point which means data is mapped to a specific position in the plot itself (not the window the plot is placed in)
+    //!
     // Todo template the chart class for different datatypes
     void AddDataTimestamp(float value, Timestamp_TP& timestamp);
 
@@ -246,21 +247,17 @@ private:
     void UpdateLeadLinePosition(float x_value_new);
 
 
-    //! Creates vertices used to draw the x and y axis
-    //!
-    //! \param size_S the size of the x and y axis.
-    //!               In case of x axis this means the 'height'.
-    //!               In case of the y axis this means the 'width'.
-    //! \returns a struct containing the vertices for the x- and y-axis
-    const XYAxisVertices_TP CreateAxesVertices(float size_S);
-
     //! Creates and allocates an empty OpenGL vertex buffer object used to store data for visualization
     void AllocateSeriesVbo();
 
     //! Write data to the vbo for visualization of data points
     //!
     //! \param data the data to write to the vbo
-    void WriteToVbo(/*const*/ QVector<float>& data);
+    void WriteToVbo(const QVector<float>& data);
+
+    //! Increments the _point_count variable, which is used
+    //! to tell opengl how many lines should be drawn from the vertex buffer
+    void IncrementPointCount(size_t increment = 1);
 
     //! Replaces data out of timerange inside the vertex buffer object with NAN-values to not visualize them.
     void RemoveOutdatedDataInsideVBO();
@@ -298,30 +295,16 @@ private:
     //! This should be equal to six, when the lead line is a line and no point or other shape.
     int _number_of_bytes_lead_line;
 
-    //! x-position of the left top corner of the chart (the chart origin)
-    //! inside the ogl context in screen coordinates
-    int _screen_pos_x_S;
-
-    //! y-position of the left top corner of the chart (the chart origin)
-    //! inside the ogl context in screen coordinates
-    int _screen_pos_y_S;
-
-    //! z-position of the ...
-    float _screen_pos_z_S = 1.0f;
-    
-    //! width of the chart in screen coordinates
-    int _width_S;
-
-    //! height of the chart in screen coordinates
-    int _height_S;
-
     //! write position for the vbo
     int64_t _vbo_current_series_idx;
 
     //! remove position for the vbo
     int64_t _remove_series_idx = 0;
 
-    //! size of the vbo
+    //! size of the input buffer (positions)
+    int64_t _buffer_size;
+
+    //! size of the vbo (bytes)
     int64_t _vbo_buffer_size;
 
     int _point_count = 0;
@@ -331,12 +314,6 @@ private:
 
     //! The minimum value of the y axis 
     int _min_y_axis_value;
-
-    //! The maximum value of the x axis 
-    int _max_x_axis_val_ms;
-
-    //! The minimum value of the x axis 
-    int _min_x_axis_val_ms;
 
     //! Timerange of the x axis in milliseconds 
     //! (_max_x_axis_val_ms - _min_x_axis_val_ms)
@@ -357,12 +334,12 @@ private:
     //! The x component of the last value plotted
     float _last_plotted_x_value_S = 0;
 
-    double _last_timestamp = 0.0;
     //! The parent widget with the opengl context
     const QOpenGLWidget& _parent_widget;
 
-    // TODO: finish and refactor bounding geometry
-    //OGLChartGeometry_C _geometry;
+    //! The bounding box geometry of the chart.
+    //! Stores where to place to chart inside the opengl viewport
+    OGLChartGeometry_C _geometry;
 
 // Sweep chart parameters
     //! counts how often the point series reached the left side of the screen and was wrapped to the left side again
