@@ -119,7 +119,7 @@ void QOpenGLPlotWidget::InitializePlots(int number_of_plots) {
     for ( int chart_idx = 0; chart_idx < number_of_plots; ++chart_idx ) {
         int chart_pos_y = (chart_height + chart_to_chart_offset_S) * chart_idx + chart_offset_from_origin_S; 
         OGLChartGeometry_C geometry(chart_pos_x, chart_pos_y, chart_width, chart_height);
-        _plots.push_back( new OGLChart_C(time_range_ms, chart_buffer_size, max_y_axis_value, min_y_axis_value, geometry, *this) );
+        _plots.push_back( new OGLSweepChart_C(time_range_ms, chart_buffer_size, max_y_axis_value, min_y_axis_value, geometry, *this) );
         std::cout << "chart pos (idx=" << chart_idx << "): " << chart_pos_y << std::endl;
     }
 
@@ -129,13 +129,19 @@ void QOpenGLPlotWidget::InitializePlots(int number_of_plots) {
     QVector3D surface_grid_color(1.0f, 1.0f, 1.0f);
     QVector3D bounding_box_color(1.0f, 1.0f, 1.0f);
 
-    // Setup colors
     for ( auto& plot : _plots ) {
+        // Setup colors
         plot->SetSeriesColor(series_color);
         plot->SetAxesColor(axes_color);
         plot->SetBoundingBoxColor(bounding_box_color);
         plot->SetLeadLineColor(lead_line_color);
         plot->SetSurfaceGridColor(surface_grid_color);
+        // Set up axes
+        plot->SetMajorTickValueXAxes(1000.0);
+        plot->SetMajorTickValueYAxes(5.0);
+
+        // Initialize
+        plot->Initialize();
     }
 
     _paint_update_timer->start();

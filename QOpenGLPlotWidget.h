@@ -113,7 +113,7 @@ private:
     QOpenGLShaderProgram _text_shader;
 
     //! All plots contained in the current instance of this widget
-    std::vector<OGLChart_C*> _plots;
+    std::vector<OGLSweepChart_C*> _plots;
 
     Quad _light_source;
 
