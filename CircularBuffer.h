@@ -1,7 +1,7 @@
 #pragma once
 
 // Project includes
-//#include <ChartTypes.h>
+#include <chart_types.h>
 
 // STL includes
 #include <vector>
@@ -12,79 +12,7 @@
 #include <mutex>
 #include <atomic>
 
-// forward declaration
-struct Timestamp_TP;
-
-// Interface types of the CircularBuffer
-//! Representation of a position in 3d space containing three components: x, y and z
-template<typename ElementType_TP>
-class Position3D_TC {
-
-public:
-    Position3D_TC() 
-        : 
-        _x(0),
-        _y(0),
-        _z(0)
-    {
-    }
-
-    Position3D_TC(ElementType_TP x, ElementType_TP y, ElementType_TP z)
-        : 
-        _x(x),
-        _y(y),
-        _z(z)
-    {
-    }
-
-    Position3D_TC(const Position3D_TC<ElementType_TP>& position)
-        : 
-        _x(position._x),
-        _y(position._y),
-        _z(position._z)
-    {
-    }
-
-public:
-    //! x value
-    ElementType_TP _x;
-
-    //! y value
-    ElementType_TP _y;
-
-    //! z value
-    ElementType_TP _z;
-
-    // Operator overloads
-public:
-    Position3D_TC<ElementType_TP>& operator=(const Position3D_TC<ElementType_TP>& lhs) {
-        // self-assignment guard
-        //if ( this == &lhs ){
-        //    return *this;
-        //}
-        _x = lhs._x;
-        _y = lhs._y;
-        _z = lhs._z;
-        return *this;
-    }
-
-    bool operator==(const Position3D_TC<ElementType_TP>& lhs) {
-        return (_x == lhs._x && _y == lhs._y && _z == lhs._z);
-    }
-
-    friend std::ostream& operator<<(std::ostream& s, const Position3D_TC& lhs) {
-        s << "Element: " << "x: " << lhs._x
-            << ", y: " << lhs._y
-            << ", z: " << lhs._z
-            << std::endl;
-        return s;
-    }
-
-};
-
-
-
-//! Circular buffer class used as input bufer for OGLChart_C
+//! Circular buffer class used as input bufer for OGLSweepChart_C
 //! After data is read with ReadLatestData(),
 //! new data inside InsertAtHead(..) is written at the beginning of the buffer
 template<typename T>
@@ -121,7 +49,6 @@ public:
     }
 
     // TODO: Return by reference??!
-
     //! Returns and removes the last added data from the buffer
     //!
     //! \returns removes and returns a copy of the last item
@@ -218,7 +145,7 @@ private:
 
 
 
-//! Flush buffer class used as input bufer for OGLChart_C
+//! Flush buffer class used as input bufer for OGLSweepChart_C
 //! After data is read with ReadLatestData(),
 //! new data inside InsertAtHead(..) is written at the beginning of the buffer
 //!
