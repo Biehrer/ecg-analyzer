@@ -178,21 +178,6 @@ public:
     //! TODO: ..
     void Initialize(float max_y_val, float min_y_val);
 
-    //! Writes NAN-data inside the vertex buffer to remove data
-    //! older than the timerange, for the viewer.
-    //! This function checks if the data inside the input array exceeds the time-range and
-    //! disables visualization of outdated lines (which are out of timerange) via opengl 
-    //! by replacing the data with NAN values ( only inside the vertex buffer, not the input ring-buffer )
-    //! This function uses binary search ( std::upper_limit ) for fast searching. 
-    //! Its possible to compare Timestamp_TP objects with ChartPoint_TP objects 
-    //! because of an compare-function which compares the Timestamp_TP object with the Timestamp_TP object of the ChartPoint_TP
-    //!
-    //! \param timestamp the timestamp to search
-    //! \param data the data array of ChartPoint_TP to look for.
-    //! \returns on success, the offset to the timestamp value inside the ogl chart input ring-buffer. 
-    //!     If nothing was found the function returns -1.
-    int FindIdxToTimestampInsideData(const Timestamp_TP & timestamp, const std::vector<ChartPoint_TP<Position3D_TC<float>>>& data);
-
     //! Appends a new data value to the chart which consistss of a x-value(ms) and y-value(no unit) component.
     //! If the buffer of the chart is full, old data is overwritten, starting at the beginning of the buffer.
     //! This function maps data to a plot point which means data is mapped to a specific position in the plot itself (not the window the plot is placed in)
@@ -201,7 +186,7 @@ public:
     void AddDataTimestamp(float value, Timestamp_TP& timestamp);
 
     //! Draws the chart inside the opengl context from which this function is called
-    void Draw();
+    void Draw( QOpenGLShaderProgram& shader);
 
     // Unuused, old function
     void addRange(int, QVector<double>);
@@ -215,23 +200,33 @@ public:
     //! Returns the y-screen coordinates of a given plot x-value
     float GetScreenCoordsFromXChartValue(float x_value);
 
+    void SetAxesColor(const QVector3D& color);
+    
+    void SetSeriesColor(const QVector3D& color);
+    
+    void SetBoundingBoxColor(const QVector3D& color);
+    
+    void SetSurfaceGridColor(const QVector3D& color);
+    
+    void SetLeadLineColor(const QVector3D& color);
+
 // Private helper functions
 private:
     //! Draws the x- and y-axis inside the opengl context
     //! from which the function is called
-    void DrawXYAxes();
+    void DrawXYAxes( QOpenGLShaderProgram& shader);
 
     //! Draws the border bounding box of the plot area inside the opengl context
-    void DrawBoundingBox();
+    void DrawBoundingBox( QOpenGLShaderProgram& shader);
 
     //! Draws the data series to the opengl context inside the plot-area
-    void DrawSeries();
+    void DrawSeries( QOpenGLShaderProgram& shader);
     
     //! Draws the surface grid
-    void DrawSurfaceGrid();
+    void DrawSurfaceGrid( QOpenGLShaderProgram& shader);
 
     //! Draws the lead line
-    void DrawLeadLine();
+    void DrawLeadLine( QOpenGLShaderProgram& shader);
 
     //! Creates the vbo used to draw the bounding box of the chart
     void CreateBoundingBox();
@@ -242,10 +237,12 @@ private:
     //! Creates the vbo used to draw the lead line indicating the most current datapoint
     void CreateLeadLineVbo();
 
+    //! Creates and fills vertex buffer objects used for the axes of the chart
+    void SetupAxes();
+
     //! Update the current position of the lead line. 
     //! Used to assign the last visualized point as lead-line position
     void UpdateLeadLinePosition(float x_value_new);
-
 
     //! Creates and allocates an empty OpenGL vertex buffer object used to store data for visualization
     void AllocateSeriesVbo();
@@ -255,15 +252,29 @@ private:
     //! \param data the data to write to the vbo
     void WriteToVbo(const QVector<float>& data);
 
+    //! Replaces data out of timerange inside the vertex buffer object with NAN-values to not visualize them.
+    //! Writes NAN-data inside the vertex buffer to remove data
+    //! older than the timerange, for the viewer.
+    //! This function checks if the data inside the input array exceeds the time-range and
+    //! disables visualization of outdated lines (which are out of timerange) via opengl 
+    //! by replacing the data with NAN values ( only inside the vertex buffer, not the input ring-buffer )
+    //! This function uses binary search ( std::upper_limit ) for fast searching. 
+    //! Its possible to compare Timestamp_TP objects with ChartPoint_TP objects 
+    //! because of an compare-function which compares the Timestamp_TP object with the Timestamp_TP object of the ChartPoint_TP
+    void RemoveOutdatedDataInsideVBO();
+
     //! Increments the _point_count variable, which is used
     //! to tell opengl how many lines should be drawn from the vertex buffer
     void IncrementPointCount(size_t increment = 1);
 
-    //! Replaces data out of timerange inside the vertex buffer object with NAN-values to not visualize them.
-    void RemoveOutdatedDataInsideVBO();
+    //! 
+    //!
+    //! \param timestamp the timestamp to search
+    //! \param data the data array of ChartPoint_TP to look for.
+    //! \returns on success, the offset to the timestamp value inside the ogl chart input ring-buffer. 
+    //!     If nothing was found the function returns -1.
+    int FindIdxToTimestampInsideData(const Timestamp_TP & timestamp, const std::vector<ChartPoint_TP<Position3D_TC<float>>>& data);
 
-    //! Creates and fills vertex buffer objects used for the axes of the chart
-    void SetupAxes();
 
 // Private attributes
 private:
@@ -323,16 +334,22 @@ private:
     int _num_of_surface_grid_vertices;
 
     //! Input buffer used to store user data
-    InputBuffer_TC<float> _input_buffer;
-
-    //RingBuffer_TC<Position3D_TC<float>> _input_buffer_new;
-    RingBuffer_TC<ChartPoint_TP<Position3D_TC<float>>> _input_buffer_new;
+    RingBuffer_TC<ChartPoint_TP<Position3D_TC<float>>> _input_buffer;
 
     //! The y component of the last value plotted
     float _last_plotted_y_value_S = 0;
 
     //! The x component of the last value plotted
     float _last_plotted_x_value_S = 0;
+
+    // Colors for the shader
+    // Todo: struct!
+    QVector3D _lead_line_color;
+    QVector3D _series_color;
+    QVector3D _bounding_box_color;
+    QVector3D _surface_grid_color;
+    QVector3D _axes_color;
+
 
     //! The parent widget with the opengl context
     const QOpenGLWidget& _parent_widget;

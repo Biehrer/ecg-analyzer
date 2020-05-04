@@ -34,7 +34,6 @@ OGLChart_C::OGLChart_C(int time_range_ms,
     _surface_grid_vbo(QOpenGLBuffer::VertexBuffer),
     _lead_line_vbo(QOpenGLBuffer::VertexBuffer),
     _input_buffer(buffer_size),
-    _input_buffer_new(buffer_size),
     _no_line_vertices(buffer_size),
     _geometry(geometry.GetLeftBottom()._x, geometry.GetLeftBottom()._y, geometry.GetChartWidth(), geometry.GetChartHeight()),
     _time_range_ms(time_range_ms),
@@ -160,7 +159,7 @@ void OGLChart_C::AddDataTimestamp(float value, Timestamp_TP & timestamp)
                              ((x_val_wrap_corrected_ms) / (_time_range_ms)) *
                              _geometry.GetChartWidth();
 
-    _input_buffer_new.InsertAtTail(ChartPoint_TP<Position3D_TC<float>>(Position3D_TC<float>(x_val_scaled_S, y_val_scaled_S, 1.0f), x_ms));
+    _input_buffer.InsertAtTail(ChartPoint_TP<Position3D_TC<float>>(Position3D_TC<float>(x_val_scaled_S, y_val_scaled_S, 1.0f), x_ms));
     DEBUG("Scaled x value: " << x_val_scaled_S << ", to value: " << x_ms);
 }
 
@@ -185,16 +184,41 @@ float OGLChart_C::GetScreenCoordsFromXChartValue(float x_value_ms)
     return x_value_S;
 }
 
+void OGLChart_C::SetAxesColor(const QVector3D& color)
+{
+    _axes_color = color;
+}
+
+void OGLChart_C::SetSeriesColor(const QVector3D& color)
+{
+    _series_color = color;
+}
+
+void OGLChart_C::SetBoundingBoxColor(const QVector3D& color)
+{
+    _bounding_box_color = color;
+}
+
+void OGLChart_C::SetSurfaceGridColor(const QVector3D& color)
+{
+    _surface_grid_color = color;
+}
+
+void OGLChart_C::SetLeadLineColor(const QVector3D& color)
+{
+    _lead_line_color = color;
+}
+
 inline 
 void 
 OGLChart_C::OnChartUpdate() 
 {
-    if ( _input_buffer_new.IsBufferEmpty() ) {
+    if ( _input_buffer.IsBufferEmpty() ) {
         return;
     }
 
     // Get latest data from the input buffer
-    auto latest_data = _input_buffer_new.PopLatest();
+    auto latest_data = _input_buffer.PopLatest();
 
     if ( !latest_data.empty() ) {
         QVector<float> additional_point_vertices;
@@ -272,9 +296,9 @@ inline
 void 
 OGLChart_C::RemoveOutdatedDataInsideVBO() 
 {
-    size_t last_added_tstamp_ms = _input_buffer_new.GetLatestItem()._timestamp.GetSeconds();
+    size_t last_added_tstamp_ms = _input_buffer.GetLatestItem()._timestamp.GetSeconds();
     double start_time_ms = static_cast<double>(last_added_tstamp_ms) - _time_range_ms;
-    int start_time_idx = FindIdxToTimestampInsideData(Timestamp_TP(start_time_ms), _input_buffer_new.constData()) - 1;
+    int start_time_idx = FindIdxToTimestampInsideData(Timestamp_TP(start_time_ms), _input_buffer.constData()) - 1;
     
     if ( start_time_idx > -1 ) {
         int bytes_to_remove = (start_time_idx + 1 - _remove_series_idx) * 3 * sizeof(float);
@@ -295,13 +319,13 @@ OGLChart_C::RemoveOutdatedDataInsideVBO()
 }
 
 
-void OGLChart_C::Draw()
+void OGLChart_C::Draw(QOpenGLShaderProgram& shader) 
 {
-    DrawSeries();
-    DrawXYAxes();
-    DrawBoundingBox();
-    DrawLeadLine();
-    DrawSurfaceGrid();
+    DrawSeries(shader);
+    DrawXYAxes(shader);
+    DrawBoundingBox(shader);
+    DrawLeadLine(shader);
+    DrawSurfaceGrid(shader);
 }
 
 
@@ -335,9 +359,10 @@ void OGLChart_C::SetupAxes()
     _y_axis_vbo.release();
 }
 
-void OGLChart_C::DrawSurfaceGrid() 
+void OGLChart_C::DrawSurfaceGrid( QOpenGLShaderProgram& shader)
 {
     QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
+    shader.setUniformValue("u_object_color", _surface_grid_color);
     _surface_grid_vbo.bind();
     f->glEnableVertexAttribArray(0);
     f->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
@@ -415,9 +440,12 @@ void OGLChart_C::UpdateLeadLinePosition(float x_value_new)
     _lead_line_vbo.write(0, _lead_line_vertices.constData(), _number_of_bytes_lead_line);
 }
 
-void OGLChart_C::DrawLeadLine() 
+// expects that the shader is bound to the context
+void OGLChart_C::DrawLeadLine(QOpenGLShaderProgram& shader)
 {
     QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
+    shader.setUniformValue("u_object_color", _lead_line_color);
+
     _lead_line_vbo.bind();
     UpdateLeadLinePosition(_last_plotted_x_value_S);
     f->glEnableVertexAttribArray(0);
@@ -428,9 +456,10 @@ void OGLChart_C::DrawLeadLine()
 }
 
 
-void OGLChart_C::DrawXYAxes()
+void OGLChart_C::DrawXYAxes(QOpenGLShaderProgram& shader)
 {
 	QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
+    shader.setUniformValue("u_object_color", _axes_color);
     _y_axis_vbo.bind();
     f->glEnableVertexAttribArray(0);
     f->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
@@ -446,9 +475,10 @@ void OGLChart_C::DrawXYAxes()
     _x_axis_vbo.release();
 }
 
-void OGLChart_C::DrawBoundingBox()
+void OGLChart_C::DrawBoundingBox(QOpenGLShaderProgram& shader)
 {
     auto* f = QOpenGLContext::currentContext()->functions();
+    shader.setUniformValue("u_object_color", _bounding_box_color);
     _bb_vbo.bind();
     f->glEnableVertexAttribArray(0);
     f->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
@@ -457,9 +487,10 @@ void OGLChart_C::DrawBoundingBox()
     _bb_vbo.release();
 }
 
-void OGLChart_C::DrawSeries() 
+void OGLChart_C::DrawSeries(QOpenGLShaderProgram& shader)
 {
     auto* f = QOpenGLContext::currentContext()->functions();
+    shader.setUniformValue("u_object_color", _series_color);
     // Bind buffer and send data to the gpu
     _chart_vbo.bind();
     OnChartUpdate();
