@@ -39,7 +39,7 @@ OGLChartGeometry_C::OGLChartGeometry_C(const OGLChartGeometry_C & geometry)
     _height_S = _left_top._y - _left_bottom._y;
     
     _z_pos = geometry._z_pos;
-
+    
     _screen_pos_x_S = _left_bottom._x;
     _screen_pos_y_S = _left_bottom._y;
 }

@@ -123,7 +123,7 @@ void QOpenGLPlotWidget::InitializePlots(int number_of_plots) {
         std::cout << "chart pos (idx=" << chart_idx << "): " << chart_pos_y << std::endl;
     }
 
-    QVector3D series_color(1.0f, 1.0f, 1.0f);
+    QVector3D series_color(1.0f, 0.0f, 1.0f);
     QVector3D axes_color(1.0f, 1.0f, 1.0f);
     QVector3D lead_line_color(1.0f, 0.01f, 0.0f);
     QVector3D surface_grid_color(1.0f, 1.0f, 1.0f);
