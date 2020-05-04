@@ -111,16 +111,31 @@ void QOpenGLPlotWidget::InitializePlots(int number_of_plots) {
     int chart_height = SCREENHEIGHT / number_of_plots;
     // Chart is aligned at the left side of the screen
     int chart_pos_x = 0;
-
     std::cout << "initialize plots: " << std::endl;
     int chart_to_chart_offset_S = 10;
     int chart_offset_from_origin_S = 4;
 
+    // Create plots
     for ( int chart_idx = 0; chart_idx < number_of_plots; ++chart_idx ) {
         int chart_pos_y = (chart_height + chart_to_chart_offset_S) * chart_idx + chart_offset_from_origin_S; 
         OGLChartGeometry_C geometry(chart_pos_x, chart_pos_y, chart_width, chart_height);
         _plots.push_back( new OGLChart_C(time_range_ms, chart_buffer_size, max_y_axis_value, min_y_axis_value, geometry, *this) );
         std::cout << "chart pos (idx=" << chart_idx << "): " << chart_pos_y << std::endl;
+    }
+
+    QVector3D series_color(1.0f, 1.0f, 1.0f);
+    QVector3D axes_color(1.0f, 1.0f, 1.0f);
+    QVector3D lead_line_color(1.0f, 0.01f, 0.0f);
+    QVector3D surface_grid_color(1.0f, 1.0f, 1.0f);
+    QVector3D bounding_box_color(1.0f, 1.0f, 1.0f);
+
+    // Setup colors
+    for ( auto& plot : _plots ) {
+        plot->SetSeriesColor(series_color);
+        plot->SetAxesColor(axes_color);
+        plot->SetBoundingBoxColor(bounding_box_color);
+        plot->SetLeadLineColor(lead_line_color);
+        plot->SetSurfaceGridColor(surface_grid_color);
     }
 
     _paint_update_timer->start();
@@ -177,7 +192,8 @@ void QOpenGLPlotWidget::paintGL()
     _light_shader.setUniformValue("u_MVP", *_MVP);
     _light_shader.setUniformValue("point_scale", 2.0f);
     _light_shader.setUniformValue("u_object_color", QVector3D(1.0f, 1.0f, 1.0f));
-    _light_shader.setUniformValue("u_light_color", QVector3D(0.0f, 1.0f, 1.0f));
+    //_light_shader.setUniformValue("u_light_color", QVector3D(0.0f, 1.0f, 1.0f));
+    _light_shader.setUniformValue("u_light_color", QVector3D(1.0f, 1.0f, 1.0f));
 
     //float color_counter = 2;
     for ( const auto& plot : _plots ) {
@@ -185,7 +201,7 @@ void QOpenGLPlotWidget::paintGL()
         //float blue_val = std::cosf(color_counter * 10.0);
         //_prog.setUniformValue("u_Color", QVector3D(red_val, blue_val, 1.0f));
         //++color_counter;
-        plot->Draw();
+        plot->Draw(_light_shader);
     }
 
     //_prog.release();
@@ -264,7 +280,6 @@ bool QOpenGLPlotWidget::InitializeShaderProgramms()
      << "Standard Shader error log: " << std::endl;
 
     QString path_of_executable( QDir::currentPath() );
-
     std::cout << "expected filepath to shaders (make sure it exists): "
         << path_of_executable.toStdString() << std::endl;
 
@@ -274,33 +289,42 @@ bool QOpenGLPlotWidget::InitializeShaderProgramms()
     std::vector<QString> std_shader_uniforms;
     std_shader_uniforms.push_back("position");
     std_shader_uniforms.push_back("vertexColor");
-    bool result = CreateShader(_prog,
-        QString(path_of_shader_dir + "vertex.vsh"),
-        QString(path_of_shader_dir + "fragment.fsh"),
-        std_shader_uniforms);
+    bool success = CreateShader(_prog,
+                                QString(path_of_shader_dir + "vertex.vsh"),
+                                QString(path_of_shader_dir + "fragment.fsh"),
+                                std_shader_uniforms);
 
     // Light shader
     std::vector<QString> light_shader_uniforms;
     // Must be pushed in the right order ! 
     light_shader_uniforms.push_back("position");
     light_shader_uniforms.push_back("vertexColor");
-
-    result = CreateShader(_light_shader,
+    success = CreateShader(_light_shader,
         QString(path_of_shader_dir + "vertex.vsh"),
         QString(path_of_shader_dir + "fragment_light.fsh"),
         light_shader_uniforms);
+
+    // 2D Light shader 
+    std::vector<QString> light_2d_shader_uniforms;
+    // Must be pushed in the right order ! 
+    light_2d_shader_uniforms.push_back("position");
+    light_2d_shader_uniforms.push_back("vertexColor");
+    success = CreateShader(_light_2d_shader,
+        QString(path_of_shader_dir + "vertex_light_2d.vsh"),
+        QString(path_of_shader_dir + "fragment_light.fsh"),
+        light_2d_shader_uniforms);
 
     // Text shader
     std::vector<QString> text_shader_uniforms;
     // Must be pushed in the right order ! 
     text_shader_uniforms.push_back("vertex");
 
-    result = CreateShader(_text_shader,
+    success = CreateShader(_text_shader,
         QString(path_of_shader_dir + "vertex_text.vsh"),
         QString(path_of_shader_dir + "fragment_text.fsh"), 
         text_shader_uniforms);
 
-    return result;
+    return success;
 }
 
 bool QOpenGLPlotWidget::CreateShader(QOpenGLShaderProgram& shader, 

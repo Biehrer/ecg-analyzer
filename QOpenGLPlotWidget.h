@@ -100,6 +100,9 @@ private:
 
     //! OpenGL shader
     QOpenGLShaderProgram _prog;
+    
+    //! 2d light shader
+    QOpenGLShaderProgram _light_2d_shader;
 
     //! OpenGl light shader ( objects which are illuminated with light )
     QOpenGLShaderProgram _light_shader;
