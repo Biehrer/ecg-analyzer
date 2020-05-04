@@ -14,6 +14,8 @@ public:
                        int width_S,
                        int height_S);
 
+    OGLChartGeometry_C(const OGLChartGeometry_C& geometry);
+
     // Public access functions
 public:
     //! Returns the left top of the chart bounding box in screen coordinates

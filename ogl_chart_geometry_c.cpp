@@ -28,6 +28,22 @@ OGLChartGeometry_C::OGLChartGeometry_C(int screen_pos_x_S,
     _right_top._z = _z_pos;
 }
 
+OGLChartGeometry_C::OGLChartGeometry_C(const OGLChartGeometry_C & geometry)
+{
+    _left_bottom  = geometry._left_bottom;
+    _left_top     = geometry._left_top;
+    _right_bottom = geometry._right_bottom;
+    _right_top    = geometry._right_top;
+
+    _width_S  = _right_bottom._x - _left_bottom._x;
+    _height_S = _left_top._y - _left_bottom._y;
+    
+    _z_pos = geometry._z_pos;
+
+    _screen_pos_x_S = _left_bottom._x;
+    _screen_pos_y_S = _left_bottom._y;
+}
+
 const 
 Position3D_TC<PositionType_TP>&
 OGLChartGeometry_C::GetLeftTop() const
