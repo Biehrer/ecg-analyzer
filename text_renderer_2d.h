@@ -45,11 +45,7 @@ public:
 
     ~OGLTextBox()
     {   
-        if( _text_set ) {
-            QOpenGLExtraFunctions* f = QOpenGLContext::currentContext()->extraFunctions();
-            f->glDeleteVertexArrays(1, &_VAO);
-            f->glDeleteBuffers(GetVBOSize(), &_VBO);
-        }
+            Cleanup();
     }
 
 private:
@@ -195,6 +191,10 @@ public:
             // Bitshift by 6 to get value in pixels (2^6 = 64 (divide amount of 1/64th pixels by 64 to get amount of pixels))
         }
 
+        // If the text is changed and not initially created 
+        // => cleanup the VAO used to display the old text
+        Cleanup();
+
         // Allocate an vertex buffer which can store the current text
         SetupVAO();
 
@@ -258,6 +258,15 @@ private:
         extra_f->glBindVertexArray(0);
     }
 
+    void Cleanup() 
+    {
+        if ( _text_set ) {
+            QOpenGLExtraFunctions* f = QOpenGLContext::currentContext()->extraFunctions();
+            f->glDeleteVertexArrays(1, &_VAO);
+            f->glDeleteBuffers(GetVBOSize(), &_VBO);
+            _text_set = false;
+        }
+    }
 
     //! Writes the current text to the VBO as textured GL_QUADS
     void SubmitCurrentText()
