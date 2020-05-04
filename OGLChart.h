@@ -4,6 +4,7 @@
 #include <CircularBuffer.h>
 #include <ogl_chart_geometry_c.h>
 #include <chart_shapes_c.h>
+#include <chart_types.h>
 
 // STL includes
 #include <iostream>
@@ -29,107 +30,6 @@
 #include <qopenglwidget.h>
 #include <qdatetime.h>
 
-//! Defines which clock to use to record timestamps
-using ClockType = std::chrono::system_clock;
-
-//! Representation of a timestamp 
-struct Timestamp_TP {
-    // Construction / Destruction / Copying
-public:
-    Timestamp_TP() 
-        : _timestamp(ClockType::now())
-    {
-    }
-
-    Timestamp_TP(double current_time_sec)
-    {
-        auto converted_time = ClockType::from_time_t( time_t(current_time_sec/* * 1000.0*/) ).time_since_epoch();
-        auto duration = std::chrono::duration_cast<std::chrono::seconds>( converted_time);
-        _timestamp = std::chrono::time_point<ClockType>( duration);
-    }
-
-    Timestamp_TP(std::chrono::time_point<ClockType>& timestamp)
-        : _timestamp(timestamp)
-    {
-    }
-
-    bool operator<(const Timestamp_TP& rhs) {
-        return GetMilliseconds() < rhs.GetMilliseconds();
-    }
-
-    // Public access functions
-public:
-    //! Records a timestamp
-    //! Stores the current time as timestamp
-    void Now(){ _timestamp = ClockType::now(); }
-
-    //! Get the timestamp in milliseconds
-    size_t GetMilliseconds() const { return std::chrono::duration_cast<std::chrono::milliseconds>(_timestamp.time_since_epoch()).count(); }
-    size_t GetNanoseconds(){ return std::chrono::duration_cast<std::chrono::nanoseconds>(_timestamp.time_since_epoch()).count(); }
-    size_t GetSeconds() { return std::chrono::duration_cast<std::chrono::seconds>(_timestamp.time_since_epoch()).count(); }
-
-    //! Get the timestamp in any resolution
-    //!
-    //! Usage of the template parameter:
-    //! TimeRes = std::chrono::x , with x = milliseconds, seconds, nanoseconds,...
-    template<typename TimeRes> size_t GetTime() {
-        return std::chrono::duration_cast<TimeRes>(_timestamp.time_since_epoch()).count();
-    }
-
-    //! Returns a pointer to the internal time_point object
-    std::chrono::time_point<ClockType>* GetTimestampPtr() { return &_timestamp; }
-
-    // Private attributes
-private:
-    std::chrono::time_point<ClockType> _timestamp;
-};
-
-template<typename Datatype_TP>
-struct ChartPoint_TP 
-{
-    // Construction / Destruction / Copying
-public:
-    ChartPoint_TP(Datatype_TP& value, const Timestamp_TP& timestamp) 
-        : 
-        _value(value),
-        _timestamp(timestamp)
-    {
-    }
-
-    ChartPoint_TP(Datatype_TP& value, double timestamp)
-        :
-        _value(value),
-        _timestamp(timestamp)
-    {
-    }
-
-    ChartPoint_TP()
-    {
-    }
-
-    const bool operator<(const ChartPoint_TP& rhs) const {
-        return _timestamp.GetMilliseconds() < rhs._timestamp.GetMilliseconds();
-    }
-
-    const bool operator<(const Timestamp_TP& timestamp) {
-        return _timestamp.GetMilliseconds() < timestamp.GetMilliseconds();
-    }
-    // Public attributes
-public:
-    //! Stores the scaled values for the visualization 
-    //! and not the raw values which were used as input from the user
-    Datatype_TP _value;
-
-    //! Timestamp of this chart point
-    Timestamp_TP _timestamp;
-};
-
-// Compare function to compare a timestamp_TP with a ChartPoint_TP (comparison is done with the underlying timestamp)
-inline bool CmpTimestamps(const ChartPoint_TP<Position3D_TC<float>>& rhs, const Timestamp_TP& timestamp)
-{
-    return rhs._timestamp.GetMilliseconds() < timestamp.GetMilliseconds();
-}
-
 //! Description
 //! Specialization of a OpenGl point-plot  (GL_POINTS) optimized for visualization of real time data
 //!
@@ -150,12 +50,12 @@ inline bool CmpTimestamps(const ChartPoint_TP<Position3D_TC<float>>& rhs, const 
 //!  (0,-y) |
 //!
 //
-class OGLChart_C
+class OGLSweepChart_C
 {
 
     // Constructor / Destructor / Copying..
 public:
-    OGLChart_C(int time_range_ms, 
+    OGLSweepChart_C(int time_range_ms, 
                int buffer_size,
                int screen_pos_x_S,
                int screen_pos_y_S,
@@ -163,20 +63,20 @@ public:
                int height_S,
                const QOpenGLWidget& parent);
 
-    OGLChart_C(int time_range_ms,
+    OGLSweepChart_C(int time_range_ms,
                int buffer_size,
                float max_y_Value, 
                float min_y_value,
                const OGLChartGeometry_C& geometry,
                const QOpenGLWidget& parent);
 
-    ~OGLChart_C();
+    ~OGLSweepChart_C();
 
 // Public access functions
 public:
     
     //! TODO: ..
-    void Initialize(float max_y_val, float min_y_val);
+    void Initialize();
 
     //! Appends a new data value to the chart which consistss of a x-value(ms) and y-value(no unit) component.
     //! If the buffer of the chart is full, old data is overwritten, starting at the beginning of the buffer.
@@ -199,6 +99,10 @@ public:
 
     //! Returns the y-screen coordinates of a given plot x-value
     float GetScreenCoordsFromXChartValue(float x_value);
+
+    void SetMajorTickValueXAxes(float tick_value_unit);
+
+    void SetMajorTickValueYAxes(float tick_value_unit);
 
     void SetAxesColor(const QVector3D& color);
     

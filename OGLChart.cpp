@@ -8,7 +8,7 @@
     #define DEBUG(msg) do{} while(0)
 #endif
 
-OGLChart_C::~OGLChart_C() 
+OGLSweepChart_C::~OGLSweepChart_C() 
 {
     _chart_vbo.destroy();
     _y_axis_vbo.destroy();
@@ -17,7 +17,7 @@ OGLChart_C::~OGLChart_C()
     _surface_grid_vbo.destroy();
 }
 
-OGLChart_C::OGLChart_C(int time_range_ms,
+OGLSweepChart_C::OGLSweepChart_C(int time_range_ms,
                        int buffer_size,
                        float max_y_value,
                        float min_y_value,
@@ -35,14 +35,15 @@ OGLChart_C::OGLChart_C(int time_range_ms,
     _lead_line_vbo(QOpenGLBuffer::VertexBuffer),
     _input_buffer(buffer_size),
     _no_line_vertices(buffer_size),
-    _geometry(geometry.GetLeftBottom()._x, geometry.GetLeftBottom()._y, geometry.GetChartWidth(), geometry.GetChartHeight()),
+    _geometry(geometry),
     _time_range_ms(time_range_ms),
     _parent_widget(parent)
 {
-    Initialize(max_y_value, min_y_value);
+    _max_y_axis_value = max_y_value;
+    _min_y_axis_value = min_y_value;
 }
 
-void OGLChart_C::Initialize(float max_y_val, float min_y_val) 
+void OGLSweepChart_C::Initialize() 
 {
     DEBUG("Initialize OGLChart");
 
@@ -54,9 +55,6 @@ void OGLChart_C::Initialize(float max_y_val, float min_y_val)
     // number of visualized points in the graph
     _point_count = 0;
     
-    _min_y_axis_value = min_y_val;
-    _max_y_axis_value = max_y_val;
-    
     // Allocate a vertex buffer object to store data for visualization
     AllocateSeriesVbo();
     // Allocate a vertex buffer object to store data for the lead line
@@ -65,13 +63,14 @@ void OGLChart_C::Initialize(float max_y_val, float min_y_val)
     SetupAxes();
     // Create vbo for the bounding box of the chart
     CreateBoundingBox();
+
     // Create surface grid vbo
     CreateSurfaceGrid(200, 5);
 
     _no_line_vertices.fill(NAN, _buffer_size);
 }
 
-void OGLChart_C::AllocateSeriesVbo()
+void OGLSweepChart_C::AllocateSeriesVbo()
 {
     QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
     // Setup OGL-Chart buffer - empty
@@ -88,7 +87,7 @@ void OGLChart_C::AllocateSeriesVbo()
 
 // Todo : Refactor this function in the RingBuffer itself ! Then we can call this function on the ringbuffer -> should work!
 int
-OGLChart_C::FindIdxToTimestampInsideData(const Timestamp_TP& timestamp,
+OGLSweepChart_C::FindIdxToTimestampInsideData(const Timestamp_TP& timestamp,
     const std::vector<ChartPoint_TP<Position3D_TC<float>>>& data)
 {
     int current_idx =  _vbo_current_series_idx / 3 / sizeof(float);
@@ -121,7 +120,7 @@ OGLChart_C::FindIdxToTimestampInsideData(const Timestamp_TP& timestamp,
     //}
 }
 
-void OGLChart_C::AddDataTimestamp(float value, Timestamp_TP & timestamp)
+void OGLSweepChart_C::AddDataTimestamp(float value, Timestamp_TP & timestamp)
 {
     // Don't add the value if its not inside the range, 
    // because its not visible eitherway -> better solution would be: Add it to the series but don't draw it!
@@ -164,7 +163,7 @@ void OGLChart_C::AddDataTimestamp(float value, Timestamp_TP & timestamp)
 }
 
 
-float OGLChart_C::GetScreenCoordsFromYChartValue(float y_value) 
+float OGLSweepChart_C::GetScreenCoordsFromYChartValue(float y_value) 
 {
    float y_value_S =  static_cast<float>(_geometry.GetLeftTop()._y) -
         ((y_value - _min_y_axis_value) / (_max_y_axis_value - _min_y_axis_value)) * _geometry.GetChartHeight();
@@ -172,7 +171,7 @@ float OGLChart_C::GetScreenCoordsFromYChartValue(float y_value)
    return y_value_S;
 }
 
-float OGLChart_C::GetScreenCoordsFromXChartValue(float x_value_ms)
+float OGLSweepChart_C::GetScreenCoordsFromXChartValue(float x_value_ms)
 {
     // calculate new x-index when the dataseries has reached the left border of the plot
     float x_val_wrap_corrected_ms = x_value_ms - static_cast<float>(_time_range_ms) * static_cast<float>(_number_of_wraps - 1);
@@ -184,34 +183,43 @@ float OGLChart_C::GetScreenCoordsFromXChartValue(float x_value_ms)
     return x_value_S;
 }
 
-void OGLChart_C::SetAxesColor(const QVector3D& color)
+void OGLSweepChart_C::SetMajorTickValueXAxes(float tick_value_unit)
+{
+
+}
+
+void OGLSweepChart_C::SetMajorTickValueYAxes(float tick_value_unit)
+{
+}
+
+void OGLSweepChart_C::SetAxesColor(const QVector3D& color)
 {
     _axes_color = color;
 }
 
-void OGLChart_C::SetSeriesColor(const QVector3D& color)
+void OGLSweepChart_C::SetSeriesColor(const QVector3D& color)
 {
     _series_color = color;
 }
 
-void OGLChart_C::SetBoundingBoxColor(const QVector3D& color)
+void OGLSweepChart_C::SetBoundingBoxColor(const QVector3D& color)
 {
     _bounding_box_color = color;
 }
 
-void OGLChart_C::SetSurfaceGridColor(const QVector3D& color)
+void OGLSweepChart_C::SetSurfaceGridColor(const QVector3D& color)
 {
     _surface_grid_color = color;
 }
 
-void OGLChart_C::SetLeadLineColor(const QVector3D& color)
+void OGLSweepChart_C::SetLeadLineColor(const QVector3D& color)
 {
     _lead_line_color = color;
 }
 
 inline 
 void 
-OGLChart_C::OnChartUpdate() 
+OGLSweepChart_C::OnChartUpdate() 
 {
     if ( _input_buffer.IsBufferEmpty() ) {
         return;
@@ -248,7 +256,7 @@ OGLChart_C::OnChartUpdate()
 }
 
 // MAke sure the buffer is bound to the current context before calling this function
-void OGLChart_C::WriteToVbo(const QVector<float>& data)
+void OGLSweepChart_C::WriteToVbo(const QVector<float>& data)
 {
     int number_of_new_data_bytes = static_cast<int>(data.size()) * static_cast<int>(sizeof(float));
  
@@ -283,7 +291,7 @@ void OGLChart_C::WriteToVbo(const QVector<float>& data)
     }
 }
 
-inline void OGLChart_C::IncrementPointCount(size_t increment) 
+inline void OGLSweepChart_C::IncrementPointCount(size_t increment) 
 {
     // Count points; stop counting points after one wrap
     // (because after a wrap the point count stays the same-> NOT ANYMORE)
@@ -294,7 +302,7 @@ inline void OGLChart_C::IncrementPointCount(size_t increment)
 
 inline 
 void 
-OGLChart_C::RemoveOutdatedDataInsideVBO() 
+OGLSweepChart_C::RemoveOutdatedDataInsideVBO() 
 {
     size_t last_added_tstamp_ms = _input_buffer.GetLatestItem()._timestamp.GetSeconds();
     double start_time_ms = static_cast<double>(last_added_tstamp_ms) - _time_range_ms;
@@ -319,7 +327,7 @@ OGLChart_C::RemoveOutdatedDataInsideVBO()
 }
 
 
-void OGLChart_C::Draw(QOpenGLShaderProgram& shader) 
+void OGLSweepChart_C::Draw(QOpenGLShaderProgram& shader) 
 {
     DrawSeries(shader);
     DrawXYAxes(shader);
@@ -330,7 +338,7 @@ void OGLChart_C::Draw(QOpenGLShaderProgram& shader)
 
 
 // Todo: x-axes should always be at the position where the chart hast the value zero at the y axis.
-void OGLChart_C::SetupAxes() 
+void OGLSweepChart_C::SetupAxes() 
 {
     const auto axes_vertices = ChartShapes_C<float>::MakesAxesVertices(_geometry, 5.0); //CreateAxesVertices(5.0);
     auto& x_axis_vertices = axes_vertices._x_axis_vertices;
@@ -359,7 +367,7 @@ void OGLChart_C::SetupAxes()
     _y_axis_vbo.release();
 }
 
-void OGLChart_C::DrawSurfaceGrid( QOpenGLShaderProgram& shader)
+void OGLSweepChart_C::DrawSurfaceGrid( QOpenGLShaderProgram& shader)
 {
     QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
     shader.setUniformValue("u_object_color", _surface_grid_color);
@@ -371,15 +379,15 @@ void OGLChart_C::DrawSurfaceGrid( QOpenGLShaderProgram& shader)
     _surface_grid_vbo.release();
 }
 
-void OGLChart_C::CreateSurfaceGrid(int x_major_tick_dist_ms, int y_major_tick_dist_unit)
+void OGLSweepChart_C::CreateSurfaceGrid(int x_major_tick_dist_ms, int y_major_tick_dist_unit)
 {
     auto surface_grid_vertices = 
         ChartShapes_C<float>::CreateSurfaceGridVertices(_geometry, 
                                                         _time_range_ms, 
                                                         _max_y_axis_value,
                                                         _min_y_axis_value, 
-                                                        1000.0,
-                                                        5.0 );
+                                                        x_major_tick_dist_ms,
+                                                        y_major_tick_dist_unit);
     _num_of_surface_grid_vertices = surface_grid_vertices.size() / 3;
 
     // Create VBO
@@ -396,7 +404,7 @@ void OGLChart_C::CreateSurfaceGrid(int x_major_tick_dist_ms, int y_major_tick_di
     _surface_grid_vbo.release();
 }
 
-void OGLChart_C::CreateLeadLineVbo() 
+void OGLSweepChart_C::CreateLeadLineVbo() 
 {
     int buffer_size = 2 * 3;
     _number_of_bytes_lead_line = buffer_size * sizeof(float);
@@ -431,7 +439,7 @@ void OGLChart_C::CreateLeadLineVbo()
     _lead_line_vertices[5] = _geometry.GetZPosition();
 }
 
-void OGLChart_C::UpdateLeadLinePosition(float x_value_new) 
+void OGLSweepChart_C::UpdateLeadLinePosition(float x_value_new) 
 {
     _lead_line_vertices[0] = x_value_new;
     _lead_line_vertices[3] = x_value_new;
@@ -441,7 +449,7 @@ void OGLChart_C::UpdateLeadLinePosition(float x_value_new)
 }
 
 // expects that the shader is bound to the context
-void OGLChart_C::DrawLeadLine(QOpenGLShaderProgram& shader)
+void OGLSweepChart_C::DrawLeadLine(QOpenGLShaderProgram& shader)
 {
     QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
     shader.setUniformValue("u_object_color", _lead_line_color);
@@ -456,7 +464,7 @@ void OGLChart_C::DrawLeadLine(QOpenGLShaderProgram& shader)
 }
 
 
-void OGLChart_C::DrawXYAxes(QOpenGLShaderProgram& shader)
+void OGLSweepChart_C::DrawXYAxes(QOpenGLShaderProgram& shader)
 {
 	QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
     shader.setUniformValue("u_object_color", _axes_color);
@@ -475,7 +483,7 @@ void OGLChart_C::DrawXYAxes(QOpenGLShaderProgram& shader)
     _x_axis_vbo.release();
 }
 
-void OGLChart_C::DrawBoundingBox(QOpenGLShaderProgram& shader)
+void OGLSweepChart_C::DrawBoundingBox(QOpenGLShaderProgram& shader)
 {
     auto* f = QOpenGLContext::currentContext()->functions();
     shader.setUniformValue("u_object_color", _bounding_box_color);
@@ -487,7 +495,7 @@ void OGLChart_C::DrawBoundingBox(QOpenGLShaderProgram& shader)
     _bb_vbo.release();
 }
 
-void OGLChart_C::DrawSeries(QOpenGLShaderProgram& shader)
+void OGLSweepChart_C::DrawSeries(QOpenGLShaderProgram& shader)
 {
     auto* f = QOpenGLContext::currentContext()->functions();
     shader.setUniformValue("u_object_color", _series_color);
@@ -505,7 +513,7 @@ void OGLChart_C::DrawSeries(QOpenGLShaderProgram& shader)
     _chart_vbo.release();
 }
 
-void OGLChart_C::CreateBoundingBox()
+void OGLSweepChart_C::CreateBoundingBox()
 {
     auto bb_vertices = ChartShapes_C<float>::MakeBoundingBoxVertices(_geometry);
     // Setup vbo
@@ -521,7 +529,7 @@ void OGLChart_C::CreateBoundingBox()
     _bb_vbo.release();
 }
 
-void OGLChart_C::addRange(int count, QVector<double> data)
+void OGLSweepChart_C::addRange(int count, QVector<double> data)
 {
     //void* pointerToData = chartVBO.mapRange(_bufferIndex, count, QOpenGLBuffer::RangeAccessFlag::RangeWrite);
     //chartVBO.write(_bufferIndex, data.constData(), count);
