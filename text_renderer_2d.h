@@ -29,7 +29,7 @@ enum Font2D_TP {
 //! 
 //! Usage:
 //! Make sure there is an active OpenGL context (InitializeGLFunctions() was called inside the QOpenGLWidget)
-//! - Call .Initialize() to setup the object internals and set the text font. ! Attention: Requires an active OGL context !
+//! - Call .Initialize() to setup the object internals and set the text font. ! Attention: This requires an active opengl context 
 //! - Call .SetText() to specify the render text and position of the text inside the OGL window.
 //! - Call .RenderText() inside the rendering loop ( paintGL() ) to draw the previously specified text onscreen
 //!
@@ -199,7 +199,7 @@ public:
         SetupVAO();
 
         // Send the data to the graphics card
-        SubmitCurrentText();
+        WriteTextToVBO();
 
         _text_set = true;
     }
@@ -269,7 +269,7 @@ private:
     }
 
     //! Writes the current text to the VBO as textured GL_QUADS
-    void SubmitCurrentText()
+    void WriteTextToVBO()
     {
         auto* f = QOpenGLContext::currentContext()->functions();
         auto* extra_f = QOpenGLContext::currentContext()->extraFunctions();
