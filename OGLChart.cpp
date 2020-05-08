@@ -10,7 +10,6 @@
 
 OGLSweepChart_C::~OGLSweepChart_C() 
 {
-    _chart_vbo.destroy();
     _y_axis_vbo.destroy();
     _x_axis_vbo.destroy();
     _bb_vbo.destroy();
@@ -25,18 +24,15 @@ OGLSweepChart_C::OGLSweepChart_C(int time_range_ms,
                        const QOpenGLWidget& parent)
     :
     _buffer_size(buffer_size),
-    _vbo_buffer_size(buffer_size * 3 * sizeof(float)),    // vbo buffer size(3 times the point buffer size) each point consists of 3 floats - i could make this template but then i can only do header files.
-    _vbo_current_series_idx(0),
-    _chart_vbo(QOpenGLBuffer::VertexBuffer),
     _x_axis_vbo(QOpenGLBuffer::VertexBuffer),
     _y_axis_vbo(QOpenGLBuffer::VertexBuffer),
     _bb_vbo(QOpenGLBuffer::VertexBuffer),
     _surface_grid_vbo(QOpenGLBuffer::VertexBuffer),
     _lead_line_vbo(QOpenGLBuffer::VertexBuffer),
-    _input_buffer(buffer_size),
-    _no_line_vertices(buffer_size),
     _geometry(geometry),
     _time_range_ms(time_range_ms),
+    _input_buffer(buffer_size),
+    _ogl_data_series(buffer_size, time_range_ms, _input_buffer),
     _parent_widget(parent)
 {
     _max_y_axis_value = max_y_value;
@@ -47,78 +43,26 @@ void OGLSweepChart_C::Initialize()
 {
     DEBUG("Initialize OGLChart");
 
-    // Sweep-chart parameters
-    _number_of_wraps = 1;
-    _need_to_wrap_series = false;
-    _dataseries_wrapped_once = false;
-
     // number of visualized points in the graph
     _point_count = 0;
     
     // Allocate a vertex buffer object to store data for visualization
-    AllocateSeriesVbo();
+    //AllocateSeriesVbo();
+    _ogl_data_series.AllocateSeriesVbo();
+    
     // Allocate a vertex buffer object to store data for the lead line
     CreateLeadLineVbo();
+    
     // Create vbo for the x and y axis
     SetupAxes();
+    
     // Create vbo for the bounding box of the chart
     CreateBoundingBox();
 
     // Create surface grid vbo
-    CreateSurfaceGrid(200, 5);
-
-    _no_line_vertices.fill(NAN, _buffer_size);
+    CreateSurfaceGrid(_major_tick_x_axes, _major_tick_y_axes);
 }
 
-void OGLSweepChart_C::AllocateSeriesVbo()
-{
-    QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
-    // Setup OGL-Chart buffer - empty
-    _chart_vbo.create();
-    _chart_vbo.bind();
-    f->glEnableVertexAttribArray(0);
-    // 3 coordinates make one point  (x, y, z)
-    f->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
-    _chart_vbo.allocate(nullptr, _vbo_buffer_size);
-    _chart_vbo.setUsagePattern(QOpenGLBuffer::DynamicDraw);
-    f->glDisableVertexAttribArray(0);
-    _chart_vbo.release();
-}
-
-// Todo : Refactor this function in the RingBuffer itself ! Then we can call this function on the ringbuffer -> should work!
-int
-OGLSweepChart_C::FindIdxToTimestampInsideData(const Timestamp_TP& timestamp,
-    const std::vector<ChartPoint_TP<Position3D_TC<float>>>& data)
-{
-    int current_idx =  _vbo_current_series_idx / 3 / sizeof(float);
-    //if( current_idx > _remove_series_idx ){
-        // case 1
-        auto it = std::lower_bound(data.begin(), data.end(), timestamp, CmpTimestamps);
-        if ( it != data.end() ) {
-            std::size_t index = std::distance(data.begin(), it);
-            return index;
-        }else {
-            //return -1;
-        }
-    //} else {
-        // if _remove_idx > head_idx the data to remove is most probably at the end of the buffer => check first the end
-        auto latest_raw_data_begin = data.begin() + _remove_series_idx;
-        auto it_interesting_data_range_until_end = std::lower_bound(latest_raw_data_begin, data.end(), timestamp, CmpTimestamps); // search inside the old data
-        if ( it_interesting_data_range_until_end != data.end() ) {
-            std::size_t index = std::distance(data.begin(), it_interesting_data_range_until_end);
-            return index;
-        }
-
-        auto current_data_ptr = data.begin() + current_idx;
-        auto it_interesting_data_range_until_current = std::lower_bound(data.begin(), current_data_ptr, timestamp, CmpTimestamps); // search inside the old data
-        if ( it_interesting_data_range_until_current != current_data_ptr ) {
-            std::size_t index = std::distance(data.begin(), it_interesting_data_range_until_current);
-            return index;
-        } else {
-            return -1;
-        }
-    //}
-}
 
 void OGLSweepChart_C::AddDataTimestamp(float value, Timestamp_TP & timestamp)
 {
@@ -128,21 +72,8 @@ void OGLSweepChart_C::AddDataTimestamp(float value, Timestamp_TP & timestamp)
         return;
     }
 
-    // wrapp value around x-axis if the 'x_ms' value is bigger than maximum value of the x-axis
-    if ( _need_to_wrap_series ) {
-        _number_of_wraps++;
-        _need_to_wrap_series = false;
-    }
-
     auto x_ms = timestamp.GetMilliseconds();
     auto x_ms_modulo = x_ms % static_cast<int>(_time_range_ms);
-
-    // check if we need to wrap the data (when data series reached the right border of the screen)
-    if ( x_ms_modulo >= static_cast<float>(_time_range_ms) * static_cast<float>(_number_of_wraps) ) {  // Change modulo to x_ms
-         // Calculate new x value at most left chart position
-        _need_to_wrap_series = true;
-        _dataseries_wrapped_once = true;
-    }
 
     // - (minus) because then the positive y axis is directing at the top of the screen
     float y_val_scaled_S = static_cast<float>(_geometry.GetLeftTop()._y) -
@@ -151,7 +82,7 @@ void OGLSweepChart_C::AddDataTimestamp(float value, Timestamp_TP & timestamp)
     DEBUG("Scaled y value: " << y_val_scaled_S << ", to value: " << value);
 
     // - so the data value runs from left to right side
-    float x_val_wrap_corrected_ms = x_ms_modulo - static_cast<float>(_time_range_ms) * static_cast<float>(_number_of_wraps - 1);     // Change modulo to x_ms
+    float x_val_wrap_corrected_ms = x_ms_modulo;
 
     // calculate x-value after wrapping
     float x_val_scaled_S = static_cast<float>(_geometry.GetLeftBottom()._x) +
@@ -174,7 +105,7 @@ float OGLSweepChart_C::GetScreenCoordsFromYChartValue(float y_value)
 float OGLSweepChart_C::GetScreenCoordsFromXChartValue(float x_value_ms)
 {
     // calculate new x-index when the dataseries has reached the left border of the plot
-    float x_val_wrap_corrected_ms = x_value_ms - static_cast<float>(_time_range_ms) * static_cast<float>(_number_of_wraps - 1);
+    float x_val_wrap_corrected_ms = x_value_ms;
 
     // calculate x-value after wrapping
     float x_value_S = static_cast<float>(_geometry.GetLeftBottom()._x) +
@@ -183,13 +114,14 @@ float OGLSweepChart_C::GetScreenCoordsFromXChartValue(float x_value_ms)
     return x_value_S;
 }
 
-void OGLSweepChart_C::SetMajorTickValueXAxes(float tick_value_unit)
+void OGLSweepChart_C::SetMajorTickValueXAxes(float tick_value_ms)
 {
-
+    _major_tick_x_axes = tick_value_ms;
 }
 
 void OGLSweepChart_C::SetMajorTickValueYAxes(float tick_value_unit)
 {
+    _major_tick_y_axes = tick_value_unit;
 }
 
 void OGLSweepChart_C::SetAxesColor(const QVector3D& color)
@@ -216,116 +148,6 @@ void OGLSweepChart_C::SetLeadLineColor(const QVector3D& color)
 {
     _lead_line_color = color;
 }
-
-inline 
-void 
-OGLSweepChart_C::OnChartUpdate() 
-{
-    if ( _input_buffer.IsBufferEmpty() ) {
-        return;
-    }
-
-    // Get latest data from the input buffer
-    auto latest_data = _input_buffer.PopLatest();
-
-    if ( !latest_data.empty() ) {
-        QVector<float> additional_point_vertices;
-        for ( const auto& element : latest_data ) {
-            // Check if its neccessary to end the line strip,
-            // due to a wrap of the series from the right to the left screen border
-            if ( element._value._x < _last_plotted_x_value_S ) {
-                additional_point_vertices.append(NAN);
-                additional_point_vertices.append(NAN);
-                additional_point_vertices.append(NAN);
-            }
-            //DEBUG(element);
-            additional_point_vertices.append(element._value._x);
-            additional_point_vertices.append(element._value._y);
-            additional_point_vertices.append(element._value._z);
-            _last_plotted_x_value_S = element._value._x;
-        }
-
-        _last_plotted_y_value_S = (latest_data.end() - 1)->_value._y;
-        _last_plotted_x_value_S = (latest_data.end() - 1)->_value._x;
-
-        // Write data to the vbo
-        WriteToVbo(additional_point_vertices);
-        // Remove old data out of timerange
-        RemoveOutdatedDataInsideVBO();
-    }
-}
-
-// MAke sure the buffer is bound to the current context before calling this function
-void OGLSweepChart_C::WriteToVbo(const QVector<float>& data)
-{
-    int number_of_new_data_bytes = static_cast<int>(data.size()) * static_cast<int>(sizeof(float));
- 
-    if (_vbo_current_series_idx + number_of_new_data_bytes <=_vbo_buffer_size) {
-        // The data can completely fit into the vbo 
-        _chart_vbo.write(static_cast<int>(_vbo_current_series_idx), data.constData(), number_of_new_data_bytes);
-        // new write offset in bytes
-        _vbo_current_series_idx += number_of_new_data_bytes;        
-        IncrementPointCount(data.size() / 3);
-    } else {
-        // buffer is full or not all new data can fit into it; 
-        // reset buffer index and start overwriting data at the beginning
-        // Calculate how much bytes can fit into the buffer until the end is reached
-        int number_of_free_bytes_until_end = _vbo_buffer_size - _vbo_current_series_idx;
-        int bytes_to_write_at_beginning = number_of_new_data_bytes - number_of_free_bytes_until_end;
-        int bytes_to_write_until_end = number_of_new_data_bytes - bytes_to_write_at_beginning;
-
-        if( number_of_free_bytes_until_end > 0) {
-            // Write data until the end of the buffer is reached
-           _chart_vbo.write(static_cast<int>(_vbo_current_series_idx), data.data(), bytes_to_write_until_end);
-           IncrementPointCount(number_of_free_bytes_until_end / sizeof(float) / 3);
-        }
-
-        _dataseries_wrapped_once = true;
-        // Reset the index to continue writing the rest of the data at the beginning
-        _vbo_current_series_idx = 0;
-        if ( bytes_to_write_at_beginning > 0 ) {
-            int data_memory_offset = bytes_to_write_until_end / sizeof(float); 
-            _chart_vbo.write(static_cast<int>(_vbo_current_series_idx), (data.constData() + data_memory_offset), bytes_to_write_at_beginning);
-            _vbo_current_series_idx += bytes_to_write_at_beginning;
-        }
-    }
-}
-
-inline void OGLSweepChart_C::IncrementPointCount(size_t increment) 
-{
-    // Count points; stop counting points after one wrap
-    // (because after a wrap the point count stays the same-> NOT ANYMORE)
-    if ( !_dataseries_wrapped_once ) {
-        _point_count += increment;
-    }
-}
-
-inline 
-void 
-OGLSweepChart_C::RemoveOutdatedDataInsideVBO() 
-{
-    size_t last_added_tstamp_ms = _input_buffer.GetLatestItem()._timestamp.GetSeconds();
-    double start_time_ms = static_cast<double>(last_added_tstamp_ms) - _time_range_ms;
-    int start_time_idx = FindIdxToTimestampInsideData(Timestamp_TP(start_time_ms), _input_buffer.constData()) - 1;
-    
-    if ( start_time_idx > -1 ) {
-        int bytes_to_remove = (start_time_idx + 1 - _remove_series_idx) * 3 * sizeof(float);
-
-        if ( bytes_to_remove > 0 ) {
-            _chart_vbo.write(_remove_series_idx * 3 * sizeof(float), _no_line_vertices.constData(), bytes_to_remove);
-            _remove_series_idx = start_time_idx;
-        } else {
-            // recalculate
-            int remove_series_idx_byte = _remove_series_idx * 3 * sizeof(float);
-            int number_of_free_bytes_until_end = _vbo_buffer_size - remove_series_idx_byte;
-            _chart_vbo.write(_remove_series_idx * 3 * sizeof(float), _no_line_vertices.constData(), number_of_free_bytes_until_end);
-            int bytes_to_remove_at_beginning = (start_time_idx + 1) * 3 * sizeof(float);
-            _chart_vbo.write(0, _no_line_vertices.constData(), bytes_to_remove_at_beginning);
-            _remove_series_idx = start_time_idx;
-        }
-    }
-}
-
 
 void OGLSweepChart_C::Draw(QOpenGLShaderProgram& shader) 
 {
@@ -367,6 +189,7 @@ void OGLSweepChart_C::SetupAxes()
     _y_axis_vbo.release();
 }
 
+inline
 void OGLSweepChart_C::DrawSurfaceGrid( QOpenGLShaderProgram& shader)
 {
     QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
@@ -449,13 +272,15 @@ void OGLSweepChart_C::UpdateLeadLinePosition(float x_value_new)
 }
 
 // expects that the shader is bound to the context
+inline
 void OGLSweepChart_C::DrawLeadLine(QOpenGLShaderProgram& shader)
 {
     QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
     shader.setUniformValue("u_object_color", _lead_line_color);
 
     _lead_line_vbo.bind();
-    UpdateLeadLinePosition(_last_plotted_x_value_S);
+    UpdateLeadLinePosition(_ogl_data_series.GetLastPlottedXValue() );
+
     f->glEnableVertexAttribArray(0);
     f->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
     f->glDrawArrays(GL_LINES, 0, 2);
@@ -463,7 +288,7 @@ void OGLSweepChart_C::DrawLeadLine(QOpenGLShaderProgram& shader)
     _lead_line_vbo.release();
 }
 
-
+inline
 void OGLSweepChart_C::DrawXYAxes(QOpenGLShaderProgram& shader)
 {
 	QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
@@ -483,6 +308,7 @@ void OGLSweepChart_C::DrawXYAxes(QOpenGLShaderProgram& shader)
     _x_axis_vbo.release();
 }
 
+inline
 void OGLSweepChart_C::DrawBoundingBox(QOpenGLShaderProgram& shader)
 {
     auto* f = QOpenGLContext::currentContext()->functions();
@@ -495,22 +321,12 @@ void OGLSweepChart_C::DrawBoundingBox(QOpenGLShaderProgram& shader)
     _bb_vbo.release();
 }
 
+inline
 void OGLSweepChart_C::DrawSeries(QOpenGLShaderProgram& shader)
 {
     auto* f = QOpenGLContext::currentContext()->functions();
     shader.setUniformValue("u_object_color", _series_color);
-    // Bind buffer and send data to the gpu
-    _chart_vbo.bind();
-    OnChartUpdate();
-    // Draw inside the current context
-    f->glEnableVertexAttribArray(0);
-    //f->glEnableVertexAttribArray(1);
-    // each point (GL_POINT) consists of 3 components (x, y, z)
-    f->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
-    // to get the abs number of points-> divide through count of each Point
-    f->glDrawArrays(GL_LINE_STRIP, 0, _point_count);
-    f->glDisableVertexAttribArray(0);
-    _chart_vbo.release();
+    _ogl_data_series.Draw();
 }
 
 void OGLSweepChart_C::CreateBoundingBox()
@@ -534,7 +350,7 @@ void OGLSweepChart_C::addRange(int count, QVector<double> data)
     //void* pointerToData = chartVBO.mapRange(_bufferIndex, count, QOpenGLBuffer::RangeAccessFlag::RangeWrite);
     //chartVBO.write(_bufferIndex, data.constData(), count);
     //_bufferIndex += count;
-    _chart_vbo.bind();
+    //_chart_vbo.bind();
     /*Example:
     m_vertex.bind();
     auto ptr = m_vertex.map(QOpenGLBuffer::WriteOnly);
@@ -544,12 +360,12 @@ void OGLSweepChart_C::addRange(int count, QVector<double> data)
     m_vertex.release();
     */
     //echartVBO.mapRange()
-    //auto pointerToData = chartVBO.mapRange(0, _bufferIndex, QOpenGLBuffer::RangeAccessFlag::RangeRead);
-    auto point = _chart_vbo.map(QOpenGLBuffer::Access::ReadOnly);
-    std::vector<float> dat; dat.resize(100);
+    ////auto pointerToData = chartVBO.mapRange(0, _bufferIndex, QOpenGLBuffer::RangeAccessFlag::RangeRead);
+    //auto point = _chart_vbo.map(QOpenGLBuffer::Access::ReadOnly);
+    //std::vector<float> dat; dat.resize(100);
 
-    memcpy(&dat[0], &point, 100);
-    _chart_vbo.release();
+    //memcpy(&dat[0], &point, 100);
+    //_chart_vbo.release();
     //dat.toStdVector();
     //std::copy(pointerToData, *pointerToData+11,std::back_inserter(dat.toStdVector()));
 }
