@@ -143,8 +143,6 @@ void QOpenGLPlotWidget::InitializePlots(int number_of_plots) {
         // Initialize
         plot->Initialize();
     }
-
-    _paint_update_timer->start();
 }
 
 
@@ -156,15 +154,16 @@ void QOpenGLPlotWidget::initializeGL()
 
     InitializeShaderProgramms();
 
-    InitializePlots(5);
-
     CreateLightSource();
 
     _text_box.Initialize(Font2D_TP::ARIAL);
     //_text_box.SetText("Hello World from second fastest", 540.0f, 570.0f, 0.5f); // slow variant, works with RenderTextCustom()
 
-    _text_box.SetText("Hello", 540.0f, 570.0f, 0.5f); // fast variant, works with RenderTextFastest()
+    _text_box.SetText("Hello", 10.0f, 10.0f, 0.5f); // fast variant, works with RenderTextFastest()
 
+    InitializePlots(5);
+
+    _paint_update_timer->start();
 }
 
 
@@ -198,20 +197,13 @@ void QOpenGLPlotWidget::paintGL()
     _light_shader.setUniformValue("u_MVP", *_MVP);
     _light_shader.setUniformValue("point_scale", 2.0f);
     _light_shader.setUniformValue("u_object_color", QVector3D(1.0f, 1.0f, 1.0f));
-    //_light_shader.setUniformValue("u_light_color", QVector3D(0.0f, 1.0f, 1.0f));
     _light_shader.setUniformValue("u_light_color", QVector3D(1.0f, 1.0f, 1.0f));
 
-    //float color_counter = 2;
     for ( const auto& plot : _plots ) {
-        //float red_val = std::sinf(color_counter * 10.0);
-        //float blue_val = std::cosf(color_counter * 10.0);
-        //_prog.setUniformValue("u_Color", QVector3D(red_val, blue_val, 1.0f));
-        //++color_counter;
         plot->Draw(_light_shader);
     }
 
     //_prog.release();
-
     //_light_shader.bind();
     //_light_shader.setUniformValue("u_MVP", *_MVP);
     //_light_shader.setUniformValue("point_scale", 2.0f);
@@ -220,8 +212,8 @@ void QOpenGLPlotWidget::paintGL()
     //_light_source.Draw();
     _light_shader.release();
 
-    QVector3D text_color(1.0f, 1.0f, 1.0f);
-    //_text_box.RenderText(_text_shader, text_color, *_MVP);
+    QVector3D text_color(0.0f, 1.0f, 1.0f);
+    _text_box.RenderText(_text_shader, text_color, *_MVP);
 }
 
 void QOpenGLPlotWidget::InitializeGLParameters()
