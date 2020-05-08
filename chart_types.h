@@ -95,7 +95,7 @@ public:
         _timestamp = std::chrono::time_point<ClockType>(duration);
     }
 
-    Timestamp_TP(std::chrono::time_point<ClockType>& timestamp)
+    Timestamp_TP(const std::chrono::time_point<ClockType>& timestamp)
         : _timestamp(timestamp)
     {
     }
