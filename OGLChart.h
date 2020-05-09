@@ -6,6 +6,8 @@
 #include <chart_shapes_c.h>
 #include <chart_types.h>
 #include <ogl_sweep_chart_buffer.h>
+#include <text_renderer_2d.h>
+//#include <QOpenGLPlotRendererWidget.h>
 
 // STL includes
 #include <iostream>
@@ -50,19 +52,12 @@
 //!         |
 //!  (0,-y) |
 //!
-//
+
 class OGLSweepChart_C
 {
 
     // Constructor / Destructor / Copying..
 public:
-    OGLSweepChart_C(int time_range_ms, 
-               int buffer_size,
-               int screen_pos_x_S,
-               int screen_pos_y_S,
-               int width_S,
-               int height_S,
-               const QOpenGLWidget& parent);
 
     OGLSweepChart_C(int time_range_ms,
                int buffer_size,
@@ -87,7 +82,7 @@ public:
     void AddDataTimestamp(float value, Timestamp_TP& timestamp);
 
     //! Draws the chart inside the opengl context from which this function is called
-    void Draw( QOpenGLShaderProgram& shader);
+    void Draw( QOpenGLShaderProgram& shader, QOpenGLShaderProgram& text_shader);
 
     // Unuused, old function
     void addRange(int, QVector<double>);
@@ -98,25 +93,45 @@ public:
     //! Returns the y-screen coordinates of a given plot x-value
     float GetScreenCoordsFromXChartValue(float x_value);
 
+    //! Set the major tick value for the x-axes.
     void SetMajorTickValueXAxes(float tick_value_ms);
 
+    //! Set the major tick value for the y axis
+    //! The major tick value is used to draw the horizontal grid lines
     void SetMajorTickValueYAxes(float tick_value_unit);
 
+    //! Set the color of the x- and y-axes
     void SetAxesColor(const QVector3D& color);
     
+    //! Set color for text rendering (e.g axes units)
+    void SetTextColor(const QVector3D & color);
+
+    //! Set the data series color
     void SetSeriesColor(const QVector3D& color);
     
+    //! Set the bounding box color
     void SetBoundingBoxColor(const QVector3D& color);
     
+    //! Set the color of the surface grid
     void SetSurfaceGridColor(const QVector3D& color);
     
+    //! Set the color of the lead line
     void SetLeadLineColor(const QVector3D& color);
+
+    //! Sets the model view projection matrix used for text rendering (e.g. axes units)
+    void SetModelViewProjection(QMatrix4x4 model_view_projection);
 
 // Private helper functions
 private:
+
+    //! Create the text for displaying axes units
+    void InitializeAxesDescription(const QVector<float>& horizontal_grid_vertices, 
+                                   const QVector<float>& vertical_grid_vertices, 
+                                   float scale);
+
     //! Draws the x- and y-axis inside the opengl context
     //! from which the function is called
-    void DrawXYAxes( QOpenGLShaderProgram& shader);
+    void DrawXYAxes( QOpenGLShaderProgram& shader, QOpenGLShaderProgram& text_shader);
 
     //! Draws the border bounding box of the plot area inside the opengl context
     void DrawBoundingBox( QOpenGLShaderProgram& shader);
@@ -134,7 +149,7 @@ private:
     void CreateBoundingBox();
 
     //! Creates a vbo used to draw the grid of the chart
-    void CreateSurfaceGrid(int x_dist_unit, int y_dist_unit);
+   std::pair<QVector<float>, QVector<float>> CreateSurfaceGrid(int x_dist_unit, int y_dist_unit);
 
     //! Creates the vbo used to draw the lead line indicating the most current datapoint
     void CreateLeadLineVbo();
@@ -170,11 +185,6 @@ private:
     //! Number of bytes for the lead line used by the vbo. 
     //! This should be equal to six, when the lead line is a line and no point or other shape.
     int _number_of_bytes_lead_line;
-
-    //! size of the input buffer (positions)
-    int64_t _buffer_size;
-
-    int _point_count = 0;
 	
     //! The maximum value of the y axis 
     int _max_y_axis_value;
@@ -187,7 +197,11 @@ private:
     double _time_range_ms;
 
     //! Number of vertices used to draw the vertical surface grid lines
-    int _num_of_surface_grid_vertices;
+    int _num_of_surface_grid_positions;
+
+    //! The bounding box geometry of the chart.
+    //! Stores where to place to chart inside the opengl viewport
+    OGLChartGeometry_C _geometry;
 
     //! Input buffer used to store user data
     RingBuffer_TC<ChartPoint_TP<Position3D_TC<float>>> _input_buffer;
@@ -202,23 +216,22 @@ private:
     float _last_plotted_x_value_S = 0;
 
     // Colors for the shader
-    // Todo: struct!
+    // Todo: struct?
     QVector3D _lead_line_color;
     QVector3D _series_color;
     QVector3D _bounding_box_color;
     QVector3D _surface_grid_color;
     QVector3D _axes_color;
+    QVector3D _text_color;
 
     float _major_tick_x_axes;
 
     float _major_tick_y_axes;
 
+    std::vector<OGLTextBox> _plot_axes;
+
+    QMatrix4x4 _chart_mvp;
+
     //! The parent widget with the opengl context
     const QOpenGLWidget& _parent_widget;
-
-    //! The bounding box geometry of the chart.
-    //! Stores where to place to chart inside the opengl viewport
-    OGLChartGeometry_C _geometry;
-
-    
 };

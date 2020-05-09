@@ -14,7 +14,7 @@
 #endif
 
 
-QOpenGLPlotWidget::~QOpenGLPlotWidget() {
+QOpenGLPlotRendererWidget::~QOpenGLPlotRendererWidget() {
     delete _projection_mat;
     delete _model_mat;
     delete _view_mat;
@@ -23,21 +23,17 @@ QOpenGLPlotWidget::~QOpenGLPlotWidget() {
     _paint_update_timer->deleteLater();
     delete _paint_update_timer;
 
-    _data_update_timer->deleteLater();
-	delete _data_update_timer;
-    
     // Delete plots
     for ( int chart_idx = _plots.size() - 1; chart_idx >= 0; --chart_idx ) {
         delete _plots[chart_idx];
     }
 }
 
-QOpenGLPlotWidget::QOpenGLPlotWidget(QWidget* parent)
+QOpenGLPlotRendererWidget::QOpenGLPlotRendererWidget(QWidget* parent)
     :
       _prog()
 {
-    // Setup opengl parameters
-    // DO NOT USE OPENGL COMMANDS INSIDE THE CONSTRUCTOR
+    // Attention: DO NOT USE OPENGL COMMANDS INSIDE THE CONSTRUCTOR
 	_nearZ = 1.0;
 	_farZ = 100.0;
 
@@ -61,14 +57,9 @@ QOpenGLPlotWidget::QOpenGLPlotWidget(QWidget* parent)
     double data_gen_frequency_hz = 1000.0;
     double data_gen_frequency_s = 1.0 / data_gen_frequency_hz;
     double data_gren_frequency_ms = data_gen_frequency_s * 1000.0;
-
-    _data_update_timer = new QTimer();
-    connect(_data_update_timer, SIGNAL(timeout()), this, SLOT(OnDataUpdate()));
-    _data_update_timer->setInterval(data_gren_frequency_ms);
-    //_data_update_timer->start(data_gren_frequency_ms);
 }
 
-void QOpenGLPlotWidget::OnDataUpdateThreadFunction()
+void QOpenGLPlotRendererWidget::OnDataUpdateThreadFunction()
 {
     Timestamp_TP timestamp;
     double pi = 3.1415026589; 
@@ -89,16 +80,21 @@ void QOpenGLPlotWidget::OnDataUpdateThreadFunction()
 	}
 }
 
-void QOpenGLPlotWidget::AddDataToAllPlots(float value_x, float value_y) 
+void QOpenGLPlotRendererWidget::AddDataToAllPlots(float value_x, float value_y) 
 {
     for ( auto& plot : _plots ) {
         plot->AddDataTimestamp(value_y, Timestamp_TP(value_x));
     }
 }
 
+const QMatrix4x4 QOpenGLPlotRendererWidget::GetModelViewProjection() const
+{
+    return *_MVP;
+}
 
-void QOpenGLPlotWidget::InitializePlots(int number_of_plots) {
-    
+
+void QOpenGLPlotRendererWidget::InitializePlots(int number_of_plots) 
+{   
     // Chart properties
     int chart_buffer_size = 10000;
     int time_range_ms = 10000;
@@ -123,16 +119,20 @@ void QOpenGLPlotWidget::InitializePlots(int number_of_plots) {
         std::cout << "chart pos (idx=" << chart_idx << "): " << chart_pos_y << std::endl;
     }
 
-    QVector3D series_color(1.0f, 0.0f, 1.0f);
+    QVector3D series_color(0.0f, 1.0f, 0.0f);
     QVector3D axes_color(1.0f, 1.0f, 1.0f);
     QVector3D lead_line_color(1.0f, 0.01f, 0.0f);
-    QVector3D surface_grid_color(1.0f, 1.0f, 1.0f);
+    QVector3D surface_grid_color(static_cast<float>(235.0f/255.0f), 
+                                 static_cast<float>(225.0f/255.0f), 
+                                 static_cast<float>(27.0f/255.0f) );
     QVector3D bounding_box_color(1.0f, 1.0f, 1.0f);
+    QVector3D text_color(1.0f, 1.0f, 1.0f);
 
     for ( auto& plot : _plots ) {
         // Setup colors
         plot->SetSeriesColor(series_color);
         plot->SetAxesColor(axes_color);
+        plot->SetTextColor(text_color);
         plot->SetBoundingBoxColor(bounding_box_color);
         plot->SetLeadLineColor(lead_line_color);
         plot->SetSurfaceGridColor(surface_grid_color);
@@ -143,10 +143,12 @@ void QOpenGLPlotWidget::InitializePlots(int number_of_plots) {
         // Initialize
         plot->Initialize();
     }
+
+    this->update();
 }
 
 
-void QOpenGLPlotWidget::initializeGL()
+void QOpenGLPlotRendererWidget::initializeGL()
 {
     std::cout << "Start OpenGlPlotter by Jonas Biehrer" << std::endl;
 
@@ -156,12 +158,7 @@ void QOpenGLPlotWidget::initializeGL()
 
     CreateLightSource();
 
-    _text_box.Initialize(Font2D_TP::ARIAL);
-    //_text_box.SetText("Hello World from second fastest", 540.0f, 570.0f, 0.5f); // slow variant, works with RenderTextCustom()
-
-    _text_box.SetText("Hello", 10.0f, 10.0f, 0.5f); // fast variant, works with RenderTextFastest()
-
-    InitializePlots(5);
+    InitializePlots(1);
 
     _paint_update_timer->start();
 }
@@ -169,7 +166,7 @@ void QOpenGLPlotWidget::initializeGL()
 
 // This window is never resized. only JonesPlot.h is resized (the window this widget is placed in).
 // If this event should be triggered, it needs to be passed to this widget from JonesPlot
-void QOpenGLPlotWidget::resizeGL(int width, int height)
+void QOpenGLPlotRendererWidget::resizeGL(int width, int height)
 {
     _projection_mat->setToIdentity();
     _view_mat->setToIdentity();
@@ -177,9 +174,17 @@ void QOpenGLPlotWidget::resizeGL(int width, int height)
     QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
 	f->glViewport(0, 0, this->width(), this->height());
 	this->update();
+
+    // Alternative: Trigger a signal which is activated, when the viewport is resized
+    // =>..Check whats better for performance
+    *_MVP = *(_projection_mat) * *(_view_mat) * *(_model_mat);
+    // Send the new model view projection to the charts for correct text rendering 
+    for ( auto& plot : _plots ) {
+        plot->SetModelViewProjection(*_MVP);
+    }
 }
 
-void QOpenGLPlotWidget::paintGL()
+void QOpenGLPlotRendererWidget::paintGL()
 {
 	QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
     f->glClearColor(0.0f, 0.0f, 0.0f, 0.8f);
@@ -200,7 +205,7 @@ void QOpenGLPlotWidget::paintGL()
     _light_shader.setUniformValue("u_light_color", QVector3D(1.0f, 1.0f, 1.0f));
 
     for ( const auto& plot : _plots ) {
-        plot->Draw(_light_shader);
+        plot->Draw(_light_shader, _text_shader);
     }
 
     //_prog.release();
@@ -211,12 +216,9 @@ void QOpenGLPlotWidget::paintGL()
     //_light_shader.setUniformValue("u_light_color", QVector3D(1.0f, 0.0f, 1.0f));
     //_light_source.Draw();
     _light_shader.release();
-
-    QVector3D text_color(0.0f, 1.0f, 1.0f);
-    _text_box.RenderText(_text_shader, text_color, *_MVP);
 }
 
-void QOpenGLPlotWidget::InitializeGLParameters()
+void QOpenGLPlotRendererWidget::InitializeGLParameters()
 {
     QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
     // Initialize OGL functions before any other OpenGL call
@@ -260,7 +262,7 @@ void QOpenGLPlotWidget::InitializeGLParameters()
     f->glEnable(GL_PROGRAM_POINT_SIZE);
 }
 
-void QOpenGLPlotWidget::CreateLightSource()
+void QOpenGLPlotRendererWidget::CreateLightSource()
 {
     float light_source_x_pos = 0.0f;
     float light_source_y_pos = 0.0f;
@@ -268,11 +270,14 @@ void QOpenGLPlotWidget::CreateLightSource()
     float cube_size = this->width();
 
     ShapeGenerator_C shape_gen;
-    auto light_source_vertices = shape_gen.makeQuadAtPos_(light_source_x_pos, light_source_y_pos, light_source_z_pos, cube_size);
+    auto light_source_vertices = shape_gen.makeQuadAtPos_(light_source_x_pos, 
+                                                          light_source_y_pos, 
+                                                          light_source_z_pos, 
+                                                          cube_size);
     _light_source.CreateVBO(light_source_vertices);
 }
 
-bool QOpenGLPlotWidget::InitializeShaderProgramms()
+bool QOpenGLPlotRendererWidget::InitializeShaderProgramms()
 {
     std::cout << std::endl << "Shader Compiling Error Log:" << std::endl
      << "Standard Shader error log: " << std::endl;
@@ -322,12 +327,18 @@ bool QOpenGLPlotWidget::InitializeShaderProgramms()
         QString(path_of_shader_dir + "fragment_text.fsh"), 
         text_shader_uniforms);
 
+    // ToDo: 
+    // Two in One shader for text shading (requires texture sampler 2D) and standard color shading
+
+
+    //
+
     return success;
 }
 
-bool QOpenGLPlotWidget::CreateShader(QOpenGLShaderProgram& shader, 
-                                     QString vertex_path, 
-                                     QString fragment_path,
+bool QOpenGLPlotRendererWidget::CreateShader(QOpenGLShaderProgram& shader, 
+                                     QString& vertex_path, 
+                                     QString& fragment_path,
                                      std::vector<QString>& uniforms)
 {   
     bool success = false;
@@ -375,13 +386,13 @@ bool QOpenGLPlotWidget::CreateShader(QOpenGLShaderProgram& shader,
 
 
 
-void QOpenGLPlotWidget::mouseMoveEvent(QMouseEvent* evt) 
+void QOpenGLPlotRendererWidget::mouseMoveEvent(QMouseEvent* evt) 
 {
     float x  = evt->x();
     float y = evt->y();
 }
 
-void QOpenGLPlotWidget::mousePressEvent(QMouseEvent* evt) 
+void QOpenGLPlotRendererWidget::mousePressEvent(QMouseEvent* evt) 
 {
     float x = evt->x();
     float y = evt->y();

@@ -25,7 +25,7 @@ protected:
     virtual void resizeEvent(QResizeEvent* event);
 
 private:
-    QOpenGLPlotWidget* plot_widget;
+    QOpenGLPlotRendererWidget* plot_widget;
 	Ui::JonesPlotClass ui;
 
 

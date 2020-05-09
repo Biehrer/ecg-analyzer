@@ -25,9 +25,9 @@ JonesPlotApplication_C::JonesPlotApplication_C(QWidget *parent)
 //    QSurfaceFormat::setDefaultFormat(format);
     ui.setupUi(this);
     //ui.openGLWidget->show();
-    //ui.openGLWidget = new QOpenGLPlotWidget();
+    //ui.openGLWidget = new QOpenGLPlotRendererWidget();
    
-    plot_widget = new QOpenGLPlotWidget(this);
+    plot_widget = new QOpenGLPlotRendererWidget(this);
     plot_widget->show();
    
     connect(ui._btn_add_point, &QPushButton::clicked, this, &JonesPlotApplication_C::SendDatatToPlots);
@@ -37,7 +37,7 @@ JonesPlotApplication_C::JonesPlotApplication_C(QWidget *parent)
     //    }
 
     // Start thread to add data to the plots
-    std::thread dataThread(&QOpenGLPlotWidget::OnDataUpdateThreadFunction, plot_widget);
+    std::thread dataThread(&QOpenGLPlotRendererWidget::OnDataUpdateThreadFunction, plot_widget);
     dataThread.detach();
 }
 

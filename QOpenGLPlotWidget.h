@@ -40,13 +40,15 @@
 #define SREENWIDTH 1440
 #define SCREENHEIGHT 800
 
-class QOpenGLPlotWidget : public QOpenGLWidget
+class QOpenGLPlotRendererWidget : public QOpenGLWidget
 {
 	Q_OBJECT
+
+        // Construction / Destruction / Copying
 public:
-    QOpenGLPlotWidget(QWidget* parent = 0);
+    QOpenGLPlotRendererWidget(QWidget* parent = 0);
     
-    ~QOpenGLPlotWidget();
+    ~QOpenGLPlotRendererWidget();
 
     // Public access functions
 public:
@@ -54,7 +56,9 @@ public:
 
     void AddDataToAllPlots(float value_x, float value_y);
 
-    // Protected functions
+    const QMatrix4x4 GetModelViewProjection() const;
+
+   // Protected functions
 protected:
     //! Initialize shader and models for drawing
     virtual void initializeGL();
@@ -73,16 +77,30 @@ protected:
 
     // Private helper functions
 private:
-
+    //! Creates the OGL charts
     void InitializePlots(int number_of_plots);
 
+    //! Initializes OpenGL functions
     void InitializeGLParameters();
 
+    //! Creates a light cube
     void CreateLightSource();
 
+    //! Initializes all shader programs required for the OGLCharts
     bool InitializeShaderProgramms();
 
-    bool CreateShader(QOpenGLShaderProgram& shader, QString vertex_path, QString fragment_path, std::vector<QString>& uniforms);
+    //! Creates a shader program from a fragment and vertex shader
+    //! 
+    //! \param The shader which is created
+    //! \param vertex_path filepath to the vertex shader
+    //! \param fragment_path filepath to the fragment shader
+    //! \param attribute_locations all attribute locations to bind. The position inside the vector determines the location.
+    //!         e.g the first string at position [0] is bound to the first attribute location 'zero'
+    //! \returns true on success, false if not
+    bool CreateShader(QOpenGLShaderProgram& shader, 
+                      QString& vertex_path,
+                      QString& fragment_path, 
+                      std::vector<QString>& attribute_locations);
 
     // Private attributes
 private:
@@ -135,14 +153,6 @@ private:
     //! Issues the opengl render call at around 30 - 60 Hz
     QTimer* _paint_update_timer;
 
-    //! Adds new data to the chart through signal and slot system
-    QTimer* _data_update_timer;
-
     //! Variable used as pseudo-timestamp
     int _pointcount;
-
-    OGLTextBox _text_box;
-
 };
-
-

@@ -87,10 +87,7 @@ OGLSweepChartBuffer_C::OnChartUpdate()
         _last_plotted_y_value_S = (latest_data.end() - 1)->_value._y;
 
         WriteToVbo(additional_point_vertices);
-        // Write data to the vbo
-        //WriteToVbo(additional_point_vertices);
-        // Remove old data out of timerange
-        //RemoveOutdatedDataInsideVBO();
+
         RemoveOutdatedDataInsideVBO();
     }
 }
@@ -116,6 +113,7 @@ void OGLSweepChartBuffer_C::AllocateSeriesVbo()
 }
 
 // Todo : Refactor this function in the RingBuffer itself ! Then we can call this function on the ringbuffer -> should work!
+inline
 int
 OGLSweepChartBuffer_C::FindIdxToTimestampInsideData(const Timestamp_TP& timestamp,
     const std::vector<ChartPoint_TP<Position3D_TC<float>>>& data)
@@ -154,6 +152,7 @@ OGLSweepChartBuffer_C::FindIdxToTimestampInsideData(const Timestamp_TP& timestam
 
 
 // Make sure the buffer is bound to the current context before calling this function
+inline
 void 
 OGLSweepChartBuffer_C::WriteToVbo(const QVector<float>& data)
 {
@@ -202,7 +201,7 @@ OGLSweepChartBuffer_C::IncrementPointCount(size_t increment)
     }
 }
 
-
+inline
 void
 OGLSweepChartBuffer_C::RemoveOutdatedDataInsideVBO()
 {
@@ -217,8 +216,8 @@ OGLSweepChartBuffer_C::RemoveOutdatedDataInsideVBO()
         if ( bytes_to_remove > 0 ) {
             _chart_vbo.write(_remove_series_idx * 3 * sizeof(float), _no_line_vertices.constData(), bytes_to_remove);
             _remove_series_idx = start_time_idx;
-        }
-        else {
+
+        } else {
             // recalculate
             int remove_series_idx_byte = _remove_series_idx * 3 * sizeof(float);
             int number_of_free_bytes_until_end = _vbo_buffer_size - remove_series_idx_byte;

@@ -23,7 +23,6 @@ OGLSweepChart_C::OGLSweepChart_C(int time_range_ms,
                        const OGLChartGeometry_C& geometry,
                        const QOpenGLWidget& parent)
     :
-    _buffer_size(buffer_size),
     _x_axis_vbo(QOpenGLBuffer::VertexBuffer),
     _y_axis_vbo(QOpenGLBuffer::VertexBuffer),
     _bb_vbo(QOpenGLBuffer::VertexBuffer),
@@ -43,11 +42,7 @@ void OGLSweepChart_C::Initialize()
 {
     DEBUG("Initialize OGLChart");
 
-    // number of visualized points in the graph
-    _point_count = 0;
-    
     // Allocate a vertex buffer object to store data for visualization
-    //AllocateSeriesVbo();
     _ogl_data_series.AllocateSeriesVbo();
     
     // Allocate a vertex buffer object to store data for the lead line
@@ -60,9 +55,58 @@ void OGLSweepChart_C::Initialize()
     CreateBoundingBox();
 
     // Create surface grid vbo
-    CreateSurfaceGrid(_major_tick_x_axes, _major_tick_y_axes);
+    auto grid_vertices = CreateSurfaceGrid(_major_tick_x_axes, _major_tick_y_axes);
+    auto& horizontal_verts = grid_vertices.first;
+    auto& vertical_verts = grid_vertices.second;
+    // Use the surface grid vertice
+    InitializeAxesDescription(horizontal_verts, vertical_verts, 0.25f);
 }
 
+
+void OGLSweepChart_C::InitializeAxesDescription(const QVector<float>& horizontal_grid_vertices, 
+                                                const QVector<float>& vertical_grid_vertices,
+                                                float scale)
+{
+    int num_of_horizontal_desc = horizontal_grid_vertices.size() / 2 / 3 + 1;   // /2 -> only need half the vertices (Point FROM, not point TO)
+    int num_of_vertical_desc = vertical_grid_vertices.size() / 2 / 3 + 1;      // /3 -> only need number of text fields for now. Three vertices are one text field
+    // +1 because of the 0 lines !!!!
+    int num_of_descriptions = num_of_horizontal_desc + num_of_vertical_desc;
+
+    _plot_axes.reserve(num_of_descriptions);
+    _plot_axes.resize(num_of_descriptions);
+
+    for ( auto& description : _plot_axes ) {
+        description.Initialize(Font2D_TP::ARIAL);
+    }
+
+    // time_range = 10 ms -> 10 x descriptions 0 - 10 (11 nums)
+    // max_y_val = -5 / +5 -> 2x description (1 x -5 ; 1 x +5; 1 x 0) 
+    int offset_from_left_screen_border = 10;
+
+    auto _plot_axes_horizontal_end = _plot_axes.begin() + num_of_horizontal_desc;
+    float current_y_description = _max_y_axis_value;
+    // horizontal changing descriptions (y-axes)
+    for ( auto plot_desc_y_it = _plot_axes.begin(); plot_desc_y_it != _plot_axes_horizontal_end; ++plot_desc_y_it ) {
+        // Start with the first
+        int pos_x = _geometry.GetLeftBottom()._x + offset_from_left_screen_border;
+        int pos_y = GetScreenCoordsFromYChartValue(current_y_description);
+        std::string text = std::to_string(current_y_description);
+        plot_desc_y_it->SetText(text, pos_x, pos_y, scale);
+        current_y_description -= _major_tick_y_axes;
+    }
+
+    // vertical changing descriptions (x-axes)
+    float current_x_description = _time_range_ms; 
+    for ( auto plot_desc_x_it = _plot_axes_horizontal_end; plot_desc_x_it != _plot_axes.end(); ++plot_desc_x_it ) {
+        int pos_x = GetScreenCoordsFromXChartValue(current_x_description);
+        int pos_y = _geometry.GetLeftTop()._y + 5; // +_geometry.GetChartHeight() / 2;
+        std::string text = std::to_string(current_x_description);
+        plot_desc_x_it->SetText(text, pos_x, pos_y, scale);
+        current_x_description -= _major_tick_x_axes;
+    }
+
+
+}
 
 void OGLSweepChart_C::AddDataTimestamp(float value, Timestamp_TP & timestamp)
 {
@@ -129,6 +173,10 @@ void OGLSweepChart_C::SetAxesColor(const QVector3D& color)
     _axes_color = color;
 }
 
+void OGLSweepChart_C::SetTextColor(const QVector3D& color)
+{
+    _text_color = color;
+}
 void OGLSweepChart_C::SetSeriesColor(const QVector3D& color)
 {
     _series_color = color;
@@ -149,13 +197,18 @@ void OGLSweepChart_C::SetLeadLineColor(const QVector3D& color)
     _lead_line_color = color;
 }
 
-void OGLSweepChart_C::Draw(QOpenGLShaderProgram& shader) 
+void OGLSweepChart_C::SetModelViewProjection(QMatrix4x4 model_view_projection)
+{
+    _chart_mvp = model_view_projection;
+}
+
+void OGLSweepChart_C::Draw(QOpenGLShaderProgram& shader, QOpenGLShaderProgram& text_shader) 
 {
     DrawSeries(shader);
-    DrawXYAxes(shader);
     DrawBoundingBox(shader);
     DrawLeadLine(shader);
     DrawSurfaceGrid(shader);
+    DrawXYAxes(shader, text_shader);
 }
 
 
@@ -193,16 +246,18 @@ inline
 void OGLSweepChart_C::DrawSurfaceGrid( QOpenGLShaderProgram& shader)
 {
     QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
+    shader.bind();
     shader.setUniformValue("u_object_color", _surface_grid_color);
     _surface_grid_vbo.bind();
     f->glEnableVertexAttribArray(0);
     f->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
-    f->glDrawArrays(GL_LINES, 0, _num_of_surface_grid_vertices);
+    f->glDrawArrays(GL_LINES, 0, _num_of_surface_grid_positions);
     f->glDisableVertexAttribArray(0);
     _surface_grid_vbo.release();
 }
 
-void OGLSweepChart_C::CreateSurfaceGrid(int x_major_tick_dist_ms, int y_major_tick_dist_unit)
+std::pair<QVector<float>, QVector<float>>
+OGLSweepChart_C::CreateSurfaceGrid(int x_major_tick_dist_ms, int y_major_tick_dist_unit)
 {
     auto surface_grid_vertices = 
         ChartShapes_C<float>::CreateSurfaceGridVertices(_geometry, 
@@ -211,7 +266,21 @@ void OGLSweepChart_C::CreateSurfaceGrid(int x_major_tick_dist_ms, int y_major_ti
                                                         _min_y_axis_value, 
                                                         x_major_tick_dist_ms,
                                                         y_major_tick_dist_unit);
-    _num_of_surface_grid_vertices = surface_grid_vertices.size() / 3;
+
+    auto& horizontal_grid_vertices = surface_grid_vertices.first;
+    auto& vertical_grid_vertices = surface_grid_vertices.first;
+
+    _num_of_surface_grid_positions = horizontal_grid_vertices.size() / 3 + 
+                                       vertical_grid_vertices.size() / 3;
+
+    QVector<float> combined_vertices; 
+    combined_vertices.reserve(horizontal_grid_vertices.size() + vertical_grid_vertices.size());
+    for ( auto& horizontal_vert : horizontal_grid_vertices ) {
+        combined_vertices.append(horizontal_vert);
+    }
+    for ( auto& vertical_vert : vertical_grid_vertices ) {
+        combined_vertices.append(vertical_vert);
+    }
 
     // Create VBO
     QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
@@ -221,10 +290,12 @@ void OGLSweepChart_C::CreateSurfaceGrid(int x_major_tick_dist_ms, int y_major_ti
     f->glEnableVertexAttribArray(0);
     // 3 positions for x and y and z data coordinates
     f->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
-    _surface_grid_vbo.allocate(surface_grid_vertices.constData(), surface_grid_vertices.size() * static_cast<int>(sizeof(float)));
+    _surface_grid_vbo.allocate(combined_vertices.constData(), combined_vertices.size() * static_cast<int>(sizeof(float)));
     _surface_grid_vbo.setUsagePattern(QOpenGLBuffer::StaticDraw);
     f->glDisableVertexAttribArray(0);
     _surface_grid_vbo.release();
+
+    return surface_grid_vertices;
 }
 
 void OGLSweepChart_C::CreateLeadLineVbo() 
@@ -276,9 +347,10 @@ inline
 void OGLSweepChart_C::DrawLeadLine(QOpenGLShaderProgram& shader)
 {
     QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
+    shader.bind();
     shader.setUniformValue("u_object_color", _lead_line_color);
-
     _lead_line_vbo.bind();
+
     UpdateLeadLinePosition(_ogl_data_series.GetLastPlottedXValue() );
 
     f->glEnableVertexAttribArray(0);
@@ -289,9 +361,10 @@ void OGLSweepChart_C::DrawLeadLine(QOpenGLShaderProgram& shader)
 }
 
 inline
-void OGLSweepChart_C::DrawXYAxes(QOpenGLShaderProgram& shader)
+void OGLSweepChart_C::DrawXYAxes(QOpenGLShaderProgram& shader, QOpenGLShaderProgram& text_shader)
 {
 	QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
+    shader.bind();
     shader.setUniformValue("u_object_color", _axes_color);
     _y_axis_vbo.bind();
     f->glEnableVertexAttribArray(0);
@@ -306,12 +379,21 @@ void OGLSweepChart_C::DrawXYAxes(QOpenGLShaderProgram& shader)
 	f->glDrawArrays(GL_TRIANGLES, 0, 6);
 	f->glDisableVertexAttribArray(0);
     _x_axis_vbo.release();
+
+    // Draw the descriptions
+    for ( const auto& description : _plot_axes ) {
+        // => Cherno 2 in 1 shader 
+        // -> bind a white 1x1 texture to use flat colors and bind a 1.0 color to just draw the texture, 
+        // use a texture sampler, if not, just use the uniform color !
+         description.RenderText(text_shader, _text_color, _chart_mvp);
+    }
 }
 
 inline
 void OGLSweepChart_C::DrawBoundingBox(QOpenGLShaderProgram& shader)
 {
     auto* f = QOpenGLContext::currentContext()->functions();
+    shader.bind();
     shader.setUniformValue("u_object_color", _bounding_box_color);
     _bb_vbo.bind();
     f->glEnableVertexAttribArray(0);
@@ -325,6 +407,7 @@ inline
 void OGLSweepChart_C::DrawSeries(QOpenGLShaderProgram& shader)
 {
     auto* f = QOpenGLContext::currentContext()->functions();
+    shader.bind();
     shader.setUniformValue("u_object_color", _series_color);
     _ogl_data_series.Draw();
 }
