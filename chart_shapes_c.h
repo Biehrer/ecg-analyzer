@@ -73,54 +73,61 @@ public:
 
    static 
    const 
-   QVector<VertexType_TP> CreateSurfaceGridVertices(const OGLChartGeometry_C& geometry,
-                                                   VertexType_TP time_range_ms,
-                                                   VertexType_TP max_y_val,
-                                                   VertexType_TP min_y_val,
-                                                   VertexType_TP x_major_tick_dist_ms,
-                                                   VertexType_TP y_major_tick_dist_unit)
+   std::pair< QVector<VertexType_TP>, QVector<VertexType_TP>>
+       CreateSurfaceGridVertices(const OGLChartGeometry_C& geometry,
+                                 VertexType_TP time_range_ms,
+                                 VertexType_TP max_y_val,
+                                 VertexType_TP min_y_val,
+                                 VertexType_TP x_major_tick_dist_ms,
+                                 VertexType_TP y_major_tick_dist_unit)
     {
         // x_major_tick_dist_ms and y_major_tick_dist_unit = major ticks in the same unit like the member values : min_y_axis_value and max_y_axis_value
         //p1(from)--------------------------------------------->>>>
         // |                                            |
         // ----------------------------------------------
-        int number_of_vertical_grid_lines = (max_y_val - min_y_val) / y_major_tick_dist_unit;
-        VertexType_TP y_axis_major_tick_value = max_y_val;
 
         // Creaete vertices
-        QVector<VertexType_TP> surface_grid_lines;
-        for ( int line_idx = 0; line_idx < number_of_vertical_grid_lines; ++line_idx ) {
+        //QVector<VertexType_TP> surface_grid_lines;
+        QVector<VertexType_TP> horizontal_line_pos;
+        
+        // Horizontal lines
+        int number_of_horizontal_grid_lines = (max_y_val - min_y_val) / y_major_tick_dist_unit;
+        VertexType_TP y_axis_major_tick_value = max_y_val;
+
+        for ( int line_idx = 0; line_idx < number_of_horizontal_grid_lines; ++line_idx ) {
             VertexType_TP major_tick_y_pos_S = GetScreenCoordsFromYChartValue(y_axis_major_tick_value, max_y_val, min_y_val, geometry);
 
             y_axis_major_tick_value -= y_major_tick_dist_unit;
             // Point from
-            surface_grid_lines.push_back(geometry.GetLeftBottom()._x);
-            surface_grid_lines.push_back(major_tick_y_pos_S);
-            surface_grid_lines.push_back(geometry.GetZPosition() );
+            horizontal_line_pos.push_back(geometry.GetLeftBottom()._x);
+            horizontal_line_pos.push_back(major_tick_y_pos_S);
+            horizontal_line_pos.push_back(geometry.GetZPosition() );
+
             // Point to
-            surface_grid_lines.push_back(geometry.GetLeftBottom()._x + geometry.GetChartWidth() );
-            surface_grid_lines.push_back(major_tick_y_pos_S);
-            surface_grid_lines.push_back(geometry.GetZPosition());
+            horizontal_line_pos.push_back(geometry.GetLeftBottom()._x + geometry.GetChartWidth() );
+            horizontal_line_pos.push_back(major_tick_y_pos_S);
+            horizontal_line_pos.push_back(geometry.GetZPosition());
         }
 
-        // Create horizontal line vertices
-        // unit - in milliseconds
+        // Vertical lines
+        QVector<VertexType_TP> vertical_line_pos;
+
         VertexType_TP x_axis_major_tick_value = time_range_ms;
-        int number_of_horizontal_grid_lines = time_range_ms / x_major_tick_dist_ms;
-        for ( int line_idx = 0; line_idx < number_of_horizontal_grid_lines; ++line_idx ) {
+        int number_of_vertical_grid_lines = time_range_ms / x_major_tick_dist_ms;
+        for ( int line_idx = 0; line_idx < number_of_vertical_grid_lines; ++line_idx ) {
             VertexType_TP major_tick_x_pos_S = GetScreenCoordsFromXChartValue(x_axis_major_tick_value, time_range_ms, geometry);
             x_axis_major_tick_value -= x_major_tick_dist_ms;
             // Point from
-            surface_grid_lines.push_back(major_tick_x_pos_S);
-            surface_grid_lines.push_back(geometry.GetLeftBottom()._y);
-            surface_grid_lines.push_back(geometry.GetZPosition());
+            vertical_line_pos.push_back(major_tick_x_pos_S);
+            vertical_line_pos.push_back(geometry.GetLeftBottom()._y);
+            vertical_line_pos.push_back(geometry.GetZPosition());
             // Point to
-            surface_grid_lines.push_back(major_tick_x_pos_S);
-            surface_grid_lines.push_back(geometry.GetLeftBottom()._y + geometry.GetChartHeight() );
-            surface_grid_lines.push_back(geometry.GetZPosition());
+            vertical_line_pos.push_back(major_tick_x_pos_S);
+            vertical_line_pos.push_back(geometry.GetLeftBottom()._y + geometry.GetChartHeight() );
+            vertical_line_pos.push_back(geometry.GetZPosition());
         }
 
-        return surface_grid_lines;
+        return { horizontal_line_pos, vertical_line_pos }; 
     }
 
     //! Creates vertices used to draw the x- and y-axis
