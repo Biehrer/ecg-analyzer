@@ -213,7 +213,7 @@ public:
     //! \param model_view_projection the current active mvp transform
     void RenderText(QOpenGLShaderProgram &shader,
         QVector3D& color,
-        QMatrix4x4& model_view_projection)
+        QMatrix4x4& model_view_projection) const
     {
         auto* f = QOpenGLContext::currentContext()->functions();
         auto* extra_f = QOpenGLContext::currentContext()->extraFunctions();
