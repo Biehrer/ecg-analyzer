@@ -23,3 +23,6 @@ target_link_libraries(${PROJECT_NAME} PUBLIC visualization)
 target_link_libraries(${PROJECT_NAME} Qt5::Widgets)
 target_link_libraries(${PROJECT_NAME} Qt5::Gui)
 target_link_libraries(${PROJECT_NAME} Qt5::Core)
+
+# copy the glsl shaders into the build directory for the visualization project
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/Resources/ DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/Resources/)
