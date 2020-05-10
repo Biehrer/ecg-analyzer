@@ -17,10 +17,12 @@ message(STATUS "FREETYPE_INCLUDE_DIR_ft2build=${FREETYPE_INCLUDE_DIR_ft2build}")
 add_library(${PROJECT_NAME} 
 "JonesPlot.h" 
 "JonesPlot.cpp"
-"OGLChart.h" 
-"OGLChart.cpp"
-"QOpenGLPlotWidget.h"
-"QOpenGLPlotWidget.cpp"
+"ogl_plot_renderer_widget.h"
+"ogl_plot_renderer_widget.cpp"
+"ogl_sweep_chart.h" 
+"ogl_sweep_chart.cpp"
+"ogl_sweep_chart_buffer.h"
+"ogl_sweep_chart_buffer.cpp"
 "ShapeGenerator.h" 
 "ShapeData.h"
 "CircularBuffer.h"
@@ -30,8 +32,7 @@ add_library(${PROJECT_NAME}
 "ogl_chart_geometry_c.h"
 "ogl_chart_geometry_c.cpp"
 "chart_shapes_c.h"
-"ogl_sweep_chart_buffer.h"
-"ogl_sweep_chart_buffer.cpp"
+
 )
 
  # link libs
@@ -43,6 +44,4 @@ target_link_libraries(visualization Qt5::Core)
 target_link_libraries(visualization ${FREETYPE_LIBRARIES})
 target_include_directories(visualization PUBLIC ${FREETYPE_INCLUDE_DIRS})
 
-
 target_include_directories(${PROJECT_NAME} PUBLIC includes)
-

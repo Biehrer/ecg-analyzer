@@ -1,7 +1,7 @@
 #pragma once
 
 // Project includes
-#include "includes/OGLChart.h"
+#include "includes/ogl_sweep_chart.h"
 #include "includes/ShapeData.h"
 #include <includes/text_renderer_2d.h>
 #include <includes/ShapeGenerator.h>

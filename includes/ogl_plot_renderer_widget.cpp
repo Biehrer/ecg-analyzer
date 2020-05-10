@@ -1,4 +1,4 @@
-#include "includes/QOpenGLPlotWidget.h"
+#include "includes/ogl_plot_renderer_widget.h"
 
 //#define DEBUG_INFO
 
@@ -323,9 +323,6 @@ bool QOpenGLPlotRendererWidget::InitializeShaderProgramms()
 
     // ToDo: 
     // Two in One shader for text shading (requires texture sampler 2D) and standard color shading
-
-
-    //
 
     return success;
 }
