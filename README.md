@@ -4,7 +4,6 @@ Framework for visualization and algorithmic analyzation of ecg (electrocardiogra
 ## Get started
 
 required dependencies:
-
 - Qt5 (Core/Widgets/GUI module)
 - Freetype II
 
@@ -16,11 +15,9 @@ required dependencies:
 To install Freetype correctly, download and build the library and go to the CMakeLists.txt file of this project.
 Inside the CMakeLists.txt file, adapt the environment variable of the freetype path to the directory Freetype was installed on you machine.
 - Press configure
-- Open the .sln file, set the project as startup project and run the project
+- Open the .sln file, set the project 'signalanalyzer' (with main.cpp) as startup project and run the project
 
 ### How 2 run:
+no extra steps neccessary
 
-Make sure the shaders (files inside the /Resources directory) are inside the BUILD directory you created with CMake.
-The expected path to this directory is printed to the console. Make sure the files are there.
-
-Many of these steps won't be required when CMake is completely setup for this project
+Adapt hardcoded file paths (e.g strg-f search for C:/ and adapt it to you machine) -> this wont be necessary when there is an filepath manager
