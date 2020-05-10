@@ -1,5 +1,4 @@
-#include <ogl_sweep_chart_buffer.h>
-
+#include <includes/ogl_sweep_chart_buffer.h>
 
 OGLSweepChartBuffer_C::OGLSweepChartBuffer_C(int buffer_size,
                                              double time_range_ms,

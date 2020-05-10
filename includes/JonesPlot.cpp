@@ -1,4 +1,4 @@
-#include "JonesPlot.h"
+#include "includes/JonesPlot.h"
 
 JonesPlotApplication_C::~JonesPlotApplication_C() {
     delete plot_widget;

@@ -1,7 +1,7 @@
 #pragma once
 
 // Project includes
-#include <chart_types.h>
+#include <includes/chart_types.h>
 
 // STL includes
 #include <vector>
@@ -86,7 +86,7 @@ public:
     //! Does not remove the item.
     //!
     //!\returns copy of the last item added to the buffer
-     T GetLatestItem() {
+      T GetLatestItem() {
        std::unique_lock<std::mutex> lck(_lock);
        if( _tail_idx == 0 ){
          return _data_series_buffer[_max_size -1];

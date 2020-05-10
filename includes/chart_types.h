@@ -61,6 +61,20 @@ public:
         return *this;
     }
 
+    Position3D_TC<ElementType_TP>& operator-(const Position3D_TC<ElementType_TP>& lhs) {
+        _x -= lhs._x;
+        _y -= lhs._y;
+        _z -= lhs._z;
+        return *this;
+    }
+
+    Position3D_TC<ElementType_TP>& operator+(const Position3D_TC<ElementType_TP>& lhs) {
+        _x += lhs._x;
+        _y += lhs._y;
+        _z += lhs._z;
+        return *this;
+    }
+
     bool operator==(const Position3D_TC<ElementType_TP>& lhs) {
         return (_x == lhs._x && _y == lhs._y && _z == lhs._z);
     }

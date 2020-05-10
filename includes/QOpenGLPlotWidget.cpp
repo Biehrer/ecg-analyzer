@@ -1,10 +1,5 @@
-#include "QOpenGLPlotWidget.h"
+#include "includes/QOpenGLPlotWidget.h"
 
-#include <qglobal.h>
-#include <qglobalstatic.h>
-
-#include <chrono>
-#include <iostream>
 //#define DEBUG_INFO
 
 #ifdef DEBUG_INFO
@@ -158,7 +153,7 @@ void QOpenGLPlotRendererWidget::initializeGL()
 
     CreateLightSource();
 
-    InitializePlots(1);
+    InitializePlots(3);
 
     _paint_update_timer->start();
 }

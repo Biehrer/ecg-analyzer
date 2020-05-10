@@ -1,5 +1,5 @@
 // Project includes
-#include "includes/JonesPlot.h"
+#include "JonesPlot.h"
 
 // Qt includes
 #include <QtWidgets/QApplication>
@@ -16,6 +16,7 @@ int main(int argc, char *argv[])
     JonesPlotApplication_C w;
 	w.show();
    
+     
 	return a.exec();
 }
 

@@ -1,10 +1,10 @@
 #pragma once
 
 // Project includes
-#include "OGLChart.h"
-#include "ShapeData.h"
-#include <text_renderer_2d.h>
-#include <ShapeGenerator.h>
+#include "includes/OGLChart.h"
+#include "includes/ShapeData.h"
+#include <includes/text_renderer_2d.h>
+#include <includes/ShapeGenerator.h>
 
 // STL includes
 #include <iostream>
@@ -31,10 +31,11 @@
 #include <qopenglbuffer.h>
 #include <qopenglshaderprogram.h>
 #include <qopengl.h>
-
 #include <qopengltexture.h>
 #include <qopenglvertexarrayobject.h>
 #include <qdatetime.h>
+#include <qglobal.h>
+#include <qglobalstatic.h>
 
 // Project defines
 #define SREENWIDTH 1440

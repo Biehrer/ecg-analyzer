@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.4)
 
 project(signalanalyzer)
 
-set(CMAKE_INCLUDE_CURRENT_DIR ON)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
@@ -11,34 +11,15 @@ find_package(Qt5Core)
 find_package(Qt5Widgets)
 find_package(Qt5Gui)
 
-# temporary hack to include freetype
-set(ENV{FREETYPE_DIR} "C:/Development/libs/freetype-build/")
-find_package(Freetype REQUIRED)
-message(STATUS "FREETYPE_INCLUDE_DIR_ft2build=${FREETYPE_INCLUDE_DIR_ft2build}")
+# add visualization code 
+add_subdirectory(includes)
 
-add_executable(${PROJECT_NAME} "main.cpp"
-                                "JonesPlot.h" 
-								"JonesPlot.cpp"
-                                "OGLChart.h" 
-								"OGLChart.cpp"
-                                "QOpenGLPlotWidget.h" 
-								"QOpenGLPlotWidget.cpp"
-                                "ShapeGenerator.h" 
-                                "ShapeData.h"
-								"CircularBuffer.h"
-								"text_renderer_2d.h"
-								"chart_types.h"
-								"JonesPlot.ui"
-								"ogl_chart_geometry_c.h"
-								"ogl_chart_geometry_c.cpp"
-								"chart_shapes_c.h"
-                                )
+add_executable(${PROJECT_NAME} main.cpp)
 
- # link libs
+# link to the visualization code
+target_link_libraries(${PROJECT_NAME} PUBLIC visualization)
+
+ # link to Qt
 target_link_libraries(${PROJECT_NAME} Qt5::Widgets)
 target_link_libraries(${PROJECT_NAME} Qt5::Gui)
 target_link_libraries(${PROJECT_NAME} Qt5::Core)
-
-# link freetype
-target_link_libraries(${PROJECT_NAME} ${FREETYPE_LIBRARIES})
-target_include_directories(${PROJECT_NAME} PRIVATE ${FREETYPE_INCLUDE_DIRS})

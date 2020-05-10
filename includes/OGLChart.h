@@ -1,12 +1,12 @@
 #pragma once
 
 // Project includes
-#include <CircularBuffer.h>
-#include <ogl_chart_geometry_c.h>
-#include <chart_shapes_c.h>
-#include <chart_types.h>
-#include <ogl_sweep_chart_buffer.h>
-#include <text_renderer_2d.h>
+#include <includes/CircularBuffer.h>
+#include <includes/ogl_chart_geometry_c.h>
+#include <includes/chart_shapes_c.h>
+#include <includes/chart_types.h>
+#include <includes/ogl_sweep_chart_buffer.h>
+#include <includes/text_renderer_2d.h>
 //#include <QOpenGLPlotRendererWidget.h>
 
 // STL includes

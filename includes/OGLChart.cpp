@@ -1,4 +1,4 @@
-#include <OGLChart.h>
+#include <includes/OGLChart.h>
 
 //#define DEBUG_INFO
 

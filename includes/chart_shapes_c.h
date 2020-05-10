@@ -1,7 +1,7 @@
 #pragma once
 
 // Project includes
-#include <ogl_chart_geometry_c.h>
+#include <includes/ogl_chart_geometry_c.h>
 
 // Qt includes
 #include <qvector.h>
