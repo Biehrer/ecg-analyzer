@@ -20,4 +20,9 @@ Inside the CMakeLists.txt file, adapt the environment variable of the freetype p
 ### How 2 run:
 no extra steps neccessary
 
-Adapt hardcoded file paths (e.g strg-f search for C:/ and adapt it to you machine) -> this wont be necessary when there is an filepath manager
+Adapt hardcoded file paths (e.g strg-f search for C:/ inside the code and adapt it to you machine) -> this wont be necessary when there is an filepath manager
+
+Go to includes/CMakeList.txt and change the filepath in the following line to the location where your Freetype 2 build directy is located:
+set(ENV{FREETYPE_DIR} "C:/Development/libs/freetype-build/")
+
+Theses steps are necessary because of the projects early stage
