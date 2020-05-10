@@ -67,9 +67,12 @@ void OGLSweepChart_C::InitializeAxesDescription(const QVector<float>& horizontal
                                                 const QVector<float>& vertical_grid_vertices,
                                                 float scale)
 {
-    int num_of_horizontal_desc = horizontal_grid_vertices.size() / 2 / 3 + 1;   // /2 -> only need half the vertices (Point FROM, not point TO)
-    int num_of_vertical_desc = vertical_grid_vertices.size() / 2 / 3 + 1;      // /3 -> only need number of text fields for now. Three vertices are one text field
-    // +1 because of the 0 lines !!!!
+    // /2 -> only need half the vertices (Point FROM, not point TO)
+    // /3 -> only need number of text fields for now. Three vertices are one text field
+    // +1 because of the 0 lines with also should have an description (e.g. 0 mV) 
+    int num_of_horizontal_desc = horizontal_grid_vertices.size() / 2 / 3 + 1;   
+    int num_of_vertical_desc = vertical_grid_vertices.size() / 2 / 3 + 1;     
+
     int num_of_descriptions = num_of_horizontal_desc + num_of_vertical_desc;
 
     _plot_axes.reserve(num_of_descriptions);
@@ -268,19 +271,20 @@ OGLSweepChart_C::CreateSurfaceGrid(int x_major_tick_dist_ms, int y_major_tick_di
                                                         y_major_tick_dist_unit);
 
     auto& horizontal_grid_vertices = surface_grid_vertices.first;
-    auto& vertical_grid_vertices = surface_grid_vertices.first;
+    auto& vertical_grid_vertices = surface_grid_vertices.second;
 
-    _num_of_surface_grid_positions = horizontal_grid_vertices.size() / 3 + 
-                                       vertical_grid_vertices.size() / 3;
 
     QVector<float> combined_vertices; 
-    combined_vertices.reserve(horizontal_grid_vertices.size() + vertical_grid_vertices.size());
+    int num_of_combined_verts = horizontal_grid_vertices.size() + vertical_grid_vertices.size();
+    combined_vertices.reserve(num_of_combined_verts);
     for ( auto& horizontal_vert : horizontal_grid_vertices ) {
         combined_vertices.append(horizontal_vert);
     }
     for ( auto& vertical_vert : vertical_grid_vertices ) {
         combined_vertices.append(vertical_vert);
     }
+
+    _num_of_surface_grid_positions = num_of_combined_verts / 3;
 
     // Create VBO
     QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
@@ -290,7 +294,7 @@ OGLSweepChart_C::CreateSurfaceGrid(int x_major_tick_dist_ms, int y_major_tick_di
     f->glEnableVertexAttribArray(0);
     // 3 positions for x and y and z data coordinates
     f->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
-    _surface_grid_vbo.allocate(combined_vertices.constData(), combined_vertices.size() * static_cast<int>(sizeof(float)));
+    _surface_grid_vbo.allocate(combined_vertices.constData(), combined_vertices.size() * sizeof(float) );
     _surface_grid_vbo.setUsagePattern(QOpenGLBuffer::StaticDraw);
     f->glDisableVertexAttribArray(0);
     _surface_grid_vbo.release();
@@ -380,10 +384,10 @@ void OGLSweepChart_C::DrawXYAxes(QOpenGLShaderProgram& shader, QOpenGLShaderProg
 	f->glDisableVertexAttribArray(0);
     _x_axis_vbo.release();
 
-    // Draw the descriptions
+    // Draw the axes descriptions
     for ( const auto& description : _plot_axes ) {
         // => Cherno 2 in 1 shader 
-        // -> bind a white 1x1 texture to use flat colors and bind a 1.0 color to just draw the texture, 
+        // -> approach: bind a white 1x1 texture to use flat colors and bind a 1.0 color to just draw the texture, 
         // use a texture sampler, if not, just use the uniform color !
          description.RenderText(text_shader, _text_color, _chart_mvp);
     }
