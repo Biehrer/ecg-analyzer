@@ -15,8 +15,8 @@ find_package(Freetype REQUIRED)
 message(STATUS "FREETYPE_INCLUDE_DIR_ft2build=${FREETYPE_INCLUDE_DIR_ft2build}")
 
 add_library(${PROJECT_NAME} 
-"JonesPlot.h" 
-"JonesPlot.cpp"
+"jones_plot_app.h" 
+"jones_plot_app.cpp"
 "ogl_plot_renderer_widget.h"
 "ogl_plot_renderer_widget.cpp"
 "ogl_sweep_chart.h" 
@@ -25,14 +25,13 @@ add_library(${PROJECT_NAME}
 "ogl_sweep_chart_buffer.cpp"
 "ShapeGenerator.h" 
 "ShapeData.h"
-"CircularBuffer.h"
+"circular_buffer.h"
 "text_renderer_2d.h"
 "chart_types.h"
 "JonesPlot.ui"
 "ogl_chart_geometry_c.h"
 "ogl_chart_geometry_c.cpp"
 "chart_shapes_c.h"
-
 )
 
  # link libs

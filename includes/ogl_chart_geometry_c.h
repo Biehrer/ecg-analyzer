@@ -1,7 +1,7 @@
 #pragma once
 
 // Project includes
-#include <includes/CircularBuffer.h>
+#include <includes/chart_types.h>
 
 //! Defines which datatype to use for position calculations
 using PositionType_TP = int;

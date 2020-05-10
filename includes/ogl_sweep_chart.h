@@ -1,7 +1,7 @@
 #pragma once
 
 // Project includes
-#include <includes/CircularBuffer.h>
+#include <includes/circular_buffer.h>
 #include <includes/ogl_chart_geometry_c.h>
 #include <includes/chart_shapes_c.h>
 #include <includes/chart_types.h>
