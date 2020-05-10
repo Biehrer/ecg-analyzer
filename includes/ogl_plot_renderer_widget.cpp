@@ -48,10 +48,6 @@ QOpenGLPlotRendererWidget::QOpenGLPlotRendererWidget(QWidget* parent)
     _paint_update_timer = new QTimer();
     connect(_paint_update_timer, SIGNAL(timeout()), this, SLOT(update()));
     _paint_update_timer->setInterval(30);
-
-    double data_gen_frequency_hz = 1000.0;
-    double data_gen_frequency_s = 1.0 / data_gen_frequency_hz;
-    double data_gren_frequency_ms = data_gen_frequency_s * 1000.0;
 }
 
 void QOpenGLPlotRendererWidget::OnDataUpdateThreadFunction()
@@ -89,20 +85,22 @@ const QMatrix4x4 QOpenGLPlotRendererWidget::GetModelViewProjection() const
 
 
 void QOpenGLPlotRendererWidget::InitializePlots(int number_of_plots) 
-{   
+{
+    DEBUG("initialize plots");
+
     // Chart properties
     int chart_buffer_size = 10000;
     int time_range_ms = 10000;
-    float max_y_axis_value = 5.0f;
-    float min_y_axis_value = -5.0f;
+    float max_y_axis_value = 10.0f;
+    float min_y_axis_value = -10.0f;
 
     // Calculate position of the charts
-    int screenwidth_fraction = SREENWIDTH / 6;
-    int chart_width = SREENWIDTH - screenwidth_fraction;
+    int offset = SREENWIDTH / 6;
+    int chart_width = SREENWIDTH - offset;
     int chart_height = SCREENHEIGHT / number_of_plots;
     // Chart is aligned at the left side of the screen
     int chart_pos_x = 0;
-    std::cout << "initialize plots: " << std::endl;
+
     int chart_to_chart_offset_S = 10;
     int chart_offset_from_origin_S = 4;
 
@@ -153,7 +151,7 @@ void QOpenGLPlotRendererWidget::initializeGL()
 
     CreateLightSource();
 
-    InitializePlots(3);
+    InitializePlots(1);
 
     _paint_update_timer->start();
 }
@@ -163,10 +161,11 @@ void QOpenGLPlotRendererWidget::initializeGL()
 // If this event should be triggered, it needs to be passed to this widget from JonesPlot
 void QOpenGLPlotRendererWidget::resizeGL(int width, int height)
 {
+    QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
+
     _projection_mat->setToIdentity();
     _view_mat->setToIdentity();
     _projection_mat->ortho(QRect(0, 0, this->width(),this->height()));
-    QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
 	f->glViewport(0, 0, this->width(), this->height());
 	this->update();
 
