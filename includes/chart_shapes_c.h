@@ -27,6 +27,7 @@ public:
         bb_vertices.push_back(geometry.GetLeftBottom()._x);
         bb_vertices.push_back(geometry.GetLeftBottom()._y);
         bb_vertices.push_back(geometry.GetLeftBottom()._z);
+
         // Draw right side 
         // Bottom right corner
         bb_vertices.push_back(geometry.GetRightBottom()._x);
@@ -36,6 +37,7 @@ public:
         bb_vertices.push_back(geometry.GetRightTop()._x);
         bb_vertices.push_back(geometry.GetRightTop()._y);
         bb_vertices.push_back(geometry.GetRightTop()._z);
+
         // Draw top side
         // Top left corner
         bb_vertices.push_back(geometry.GetLeftTop()._x);
@@ -45,6 +47,7 @@ public:
         bb_vertices.push_back(geometry.GetRightTop()._x);
         bb_vertices.push_back(geometry.GetRightTop()._y);
         bb_vertices.push_back(geometry.GetRightTop()._z);
+
         // Draw left side 
         // Top left corner
         bb_vertices.push_back(geometry.GetLeftTop()._x);
@@ -81,7 +84,7 @@ public:
         int number_of_horizontal_grid_lines = (max_y_val - min_y_val) / y_major_tick_dist_unit;
         VertexType_TP y_axis_major_tick_value = max_y_val;
 
-        for ( int line_idx = 0; line_idx < number_of_horizontal_grid_lines; ++line_idx ) {
+        for ( int line_idx = 0; line_idx <= number_of_horizontal_grid_lines; ++line_idx ) {
             VertexType_TP major_tick_y_pos_S = GetScreenCoordsFromYChartValue(y_axis_major_tick_value, max_y_val, min_y_val, geometry);
 
             y_axis_major_tick_value -= y_major_tick_dist_unit;
@@ -101,7 +104,7 @@ public:
 
         VertexType_TP x_axis_major_tick_value = time_range_ms;
         int number_of_vertical_grid_lines = time_range_ms / x_major_tick_dist_ms;
-        for ( int line_idx = 0; line_idx < number_of_vertical_grid_lines; ++line_idx ) {
+        for ( int line_idx = 0; line_idx <= number_of_vertical_grid_lines; ++line_idx ) {
             VertexType_TP major_tick_x_pos_S = GetScreenCoordsFromXChartValue(x_axis_major_tick_value, time_range_ms, geometry);
             x_axis_major_tick_value -= x_major_tick_dist_ms;
             // Point from
