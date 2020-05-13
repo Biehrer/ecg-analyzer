@@ -6,93 +6,6 @@
 //! Defines which datatype to use for position calculations
 using PositionType_TP = int;
 
-struct BoundingBoxArea_TP {
-
-    BoundingBoxArea_TP(const Position3D_TC<PositionType_TP>& left_top, 
-                        const Position3D_TC<PositionType_TP>& left_bottom,
-                        const Position3D_TC<PositionType_TP>& right_top,
-                        const Position3D_TC<PositionType_TP>& right_bottom)
-        : 
-        _left_top(left_top),
-        _left_bottom(left_bottom),
-        _right_top(right_top),
-        _right_bottom(right_bottom)
-    {
-       _width  = _left_bottom._x - _right_bottom._x;
-       _height = _left_bottom._y - _left_top._y;
-    }
-
-    BoundingBoxArea_TP(PositionType_TP screen_pos_x_S,
-                       PositionType_TP screen_pos_y_S,
-                       PositionType_TP width_S,
-                       PositionType_TP height_S)
-            : 
-        _width(width_S),
-        _height(height_S)
-
-    {
-            // calculate corner points of the bounding box
-            _left_bottom._x = screen_pos_x_S;
-            _left_bottom._y = screen_pos_y_S;
-            _left_bottom._z = _z_pos;
-
-            _left_top._x = screen_pos_x_S;
-            _left_top._y = screen_pos_y_S + _height;
-            _left_top._z = _z_pos;
-
-            _right_bottom._x = screen_pos_x_S + _width;
-            _right_bottom._y = screen_pos_y_S;
-            _right_bottom._z = _z_pos;
-
-            _right_top._x = screen_pos_x_S + _width;
-            _right_top._y = screen_pos_y_S + _height;
-            _right_top._z = _z_pos;
-    }
-
-    BoundingBoxArea_TP()
-    {
-    }
-
-    
-public:
-    //! Returns the left top of the area in screen coordinates
-    const Position3D_TC<PositionType_TP>& GetLeftTop() const { return _left_top; }
-
-    //! Returns the left bottom of the area in screen coordinates
-    const Position3D_TC<PositionType_TP>& GetLeftBottom() const { return _left_bottom; }
-
-    //! Returns the right top of the area in screen coordinates
-    const Position3D_TC<PositionType_TP>& GetRightTop() const { return _right_top; }
-
-    //! Returns the right bottom of the area in screen coordinates
-    const Position3D_TC<PositionType_TP>& GetRightBottom() const { return _right_bottom; }
-
-    //! Returns the with of the area
-    const PositionType_TP GetWidth() const { return _width; }
-
-    //! Returns the height of the area
-    const PositionType_TP GetHeight() const { return _height; }
-
-    //! Returns the z position
-    const PositionType_TP GetZPosition() const { return _left_top._z; }
-
-public:
-    Position3D_TC<PositionType_TP> _left_top;
-
-    Position3D_TC<PositionType_TP> _left_bottom;
-    
-    Position3D_TC<PositionType_TP> _right_top;
-    
-    Position3D_TC<PositionType_TP> _right_bottom;
-
-    PositionType_TP _width = 0;
-
-    PositionType_TP _height = 0;
-
-    PositionType_TP _z_pos = 0;
-};
-
-
 class OGLChartGeometry_C {
 
     // Construction / Destruction / Copying / ...
@@ -101,6 +14,8 @@ public:
                        PositionType_TP screen_pos_y_S,
                        PositionType_TP width_S,
                        PositionType_TP height_S);
+
+    OGLChartGeometry_C() = default;
 
     OGLChartGeometry_C(const OGLChartGeometry_C& geometry);
 
@@ -118,6 +33,14 @@ public:
     //! Returns the right bottom of the chart bounding box in screen coordinates
     const Position3D_TC<PositionType_TP>& GetRightBottom() const;
 
+    void SetLeftTop(const Position3D_TC<PositionType_TP>& left_top);
+
+    void SetLeftBottom(const Position3D_TC<PositionType_TP>& left_top);
+
+    void SetRightTop(const Position3D_TC<PositionType_TP>& left_top);
+
+    void SetRightBottom(const Position3D_TC<PositionType_TP>& left_top);
+
     //! Returns the z position of the chart in screen coordinates
     PositionType_TP GetZPosition() const;
 
@@ -127,8 +50,12 @@ public:
     //! Returns the chart height in screen coordinates
     PositionType_TP GetChartHeight() const;
 
-    // The drawing area of the series
-    const BoundingBoxArea_TP& GetPlotArea() const;
+private:
+    //! Uses right_bottom - left_bottom to calculate the width
+    void RecalculateWidth();
+    
+    //! Uses left_top - left_bottom
+    void RecalculateHeight();
 
 // Private attributes
 private:
@@ -159,6 +86,4 @@ private:
     //! right bottom corner position in screen coordinates
     Position3D_TC<PositionType_TP> _right_bottom;
 
-    //! The plot area
-    BoundingBoxArea_TP _plot_area;
 };
