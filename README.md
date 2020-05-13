@@ -3,6 +3,7 @@ Framework for visualization and algorithmic analyzation of ecg (electrocardiogra
 
 Hardware accelerated realtime visualization of ecg signals in sweep charts on the gpu via OpenGL
 
+https://github.com/Biehrer/ecg-analyzer
 ## Get started
 
 required dependencies:
