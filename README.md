@@ -1,6 +1,8 @@
 # ecg-analyzer
 Framework for visualization and algorithmic analyzation of ecg (electrocardiography) signals.
 
+Hardware accelerated realtime visualization of ecg signals in sweep charts on the gpu via OpenGL
+
 ## Get started
 
 required dependencies:
