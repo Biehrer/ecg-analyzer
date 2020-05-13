@@ -99,7 +99,7 @@ void QOpenGLPlotRendererWidget::InitializePlots(int number_of_plots)
     int chart_width = SREENWIDTH - offset;
     int chart_height = SCREENHEIGHT / number_of_plots;
     // Chart is aligned at the left side of the screen
-    int chart_pos_x = 0;
+    int chart_pos_x = 10;
 
     int chart_to_chart_offset_S = 10;
     int chart_offset_from_origin_S = 4;
@@ -108,7 +108,7 @@ void QOpenGLPlotRendererWidget::InitializePlots(int number_of_plots)
     for ( int chart_idx = 0; chart_idx < number_of_plots; ++chart_idx ) {
         int chart_pos_y = (chart_height + chart_to_chart_offset_S) * chart_idx + chart_offset_from_origin_S; 
         OGLChartGeometry_C geometry(chart_pos_x, chart_pos_y, chart_width, chart_height);
-        _plots.push_back( new OGLSweepChart_C<DrawingStyle_TP::LINE_STRIP>(time_range_ms, chart_buffer_size, max_y_axis_value, min_y_axis_value, geometry, *this) );
+        _plots.push_back( new OGLSweepChart_C(time_range_ms, chart_buffer_size, max_y_axis_value, min_y_axis_value, geometry, *this) );
         std::cout << "chart pos (idx=" << chart_idx << "): " << chart_pos_y << std::endl;
     }
 
@@ -132,6 +132,8 @@ void QOpenGLPlotRendererWidget::InitializePlots(int number_of_plots)
         // Set up axes
         plot->SetMajorTickValueXAxes(1000.0);
         plot->SetMajorTickValueYAxes(5.0);
+        // Set chart type
+        plot->SetChartType(DrawingStyle_TP::LINE_SERIES);
 
         // Initialize
         plot->Initialize();
@@ -151,7 +153,7 @@ void QOpenGLPlotRendererWidget::initializeGL()
 
     CreateLightSource();
 
-    InitializePlots(1);
+    InitializePlots(2);
 
     _paint_update_timer->start();
 }

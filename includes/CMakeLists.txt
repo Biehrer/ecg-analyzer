@@ -24,6 +24,7 @@ add_library( visualization# ${PROJECT_NAME}
 "ogl_sweep_chart.h" 
 "ogl_sweep_chart.cpp"
 "ogl_sweep_chart_buffer.h"
+"ogl_sweep_chart_buffer.cpp"
 "ShapeGenerator.h" 
 "ShapeData.h"
 "circular_buffer.h"

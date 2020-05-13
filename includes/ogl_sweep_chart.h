@@ -45,14 +45,14 @@
 //! Unit - world unit (millimeters)
 //!
 //! Chart coordinate system:
-//!  (0, y) ^
-//!         | 
-//!  (0, 0) |---------------------> (x, 0)
-//!         |
-//!  (0,-y) |
+//!               __________________________________________________
+//! BOTTOM(Left) |                                                  | BOTTOM (Right)
+//!              |                                                  |
+//!       (x, y) |------------------------------------------------->| (time_range_ms, 0) (RIGHT)
+//!              |                                                  |
+//!    TOP(Left) |__________________________________________________| TOP (Right)
 //!
 
-template<DrawingStyle_TP style>
 class OGLSweepChart_C
 {
 
@@ -82,7 +82,7 @@ public:
     void AddDataTimestamp(const float value, const Timestamp_TP& timestamp);
 
     //! Draws the chart inside the opengl context from which this function is called
-    //template<DrawingStyle_TP type = DrawingStyle_TP::LINE_STRIP >
+    //template<DrawingStyle_TP type = DrawingStyle_TP::LINE_SERIES >
     void Draw( QOpenGLShaderProgram& shader, QOpenGLShaderProgram& text_shader);
 
     //! Returns the y-screen coordinates of a given plot y-value
@@ -90,6 +90,17 @@ public:
 
     //! Returns the y-screen coordinates of a given plot x-value
     float GetScreenCoordsFromXChartValue(float x_value);
+
+    //! Sets the chart type: 
+    //! - Line chart(LINE_SERIES): 
+    //!     connects datapoints with lines
+    //! 
+    //! - Point chart(POINT_SERIES):
+    //!     draws each datapoint as a point itself
+    //!
+    //! \param chart_type LINE_SERIES for a line chart or 
+    //!                   POINT_SERIES for a point chart
+    void SetChartType(DrawingStyle_TP chart_type);
 
     //! Set the major tick value for the x-axes.
     void SetMajorTickValueXAxes(float tick_value_ms);
@@ -118,8 +129,6 @@ public:
 
     //! Sets the model view projection matrix used for text rendering (e.g. axes units)
     void SetModelViewProjection(QMatrix4x4 model_view_projection);
-
-    void SetDrawStyle(DrawingStyle_TP style);
 
 // Private helper functions
 private:
@@ -201,13 +210,16 @@ private:
 
     //! The bounding box geometry of the chart.
     //! Stores where to place to chart inside the opengl viewport
-    OGLChartGeometry_C _geometry;
+    OGLChartGeometry_C _bounding_box;
+
+    //! The plot area is the area in which the data series is drawn
+    OGLChartGeometry_C _plot_area;
 
     //! Input buffer used to store user data
     RingBuffer_TC<ChartPoint_TP<Position3D_TC<float>>> _input_buffer;
 
     //! Buffer for visualization - the user does not know this one
-    OGLSweepChartBuffer_C<style> _ogl_data_series;
+    OGLSweepChartBuffer_C _ogl_data_series;
 
     //! The y component of the last value plotted
     float _last_plotted_y_value_S = 0;
