@@ -7,7 +7,6 @@
 #include <includes/chart_types.h>
 #include <includes/ogl_sweep_chart_buffer.h>
 #include <includes/text_renderer_2d.h>
-//#include <QOpenGLPlotRendererWidget.h>
 
 // STL includes
 #include <iostream>
@@ -53,6 +52,7 @@
 //!  (0,-y) |
 //!
 
+template<DrawingStyle_TP style>
 class OGLSweepChart_C
 {
 
@@ -79,13 +79,11 @@ public:
     //! This function maps data to a plot point which means data is mapped to a specific position in the plot itself (not the window the plot is placed in)
     //!
     // Todo template the chart class for different datatypes
-    void AddDataTimestamp(float value, Timestamp_TP& timestamp);
+    void AddDataTimestamp(const float value, const Timestamp_TP& timestamp);
 
     //! Draws the chart inside the opengl context from which this function is called
+    //template<DrawingStyle_TP type = DrawingStyle_TP::LINE_STRIP >
     void Draw( QOpenGLShaderProgram& shader, QOpenGLShaderProgram& text_shader);
-
-    // Unuused, old function
-    void addRange(int, QVector<double>);
 
     //! Returns the y-screen coordinates of a given plot y-value
     float GetScreenCoordsFromYChartValue(float y_value);
@@ -121,6 +119,8 @@ public:
     //! Sets the model view projection matrix used for text rendering (e.g. axes units)
     void SetModelViewProjection(QMatrix4x4 model_view_projection);
 
+    void SetDrawStyle(DrawingStyle_TP style);
+
 // Private helper functions
 private:
 
@@ -131,25 +131,25 @@ private:
 
     //! Draws the x- and y-axis inside the opengl context
     //! from which the function is called
-    void DrawXYAxes( QOpenGLShaderProgram& shader, QOpenGLShaderProgram& text_shader);
+    void DrawXYAxes(QOpenGLShaderProgram& shader, QOpenGLShaderProgram& text_shader);
 
     //! Draws the border bounding box of the plot area inside the opengl context
-    void DrawBoundingBox( QOpenGLShaderProgram& shader);
+    void DrawBoundingBox(QOpenGLShaderProgram& shader);
 
     //! Draws the data series to the opengl context inside the plot-area
-    void DrawSeries( QOpenGLShaderProgram& shader);
+    void DrawSeries(QOpenGLShaderProgram& shader);
     
     //! Draws the surface grid
-    void DrawSurfaceGrid( QOpenGLShaderProgram& shader);
+    void DrawSurfaceGrid(QOpenGLShaderProgram& shader);
 
     //! Draws the lead line
-    void DrawLeadLine( QOpenGLShaderProgram& shader);
+    void DrawLeadLine(QOpenGLShaderProgram& shader);
 
     //! Creates the vbo used to draw the bounding box of the chart
     void CreateBoundingBox();
 
     //! Creates a vbo used to draw the grid of the chart
-   std::pair<QVector<float>, QVector<float>> CreateSurfaceGrid(int x_dist_unit, int y_dist_unit);
+    std::pair<QVector<float>, QVector<float>> CreateSurfaceGrid(int x_dist_unit, int y_dist_unit);
 
     //! Creates the vbo used to draw the lead line indicating the most current datapoint
     void CreateLeadLineVbo();
@@ -207,7 +207,7 @@ private:
     RingBuffer_TC<ChartPoint_TP<Position3D_TC<float>>> _input_buffer;
 
     //! Buffer for visualization - the user does not know this one
-    OGLSweepChartBuffer_C _ogl_data_series;
+    OGLSweepChartBuffer_C<style> _ogl_data_series;
 
     //! The y component of the last value plotted
     float _last_plotted_y_value_S = 0;
@@ -218,18 +218,27 @@ private:
     // Colors for the shader
     // Todo: struct?
     QVector3D _lead_line_color;
+
     QVector3D _series_color;
+    
     QVector3D _bounding_box_color;
+    
     QVector3D _surface_grid_color;
+    
     QVector3D _axes_color;
+    
     QVector3D _text_color;
 
+    //! modifies the surface grid
     float _major_tick_x_axes;
 
+    //! modifies the surface grid
     float _major_tick_y_axes;
 
+    //! unit descriptions for the x and y axes
     std::vector<OGLTextBox> _plot_axes;
 
+    //! Model view projection transform matrix for text rendering
     QMatrix4x4 _chart_mvp;
 
     //! The parent widget with the opengl context

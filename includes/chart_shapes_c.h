@@ -2,23 +2,10 @@
 
 // Project includes
 #include <includes/ogl_chart_geometry_c.h>
+#include <includes/chart_types.h>
 
 // Qt includes
 #include <qvector.h>
-
-struct XYAxisVertices_TP
-{
-public:
-    XYAxisVertices_TP(QVector<float> x_axis_vertices,
-        QVector<float> y_axis_vertices)
-        :
-        _x_axis_vertices(x_axis_vertices),
-        _y_axis_vertices(y_axis_vertices)
-    {
-    }
-    QVector<float> _x_axis_vertices;
-    QVector<float> _y_axis_vertices;
-};
 
 template<typename VertexType_TP>
 class ChartShapes_C  {

@@ -2,7 +2,7 @@
 
 // Project includes
 #include "ui_JonesPlot.h"
-#include "includes/ogl_plot_renderer_widget.h"
+#include <includes/ogl_plot_renderer_widget.h>
 
 // Qt includes
 #include <QtWidgets/QMainWindow>
@@ -24,14 +24,11 @@ protected:
     // Called when the window is resized
     virtual void resizeEvent(QResizeEvent* event);
 
-private:
-    QOpenGLPlotRendererWidget* plot_widget;
-	Ui::JonesPlotClass ui;
-
-
 public:
     void SendDatatToPlots();
 
-
+private:
+    QOpenGLPlotRendererWidget* plot_widget;
+    Ui::JonesPlotClass ui;
 
 };

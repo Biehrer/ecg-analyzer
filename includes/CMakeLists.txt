@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 2.4)
 
 project(visualization)
 
+#include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 
@@ -14,7 +16,7 @@ set(ENV{FREETYPE_DIR} "C:/Development/libs/freetype-build/")
 find_package(Freetype REQUIRED)
 message(STATUS "FREETYPE_INCLUDE_DIR_ft2build=${FREETYPE_INCLUDE_DIR_ft2build}")
 
-add_library(${PROJECT_NAME} 
+add_library( visualization# ${PROJECT_NAME} 
 "jones_plot_app.h" 
 "jones_plot_app.cpp"
 "ogl_plot_renderer_widget.h"
@@ -22,7 +24,6 @@ add_library(${PROJECT_NAME}
 "ogl_sweep_chart.h" 
 "ogl_sweep_chart.cpp"
 "ogl_sweep_chart_buffer.h"
-"ogl_sweep_chart_buffer.cpp"
 "ShapeGenerator.h" 
 "ShapeData.h"
 "circular_buffer.h"
@@ -43,4 +44,5 @@ target_link_libraries(visualization Qt5::Core)
 target_link_libraries(visualization ${FREETYPE_LIBRARIES})
 target_include_directories(visualization PUBLIC ${FREETYPE_INCLUDE_DIRS})
 
-target_include_directories(${PROJECT_NAME} PUBLIC includes)
+# should this be PUBLIC or better INTERFACE? 
+target_include_directories(${PROJECT_NAME} INTERFACE includes)

@@ -1,4 +1,4 @@
-#include <includes/ogl_Sweep_chart.h>
+#include <includes/ogl_sweep_chart.h>
 
 //#define DEBUG_INFO
 
@@ -8,7 +8,8 @@
     #define DEBUG(msg) do{} while(0)
 #endif
 
-OGLSweepChart_C::~OGLSweepChart_C() 
+template<DrawingStyle_TP DrawingStyle>
+OGLSweepChart_C<DrawingStyle>::~OGLSweepChart_C()
 {
     _y_axis_vbo.destroy();
     _x_axis_vbo.destroy();
@@ -16,7 +17,8 @@ OGLSweepChart_C::~OGLSweepChart_C()
     _surface_grid_vbo.destroy();
 }
 
-OGLSweepChart_C::OGLSweepChart_C(int time_range_ms,
+template<DrawingStyle_TP DrawingStyle>
+OGLSweepChart_C<DrawingStyle>::OGLSweepChart_C(int time_range_ms,
                        int buffer_size,
                        float max_y_value,
                        float min_y_value,
@@ -32,13 +34,15 @@ OGLSweepChart_C::OGLSweepChart_C(int time_range_ms,
     _time_range_ms(time_range_ms),
     _input_buffer(buffer_size),
     _ogl_data_series(buffer_size, time_range_ms, _input_buffer),
+    _drawing_style(DrawingStyle_TP::POINT_STRIP),
     _parent_widget(parent)
 {
     _max_y_axis_value = max_y_value;
     _min_y_axis_value = min_y_value;
 }
 
-void OGLSweepChart_C::Initialize() 
+template<DrawingStyle_TP DrawingStyle>
+void OGLSweepChart_C<DrawingStyle>::Initialize() 
 {
     DEBUG("Initialize OGLChart");
 
@@ -57,13 +61,14 @@ void OGLSweepChart_C::Initialize()
     // Create surface grid vbo
     auto grid_vertices = CreateSurfaceGrid(_major_tick_x_axes, _major_tick_y_axes);
     auto& horizontal_verts = grid_vertices.first;
-    auto& vertical_verts = grid_vertices.second;
+    auto& vertical_verts   = grid_vertices.second;
+
     // Use the surface grid vertice
     InitializeAxesDescription(horizontal_verts, vertical_verts, 0.25f);
 }
 
-
-void OGLSweepChart_C::InitializeAxesDescription(const QVector<float>& horizontal_grid_vertices, 
+template<DrawingStyle_TP DrawingStyle>
+void OGLSweepChart_C<DrawingStyle>::InitializeAxesDescription(const QVector<float>& horizontal_grid_vertices, 
                                                 const QVector<float>& vertical_grid_vertices,
                                                 float scale)
 {
@@ -82,8 +87,6 @@ void OGLSweepChart_C::InitializeAxesDescription(const QVector<float>& horizontal
         description.Initialize(Font2D_TP::ARIAL);
     }
 
-    // time_range = 10 ms -> 10 x descriptions 0 - 10 (11 nums)
-    // max_y_val = -5 / +5 -> 2x description (1 x -5 ; 1 x +5; 1 x 0) 
     int offset_from_left_screen_border = 10;
 
     auto _plot_axes_horizontal_end = _plot_axes.begin() + num_of_horizontal_desc;
@@ -99,19 +102,19 @@ void OGLSweepChart_C::InitializeAxesDescription(const QVector<float>& horizontal
     }
 
     // vertical changing descriptions (x-axes)
+    int offset = 5;
     float current_x_description = _time_range_ms; 
     for ( auto plot_desc_x_it = _plot_axes_horizontal_end; plot_desc_x_it != _plot_axes.end(); ++plot_desc_x_it ) {
         int pos_x = GetScreenCoordsFromXChartValue(current_x_description);
-        int pos_y = _geometry.GetLeftTop()._y + 5; // +_geometry.GetChartHeight() / 2;
+        int pos_y = _geometry.GetLeftTop()._y + offset;
         std::string text = std::to_string(current_x_description);
         plot_desc_x_it->SetText(text, pos_x, pos_y, scale);
         current_x_description -= _major_tick_x_axes;
     }
-
-
 }
 
-void OGLSweepChart_C::AddDataTimestamp(float value, Timestamp_TP & timestamp)
+template<DrawingStyle_TP DrawingStyle>
+void OGLSweepChart_C<DrawingStyle>::AddDataTimestamp(const float value, const Timestamp_TP & timestamp)
 {
     // Don't add the value if its not inside the range, 
    // because its not visible eitherway -> better solution would be: Add it to the series but don't draw it!
@@ -119,29 +122,23 @@ void OGLSweepChart_C::AddDataTimestamp(float value, Timestamp_TP & timestamp)
         return;
     }
 
-    auto x_ms = timestamp.GetMilliseconds();
-    auto x_ms_modulo = x_ms % static_cast<int>(_time_range_ms);
-
     // - (minus) because then the positive y axis is directing at the top of the screen
     float y_val_scaled_S = static_cast<float>(_geometry.GetLeftTop()._y) -
-        ((value - _min_y_axis_value) / (_max_y_axis_value - _min_y_axis_value)) * _geometry.GetChartHeight();
+                          ((value - _min_y_axis_value) / (_max_y_axis_value - _min_y_axis_value)) * _geometry.GetChartHeight();
 
-    DEBUG("Scaled y value: " << y_val_scaled_S << ", to value: " << value);
-
-    // - so the data value runs from left to right side
-    float x_val_wrap_corrected_ms = x_ms_modulo;
-
-    // calculate x-value after wrapping
+    auto x_ms = timestamp.GetMilliseconds();
+    auto x_ms_modulo    = x_ms % static_cast<int>(_time_range_ms);
     float x_val_scaled_S = static_cast<float>(_geometry.GetLeftBottom()._x) +
-                             ((x_val_wrap_corrected_ms) / (_time_range_ms)) *
-                             _geometry.GetChartWidth();
+                                             ((x_ms_modulo) / (_time_range_ms)) *
+                                             _geometry.GetChartWidth();
 
-    _input_buffer.InsertAtTail(ChartPoint_TP<Position3D_TC<float>>(Position3D_TC<float>(x_val_scaled_S, y_val_scaled_S, 1.0f), x_ms));
-    DEBUG("Scaled x value: " << x_val_scaled_S << ", to value: " << x_ms);
+    DEBUG("Scaled x value: " << x_val_scaled_S << ", to value: " << x_ms_modulo);
+    DEBUG("Scaled y value: " << y_val_scaled_S << ", to value: " << value);
+    _input_buffer.InsertAtTail(ChartPoint_TP<Position3D_TC<float>>(Position3D_TC<float>(x_val_scaled_S, y_val_scaled_S, 1.0f), x_ms ));
 }
 
-
-float OGLSweepChart_C::GetScreenCoordsFromYChartValue(float y_value) 
+template<DrawingStyle_TP DrawingStyle>
+float OGLSweepChart_C<DrawingStyle>::GetScreenCoordsFromYChartValue(float y_value) 
 {
    float y_value_S =  static_cast<float>(_geometry.GetLeftTop()._y) -
         ((y_value - _min_y_axis_value) / (_max_y_axis_value - _min_y_axis_value)) * _geometry.GetChartHeight();
@@ -149,7 +146,8 @@ float OGLSweepChart_C::GetScreenCoordsFromYChartValue(float y_value)
    return y_value_S;
 }
 
-float OGLSweepChart_C::GetScreenCoordsFromXChartValue(float x_value_ms)
+template<DrawingStyle_TP DrawingStyle>
+float OGLSweepChart_C<DrawingStyle>::GetScreenCoordsFromXChartValue(float x_value_ms)
 {
     // calculate new x-index when the dataseries has reached the left border of the plot
     float x_val_wrap_corrected_ms = x_value_ms;
@@ -161,51 +159,68 @@ float OGLSweepChart_C::GetScreenCoordsFromXChartValue(float x_value_ms)
     return x_value_S;
 }
 
-void OGLSweepChart_C::SetMajorTickValueXAxes(float tick_value_ms)
+template<DrawingStyle_TP DrawingStyle>
+void OGLSweepChart_C<DrawingStyle>::SetMajorTickValueXAxes(float tick_value_ms)
 {
     _major_tick_x_axes = tick_value_ms;
 }
 
-void OGLSweepChart_C::SetMajorTickValueYAxes(float tick_value_unit)
+template<DrawingStyle_TP DrawingStyle>
+void OGLSweepChart_C<DrawingStyle>::SetMajorTickValueYAxes(float tick_value_unit)
 {
     _major_tick_y_axes = tick_value_unit;
 }
 
-void OGLSweepChart_C::SetAxesColor(const QVector3D& color)
+template<DrawingStyle_TP DrawingStyle>
+void OGLSweepChart_C<DrawingStyle>::SetAxesColor(const QVector3D& color)
 {
     _axes_color = color;
 }
 
-void OGLSweepChart_C::SetTextColor(const QVector3D& color)
+template<DrawingStyle_TP DrawingStyle>
+void OGLSweepChart_C<DrawingStyle>::SetTextColor(const QVector3D& color)
 {
     _text_color = color;
 }
-void OGLSweepChart_C::SetSeriesColor(const QVector3D& color)
+
+template<DrawingStyle_TP DrawingStyle>
+void OGLSweepChart_C<DrawingStyle>::SetSeriesColor(const QVector3D& color)
 {
     _series_color = color;
 }
 
-void OGLSweepChart_C::SetBoundingBoxColor(const QVector3D& color)
+template<DrawingStyle_TP DrawingStyle>
+void OGLSweepChart_C<DrawingStyle>::SetBoundingBoxColor(const QVector3D& color)
 {
     _bounding_box_color = color;
 }
 
-void OGLSweepChart_C::SetSurfaceGridColor(const QVector3D& color)
+template<DrawingStyle_TP DrawingStyle>
+void OGLSweepChart_C<DrawingStyle>::SetSurfaceGridColor(const QVector3D& color)
 {
     _surface_grid_color = color;
 }
 
-void OGLSweepChart_C::SetLeadLineColor(const QVector3D& color)
+template<DrawingStyle_TP DrawingStyle>
+void OGLSweepChart_C<DrawingStyle>::SetLeadLineColor(const QVector3D& color)
 {
     _lead_line_color = color;
 }
 
-void OGLSweepChart_C::SetModelViewProjection(QMatrix4x4 model_view_projection)
+template<DrawingStyle_TP DrawingStyle>
+void OGLSweepChart_C<DrawingStyle>::SetModelViewProjection(QMatrix4x4 model_view_projection)
 {
     _chart_mvp = model_view_projection;
 }
 
-void OGLSweepChart_C::Draw(QOpenGLShaderProgram& shader, QOpenGLShaderProgram& text_shader) 
+template<DrawingStyle_TP DrawingStyle>
+void OGLSweepChart_C<DrawingStyle>::SetDrawStyle(DrawingStyle_TP style)
+{
+    //_drawing_style = style;
+}
+
+template<DrawingStyle_TP DrawingStyle>
+void OGLSweepChart_C<DrawingStyle>::Draw(QOpenGLShaderProgram& shader, QOpenGLShaderProgram& text_shader) 
 {
     DrawSeries(shader);
     DrawBoundingBox(shader);
@@ -214,9 +229,9 @@ void OGLSweepChart_C::Draw(QOpenGLShaderProgram& shader, QOpenGLShaderProgram& t
     DrawXYAxes(shader, text_shader);
 }
 
-
 // Todo: x-axes should always be at the position where the chart hast the value zero at the y axis.
-void OGLSweepChart_C::SetupAxes() 
+template<DrawingStyle_TP DrawingStyle>
+void OGLSweepChart_C<DrawingStyle>::SetupAxes() 
 {
     const auto axes_vertices = ChartShapes_C<float>::MakesAxesVertices(_geometry, 5.0); //CreateAxesVertices(5.0);
     auto& x_axis_vertices = axes_vertices._x_axis_vertices;
@@ -245,8 +260,9 @@ void OGLSweepChart_C::SetupAxes()
     _y_axis_vbo.release();
 }
 
+template<DrawingStyle_TP DrawingStyle>
 inline
-void OGLSweepChart_C::DrawSurfaceGrid( QOpenGLShaderProgram& shader)
+void OGLSweepChart_C<DrawingStyle>::DrawSurfaceGrid( QOpenGLShaderProgram& shader)
 {
     QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
     shader.bind();
@@ -259,8 +275,9 @@ void OGLSweepChart_C::DrawSurfaceGrid( QOpenGLShaderProgram& shader)
     _surface_grid_vbo.release();
 }
 
+template<DrawingStyle_TP DrawingStyle>
 std::pair<QVector<float>, QVector<float>>
-OGLSweepChart_C::CreateSurfaceGrid(int x_major_tick_dist_ms, int y_major_tick_dist_unit)
+OGLSweepChart_C<DrawingStyle>::CreateSurfaceGrid(int x_major_tick_dist_ms, int y_major_tick_dist_unit)
 {
     auto surface_grid_vertices = 
         ChartShapes_C<float>::CreateSurfaceGridVertices(_geometry, 
@@ -302,7 +319,8 @@ OGLSweepChart_C::CreateSurfaceGrid(int x_major_tick_dist_ms, int y_major_tick_di
     return surface_grid_vertices;
 }
 
-void OGLSweepChart_C::CreateLeadLineVbo() 
+template<DrawingStyle_TP DrawingStyle>
+void OGLSweepChart_C<DrawingStyle>::CreateLeadLineVbo() 
 {
     int buffer_size = 2 * 3;
     _number_of_bytes_lead_line = buffer_size * sizeof(float);
@@ -337,7 +355,8 @@ void OGLSweepChart_C::CreateLeadLineVbo()
     _lead_line_vertices[5] = _geometry.GetZPosition();
 }
 
-void OGLSweepChart_C::UpdateLeadLinePosition(float x_value_new) 
+template<DrawingStyle_TP DrawingStyle>
+void OGLSweepChart_C<DrawingStyle>::UpdateLeadLinePosition(float x_value_new) 
 {
     _lead_line_vertices[0] = x_value_new;
     _lead_line_vertices[3] = x_value_new;
@@ -347,8 +366,9 @@ void OGLSweepChart_C::UpdateLeadLinePosition(float x_value_new)
 }
 
 // expects that the shader is bound to the context
+template<DrawingStyle_TP DrawingStyle>
 inline
-void OGLSweepChart_C::DrawLeadLine(QOpenGLShaderProgram& shader)
+void OGLSweepChart_C<DrawingStyle>::DrawLeadLine(QOpenGLShaderProgram& shader)
 {
     QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
     shader.bind();
@@ -364,8 +384,9 @@ void OGLSweepChart_C::DrawLeadLine(QOpenGLShaderProgram& shader)
     _lead_line_vbo.release();
 }
 
+template<DrawingStyle_TP DrawingStyle>
 inline
-void OGLSweepChart_C::DrawXYAxes(QOpenGLShaderProgram& shader, QOpenGLShaderProgram& text_shader)
+void OGLSweepChart_C<DrawingStyle>::DrawXYAxes(QOpenGLShaderProgram& shader, QOpenGLShaderProgram& text_shader)
 {
 	QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
     shader.bind();
@@ -393,8 +414,9 @@ void OGLSweepChart_C::DrawXYAxes(QOpenGLShaderProgram& shader, QOpenGLShaderProg
     }
 }
 
+template<DrawingStyle_TP DrawingStyle>
 inline
-void OGLSweepChart_C::DrawBoundingBox(QOpenGLShaderProgram& shader)
+void OGLSweepChart_C<DrawingStyle>::DrawBoundingBox(QOpenGLShaderProgram& shader)
 {
     auto* f = QOpenGLContext::currentContext()->functions();
     shader.bind();
@@ -407,8 +429,9 @@ void OGLSweepChart_C::DrawBoundingBox(QOpenGLShaderProgram& shader)
     _bb_vbo.release();
 }
 
-inline
-void OGLSweepChart_C::DrawSeries(QOpenGLShaderProgram& shader)
+
+template<DrawingStyle_TP DrawingStyle>
+void OGLSweepChart_C<DrawingStyle>::DrawSeries(QOpenGLShaderProgram& shader)
 {
     auto* f = QOpenGLContext::currentContext()->functions();
     shader.bind();
@@ -416,7 +439,8 @@ void OGLSweepChart_C::DrawSeries(QOpenGLShaderProgram& shader)
     _ogl_data_series.Draw();
 }
 
-void OGLSweepChart_C::CreateBoundingBox()
+template<DrawingStyle_TP DrawingStyle>
+void OGLSweepChart_C<DrawingStyle>::CreateBoundingBox()
 {
     auto bb_vertices = ChartShapes_C<float>::MakeBoundingBoxVertices(_geometry);
     // Setup vbo
@@ -431,30 +455,3 @@ void OGLSweepChart_C::CreateBoundingBox()
     f->glDisableVertexAttribArray(0);
     _bb_vbo.release();
 }
-
-void OGLSweepChart_C::addRange(int count, QVector<double> data)
-{
-    //void* pointerToData = chartVBO.mapRange(_bufferIndex, count, QOpenGLBuffer::RangeAccessFlag::RangeWrite);
-    //chartVBO.write(_bufferIndex, data.constData(), count);
-    //_bufferIndex += count;
-    //_chart_vbo.bind();
-    /*Example:
-    m_vertex.bind();
-    auto ptr = m_vertex.map(QOpenGLBuffer::WriteOnly);
-    memcpy(ptr, Pts.data(), Pts.size() * sizeof(Pts[0]));	//map data to buffer
-    m_vertex.unmap();
-    //do stuff and draw
-    m_vertex.release();
-    */
-    //echartVBO.mapRange()
-    ////auto pointerToData = chartVBO.mapRange(0, _bufferIndex, QOpenGLBuffer::RangeAccessFlag::RangeRead);
-    //auto point = _chart_vbo.map(QOpenGLBuffer::Access::ReadOnly);
-    //std::vector<float> dat; dat.resize(100);
-
-    //memcpy(&dat[0], &point, 100);
-    //_chart_vbo.release();
-    //dat.toStdVector();
-    //std::copy(pointerToData, *pointerToData+11,std::back_inserter(dat.toStdVector()));
-}
-
-//void OGLChart::sendDataToOGL(QOpenGLBuffer& chartVBO)//makes the function better for reuse..(we can use at as general buffer write function)

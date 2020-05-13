@@ -9,6 +9,11 @@
 #include <mutex>
 #include <atomic>
 
+// Qt includes
+#include <qvector.h>
+
+
+
 //! Representation of a position in 3d space containing three components: x, y and z
 template<typename ElementType_TP>
 class Position3D_TC {
@@ -50,40 +55,40 @@ public:
 
     // Operator overloads
 public:
-    Position3D_TC<ElementType_TP>& operator=(const Position3D_TC<ElementType_TP>& lhs) {
+    Position3D_TC<ElementType_TP>& operator=(const Position3D_TC<ElementType_TP>& rhs) {
         // self-assignment guard
-        //if ( this == &lhs ){
+        //if ( this == &rhs ){
         //    return *this;
         //}
-        _x = lhs._x;
-        _y = lhs._y;
-        _z = lhs._z;
+        _x = rhs._x;
+        _y = rhs._y;
+        _z = rhs._z;
         return *this;
     }
 
-    Position3D_TC<ElementType_TP>& operator-(const Position3D_TC<ElementType_TP>& lhs) {
-        _x -= lhs._x;
-        _y -= lhs._y;
-        _z -= lhs._z;
+    Position3D_TC<ElementType_TP>& operator-(const Position3D_TC<ElementType_TP>& rhs) {
+        _x -= rhs._x;
+        _y -= rhs._y;
+        _z -= rhs._z;
         return *this;
     }
 
-    Position3D_TC<ElementType_TP>& operator+(const Position3D_TC<ElementType_TP>& lhs) {
-        _x += lhs._x;
-        _y += lhs._y;
-        _z += lhs._z;
+    Position3D_TC<ElementType_TP>& operator+(const Position3D_TC<ElementType_TP>& rhs) {
+        _x += rhs._x;
+        _y += rhs._y;
+        _z += rhs._z;
         return *this;
     }
 
-    bool operator==(const Position3D_TC<ElementType_TP>& lhs) {
-        return (_x == lhs._x && _y == lhs._y && _z == lhs._z);
+    bool operator==(const Position3D_TC<ElementType_TP>& rhs) {
+        return (_x == rhs._x && _y == rhs._y && _z == rhs._z);
     }
 
-    friend std::ostream& operator<<(std::ostream& s, const Position3D_TC& lhs) {
-        s << "Element: " << "x: " << lhs._x
-            << ", y: " << lhs._y
-            << ", z: " << lhs._z
-            << std::endl;
+    friend std::ostream& operator<<(std::ostream& s, const Position3D_TC& obj) {
+        s << "Element: " << "x: " << obj._x
+                        << ", y: " << obj._y
+                        << ", z: " << obj._z
+                        << std::endl;
         return s;
     }
 
@@ -125,7 +130,7 @@ public:
     void Now() { _timestamp = ClockType::now(); }
 
     //! Get the timestamp in milliseconds
-    size_t GetMilliseconds() const { return std::chrono::duration_cast<std::chrono::milliseconds>(_timestamp.time_since_epoch()).count(); }
+    const size_t GetMilliseconds() const { return std::chrono::duration_cast<std::chrono::milliseconds>(_timestamp.time_since_epoch()).count(); }
     size_t GetNanoseconds() { return std::chrono::duration_cast<std::chrono::nanoseconds>(_timestamp.time_since_epoch()).count(); }
     size_t GetSeconds() { return std::chrono::duration_cast<std::chrono::seconds>(_timestamp.time_since_epoch()).count(); }
 
@@ -193,3 +198,19 @@ inline bool CmpTimestamps(const ChartPoint_TP<Position3D_TC<float>>& rhs, const 
 {
     return rhs._timestamp.GetMilliseconds() < timestamp.GetMilliseconds();
 }
+
+
+//! Storage for x and y axes vertices
+struct XYAxisVertices_TP
+{
+public:
+    XYAxisVertices_TP(QVector<float> x_axis_vertices,
+        QVector<float> y_axis_vertices)
+        :
+        _x_axis_vertices(x_axis_vertices),
+        _y_axis_vertices(y_axis_vertices)
+    {
+    }
+    QVector<float> _x_axis_vertices;
+    QVector<float> _y_axis_vertices;
+};

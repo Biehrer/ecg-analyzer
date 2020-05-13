@@ -1,5 +1,4 @@
 #include <includes/ogl_chart_geometry_c.h>
-#include "includes/chart_types.h"
 OGLChartGeometry_C::OGLChartGeometry_C(PositionType_TP screen_pos_x_S, 
                                        PositionType_TP screen_pos_y_S,
                                        PositionType_TP width_S,
@@ -105,6 +104,6 @@ int OGLChartGeometry_C::GetChartHeight() const
     return _height_S;
 }
 
-const PlotArea_TP & OGLChartGeometry_C::GetPlotArea() const {
+const BoundingBoxArea_TP & OGLChartGeometry_C::GetPlotArea() const {
     return _plot_area;
 }

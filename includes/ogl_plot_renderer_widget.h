@@ -132,15 +132,9 @@ private:
     QOpenGLShaderProgram _text_shader;
 
     //! All plots contained in the current instance of this widget
-    std::vector<OGLSweepChart_C*> _plots;
+    std::vector<OGLSweepChart_C<DrawingStyle_TP::LINE_STRIP>*> _plots;
 
     Quad _light_source;
-
-    // Keep track of game timing and to implement bullets with different flying speed
-	double last_time = 0;
-	double current_time = 0;
-	double delta_time;
-	double deltaTime = 0;
 
     //! number of frames since the start of the programm
 	int _framecounter;
