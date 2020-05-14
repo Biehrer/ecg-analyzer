@@ -17,28 +17,27 @@ message(STATUS "FREETYPE_INCLUDE_DIR_ft2build=${FREETYPE_INCLUDE_DIR_ft2build}")
 add_library( visualization# ${PROJECT_NAME} 
 "jones_plot_app.h" 
 "jones_plot_app.cpp"
+"JonesPlot.ui"
 "ogl_plot_renderer_widget.h"
 "ogl_plot_renderer_widget.cpp"
 "ogl_sweep_chart.h" 
 "ogl_sweep_chart.cpp"
 "ogl_sweep_chart_buffer.h"
 "ogl_sweep_chart_buffer.cpp"
-"ShapeGenerator.h" 
-"ShapeData.h"
-"circular_buffer.h"
-"text_renderer_2d.h"
-"chart_types.h"
-"JonesPlot.ui"
 "ogl_chart_geometry_c.h"
 "ogl_chart_geometry_c.cpp"
 "chart_shapes_c.h"
+"circular_buffer.h"
+"text_renderer_2d.h"
+"chart_types.h"
+"ShapeGenerator.h" 
+"ShapeData.h"
 )
-
  # link libs
 target_link_libraries(visualization Qt5::Widgets
-									Qt5::Gui
-								    Qt5::Core
-									${FREETYPE_LIBRARIES})
+                                    Qt5::Gui
+                                    Qt5::Core
+                                    ${FREETYPE_LIBRARIES})
 
 
 # link freetype to this project

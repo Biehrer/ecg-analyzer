@@ -19,14 +19,14 @@ add_subdirectory(includes/signal_proc_lib)
 
 add_executable(${PROJECT_NAME} main.cpp)
 
-# link to the visualization code
+# link to the visualization code and sig_proc lib
 target_link_libraries(${PROJECT_NAME} PUBLIC visualization
-										     signal_proc_lib)
+                                              signal_proc_lib)
 
  # link to Qt
 target_link_libraries(${PROJECT_NAME} Qt5::Widgets
-								      Qt5::Gui
-									  Qt5::Core)
+                                      Qt5::Gui
+                                      Qt5::Core)
 
 # copy the glsl shaders into the build directory for the visualization project
 file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/Resources/ DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/Resources/)
