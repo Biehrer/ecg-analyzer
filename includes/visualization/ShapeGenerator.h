@@ -1,4 +1,6 @@
 #pragma once
+
+// Qt includes
 #include <qvector.h>
 
 class ShapeGenerator_C {
