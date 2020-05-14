@@ -35,12 +35,13 @@ add_library( visualization# ${PROJECT_NAME}
 )
 
  # link libs
-target_link_libraries(visualization Qt5::Widgets)
-target_link_libraries(visualization Qt5::Gui)
-target_link_libraries(visualization Qt5::Core)
+target_link_libraries(visualization Qt5::Widgets
+									Qt5::Gui
+								    Qt5::Core
+									${FREETYPE_LIBRARIES})
 
-# link freetype
-target_link_libraries(visualization ${FREETYPE_LIBRARIES})
+
+# link freetype to this project
 target_include_directories(visualization PUBLIC ${FREETYPE_INCLUDE_DIRS})
 
 # should this be PUBLIC or better INTERFACE? 
