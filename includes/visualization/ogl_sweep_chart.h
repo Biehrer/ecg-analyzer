@@ -1,12 +1,12 @@
 #pragma once
 
 // Project includes
-#include <includes/circular_buffer.h>
-#include <includes/ogl_chart_geometry_c.h>
-#include <includes/chart_shapes_c.h>
-#include <includes/chart_types.h>
-#include <includes/ogl_sweep_chart_buffer.h>
-#include <includes/text_renderer_2d.h>
+#include <includes/visualization/circular_buffer.h>
+#include <includes/visualization/ogl_chart_geometry_c.h>
+#include <includes/visualization/chart_shapes_c.h>
+#include <includes/visualization/chart_types.h>
+#include <includes/visualization/ogl_sweep_chart_buffer.h>
+#include <includes/visualization/text_renderer_2d.h>
 
 // STL includes
 #include <iostream>

@@ -1,5 +1,5 @@
 // Project includes
-#include "includes/jones_plot_app.h"
+#include <includes/visualization/jones_plot_app.h>
 
 // Qt includes
 #include <QtWidgets/QApplication>

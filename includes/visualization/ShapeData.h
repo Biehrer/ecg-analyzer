@@ -14,7 +14,7 @@
 #include <qelapsedtimer.h>
 #include <qvector3d.h>
 #include <qvector2d.h>
-//#include "Sphere.h"
+
 
 class ShapeData_C {
 public:

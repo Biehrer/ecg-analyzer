@@ -1,7 +1,7 @@
 #pragma once
 
 // Project includes
-#include <includes/chart_types.h>
+#include <includes/visualization/chart_Types.h>
 
 // STL includes
 #include <vector>

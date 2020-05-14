@@ -1,4 +1,4 @@
-#include <includes/ogl_sweep_chart.h>
+#include <includes/visualization/ogl_sweep_chart.h>
 
 //#define DEBUG_INFO
 

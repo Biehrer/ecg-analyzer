@@ -1,7 +1,6 @@
 #pragma once
 #include <qvector.h>
 
-
 class ShapeGenerator_C {
 public:
 

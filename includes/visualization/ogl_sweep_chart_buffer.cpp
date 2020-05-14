@@ -1,4 +1,4 @@
-#include<includes/ogl_sweep_chart_buffer.h>
+#include<includes/visualization/ogl_sweep_chart_buffer.h>
 
 OGLSweepChartBuffer_C::OGLSweepChartBuffer_C(int buffer_size,
                                              double time_range_ms,
@@ -43,8 +43,6 @@ void OGLSweepChartBuffer_C::Draw()
     f->glDisableVertexAttribArray(0);
     _chart_vbo.release();
 }
-
-
 
 
 float 
@@ -144,21 +142,23 @@ OGLSweepChartBuffer_C::FindIdxToTimestampInsideData(const Timestamp_TP& timestam
         std::size_t index = std::distance(data.begin(), it);
         return index;
     }
-    else {
-        return -1;
-    }
 
     //} else {
+    // Case 2
    //if _remove_idx > head_idx the data to remove is most probably at the end of the buffer => check first the end
     auto latest_raw_data_begin = data.begin() + _remove_series_idx;
-    auto it_interesting_data_range_until_end = std::lower_bound(latest_raw_data_begin, data.end(), timestamp, CmpTimestamps); // search inside the old data
+    auto it_interesting_data_range_until_end 
+        = std::lower_bound(latest_raw_data_begin, data.end(), timestamp, CmpTimestamps);
+
     if ( it_interesting_data_range_until_end != data.end() ) {
         std::size_t index = std::distance(data.begin(), it_interesting_data_range_until_end);
         return index;
     }
 
     auto current_data_ptr = data.begin() + current_idx;
-    auto it_interesting_data_range_until_current = std::lower_bound(data.begin(), current_data_ptr, timestamp, CmpTimestamps); // search inside the old data
+    auto it_interesting_data_range_until_current = 
+        std::lower_bound(data.begin(), current_data_ptr, timestamp, CmpTimestamps);
+
     if ( it_interesting_data_range_until_current != current_data_ptr ) {
         std::size_t index = std::distance(data.begin(), it_interesting_data_range_until_current);
         return index;

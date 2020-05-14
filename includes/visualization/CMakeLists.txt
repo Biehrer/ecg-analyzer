@@ -46,4 +46,4 @@ target_link_libraries(visualization ${FREETYPE_LIBRARIES})
 target_include_directories(visualization PUBLIC ${FREETYPE_INCLUDE_DIRS})
 
 # should this be PUBLIC or better INTERFACE? 
-target_include_directories(${PROJECT_NAME} INTERFACE includes)
+target_include_directories(${PROJECT_NAME} INTERFACE includes/visualization)

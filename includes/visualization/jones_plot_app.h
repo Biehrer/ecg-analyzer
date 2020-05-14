@@ -2,7 +2,7 @@
 
 // Project includes
 #include "ui_JonesPlot.h"
-#include <includes/ogl_plot_renderer_widget.h>
+#include <includes/visualization/ogl_plot_renderer_widget.h>
 
 // Qt includes
 #include <QtWidgets/QMainWindow>

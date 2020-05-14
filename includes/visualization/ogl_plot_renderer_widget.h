@@ -1,10 +1,10 @@
 #pragma once
 
 // Project includes
-#include "includes/ogl_sweep_chart.h"
-#include "includes/ShapeData.h"
-#include <includes/text_renderer_2d.h>
-#include <includes/ShapeGenerator.h>
+#include <includes/visualization/ogl_sweep_chart.h>
+#include <includes/visualization/ShapeData.h>
+#include <includes/visualization/text_renderer_2d.h>
+#include <includes/visualization/ShapeGenerator.h>
 
 // STL includes
 #include <iostream>

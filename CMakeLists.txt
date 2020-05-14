@@ -11,8 +11,8 @@ find_package(Qt5Core)
 find_package(Qt5Widgets)
 find_package(Qt5Gui)
 
-# add visualization code 
-add_subdirectory(includes)
+# add include directory (h/cpp files) 
+add_subdirectory(includes/visualization)
 
 add_executable(${PROJECT_NAME} main.cpp)
 
