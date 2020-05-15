@@ -136,9 +136,9 @@ public:
                 texture,
                 vec2_x,
                 vec2_y,
-                face->glyph->advance.x
+                static_cast<GLuint>(face->glyph->advance.x)
             };
-            _characters.insert(std::pair<GLchar, Character>(c, character));
+            _characters.insert(std::make_pair(c, character));
         }
         f->glBindTexture(GL_TEXTURE_2D, 0);
 
