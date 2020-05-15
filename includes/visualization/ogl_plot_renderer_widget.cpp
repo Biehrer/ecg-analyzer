@@ -56,7 +56,7 @@ void QOpenGLPlotRendererWidget::OnDataUpdateThreadFunction()
     double pi = 3.1415026589; 
     double value_rad = 0;
     double data_value = 0;
-   
+ 
     while(true)
     {
         timestamp.Now();
@@ -89,8 +89,8 @@ void QOpenGLPlotRendererWidget::InitializePlots(int number_of_plots)
     DEBUG("initialize plots");
 
     // Chart properties
-    int chart_buffer_size = 10000;
-    int time_range_ms = 10000;
+    RingBufferSize_TP chart_buffer_size = RingBufferSize_TP::Size65536;
+    int time_range_ms = 40000;
     float max_y_axis_value = 10.0f;
     float min_y_axis_value = -10.0f;
 
@@ -130,7 +130,7 @@ void QOpenGLPlotRendererWidget::InitializePlots(int number_of_plots)
         plot->SetLeadLineColor(lead_line_color);
         plot->SetSurfaceGridColor(surface_grid_color);
         // Set up axes
-        plot->SetMajorTickValueXAxes(1000.0);
+        plot->SetMajorTickValueXAxes(10000.0);
         plot->SetMajorTickValueYAxes(5.0);
         // Set chart type
         plot->SetChartType(DrawingStyle_TP::LINE_SERIES);
