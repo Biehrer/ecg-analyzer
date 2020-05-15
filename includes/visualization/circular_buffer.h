@@ -12,22 +12,49 @@
 #include <mutex>
 #include <atomic>
 
+enum RingBufferSize_TP {
+    Size2, Size4, Size8, Size16, Size32,
+    Size64, Size128, Size256, Size512,
+    Size1024, Size2048, Size4096, Size8192,
+    Size16384, Size32768, Size65536, Size131072,
+    Size262144, Size524288, Size1048576, Size2097152
+};
+
+// a really stupid function
+inline
+int TranslateRingBufferSize(RingBufferSize_TP size) {
+    switch ( size ) 
+    {
+    case Size2: return 2; case Size4: return 4; 
+    case Size8: return 8; case Size16: return 16;
+    case Size32: return 32; case Size64: return 64;
+    case Size128: return 128; case Size256: return 256;
+    case Size512: return 512; case Size1024: return 1024;
+    case Size2048: return 2048; case Size4096: return 4096;
+    case Size8192: return 8192; case Size16384: return 16384;
+    case Size32768: return 32768; case Size65536: return 65536;
+    case Size131072: return 131072; case Size262144: return 262144;
+    case Size524288: return 524288; case Size1048576: return 1048576;
+    case Size2097152: return 2097152;
+    }
+}
+
 //! Circular buffer class used as input bufer for OGLSweepChart_C
-//! After data is read with ReadLatestData(),
-//! new data inside InsertAtHead(..) is written at the beginning of the buffer
+//! because masking with modulo is prevented and the & operator is used, 
+//! you must use a buffer size which is a power of 2
 template<typename T>
 class RingBuffer_TC
 {
     // Construction / Destruction / Copying..
 public:
-    RingBuffer_TC(int size)
+    RingBuffer_TC(RingBufferSize_TP size)
         :
-        _max_size(size),
-        _data_series_buffer(size),
+        _data_series_buffer(TranslateRingBufferSize(size)),
         _number_of_elements(0)
     {
-        _data_series_buffer.reserve(size);
-        _data_series_buffer.resize(size);
+        _max_size = TranslateRingBufferSize(size);
+        _data_series_buffer.reserve(_max_size);
+        _data_series_buffer.resize(_max_size);
     }
 
     ~RingBuffer_TC() 
@@ -42,13 +69,11 @@ public:
     {
         std::unique_lock<std::mutex> lck(_lock);
         _data_series_buffer[_tail_idx] = element;
-
-        _tail_idx = (_tail_idx + 1) % _max_size;
+        _tail_idx = (_tail_idx + 1) & (_max_size - 1);
         lck.unlock();
         ++_number_of_elements;
     }
 
-    // TODO: Return by reference??!
     //! Returns and removes the last added data from the buffer
     //!
     //! \returns removes and returns a copy of the last item
@@ -58,7 +83,7 @@ public:
         if ( !IsBufferEmpty() ) {
             std::unique_lock<std::mutex> lck(_lock);
             item = _data_series_buffer[_head_idx];
-            _head_idx = (_head_idx + 1) % _max_size;
+            _head_idx = (_head_idx + 1) & (_max_size - 1);
             --_number_of_elements;
         } else {
             std::cout << "buffer empty, nothing to pop" << std::endl;
@@ -66,38 +91,50 @@ public:
         return item;
     }
 
-    // TODO: Return by reference??!
+
     //! Returns and removes the latest data from the buffer
     //!
     //! \returns a vector with all data which was added until the buffer was read the last time
     const std::vector<T> PopLatest() {
         std::vector<T> latest_data;
-        while ( !IsBufferEmpty() ) {
+        // This while loop could be dangerous when an thread inserts data too fast 
+        // the number of objects which should be poped from the buffer should be known at the beginning 
+        //int current_size = Size();
+        //std::unique_lock<std::mutex> lck(_lock);
+        //for(int count = 0; count <= current_size; ++count ){
+        while(!IsBufferEmpty() ) {
             std::unique_lock<std::mutex> lck(_lock);
-            latest_data.push_back(_data_series_buffer[_head_idx]);
-            _head_idx = (_head_idx + 1) % _max_size;
+            // Indexing vectors is faster than push_back and emplace
+            latest_data.emplace_back(_data_series_buffer[_head_idx]);
+            _head_idx = (_head_idx + 1) & (_max_size - 1);
             --_number_of_elements;
         }
         return latest_data;
     }
 
-
-    //! Returns the last item which was added to the buffer
+    //! Returns the last item which was added to the buffer.
+    //! Returns the standard constructed item T, if no item is inside the buffer
     //! Does not remove the item.
     //!
     //!\returns copy of the last item added to the buffer
-      T GetLatestItem() {
-       std::unique_lock<std::mutex> lck(_lock);
-       if( _tail_idx == 0 ){
-         return _data_series_buffer[_max_size -1];
-       } else {
-          return _data_series_buffer[(_tail_idx - 1) % _max_size];
-       }
+      T GetLatestItem() 
+      {
+          std::unique_lock<std::mutex> lck(_lock);
+          if( _tail_idx == 0 ) { 
+              // case: there is only one element inside the buffer
+              if( _number_of_elements != 0 ){
+               return _data_series_buffer[_max_size - 1];
+              } else {
+                  return {};
+              }
+          } else {
+             return _data_series_buffer[(_tail_idx - 1) & (_max_size - 1)];
+          }
     }
 
     bool IsBufferFull() {
         std::unique_lock<std::mutex> lck(_lock);
-        return _head_idx == (_tail_idx + 1) % _max_size;
+        return _head_idx == (_tail_idx + 1) & (_max_size - 1);
     }
 
     //! Returns true when there are no elements inside the buffer
@@ -227,7 +264,7 @@ private:
     //! Size of the buffer (maximum number of elements)
     int _max_size;
 
-    //! The input buffer - use std vector to use memory locality (cache friendly)
+    //! The input buffer
     ElementType_TP* _data_series_buffer;
 
     //! Current write position inside the buffer
