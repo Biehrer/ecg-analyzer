@@ -1,4 +1,4 @@
-#include <includes/visualization/ogl_chart_geometry_c.h>
+#include "ogl_chart_geometry_c.h"
 
 OGLChartGeometry_C::OGLChartGeometry_C(PositionType_TP screen_pos_x_S, 
                                        PositionType_TP screen_pos_y_S,

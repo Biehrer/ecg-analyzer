@@ -1,4 +1,4 @@
-#include "includes/visualization/ogl_plot_renderer_widget.h"
+#include "ogl_plot_renderer_widget.h"
 
 //#define DEBUG_INFO
 

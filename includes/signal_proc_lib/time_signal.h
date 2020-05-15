@@ -1,35 +1,19 @@
 #pragma once
 
+#pragma once
 // STL includes
 #include <iostream>
-
-class FileIO_C {
-
-public:
-
-    FileIO_C();
-    FileIO_C();
-
-public:
-    void Initialize();
-    void Read(std::string filename);
-
-private:
-
-};
+#include <vector>
 
 template<typename FormatSpec_TP>
 class TimeSignal_C {
 
 public:
-    TimeSignal_C();
-    ~TimeSignal_C();
-
+    TimeSignal_C() = default;
+    
 public:
 
-
 private:
-
     std::vector<FormatSpec_TP> _data;
 
 };

@@ -1,9 +1,8 @@
 #pragma once
 
 // Project includes
-#include <includes/visualization/ogl_chart_geometry_c.h>
-#include <includes/visualization/chart_types.h>
-
+#include "ogl_chart_geometry_c.h"
+#include "chart_types.h"
 // Qt includes
 #include <qvector.h>
 

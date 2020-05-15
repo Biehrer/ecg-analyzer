@@ -1,8 +1,8 @@
 #pragma once
 
 // Project includes
-#include <includes/visualization/circular_buffer.h>
-#include <includes/visualization/chart_types.h>
+#include "circular_buffer.h"
+#include "chart_types.h"
 
 // STL includes
 #include <iostream>

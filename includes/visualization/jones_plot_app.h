@@ -1,8 +1,7 @@
 #pragma once
-
 // Project includes
 #include "ui_JonesPlot.h"
-#include <includes/visualization/ogl_plot_renderer_widget.h>
+#include "ogl_plot_renderer_widget.h"
 
 // Qt includes
 #include <QtWidgets/QMainWindow>

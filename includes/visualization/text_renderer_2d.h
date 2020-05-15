@@ -2,6 +2,7 @@
 
 // STL includes
 #include <iostream>
+#include<assert.h>
 
 // Qt includes
 #include <qopenglbuffer.h>
