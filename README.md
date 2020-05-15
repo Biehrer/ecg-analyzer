@@ -1,8 +1,8 @@
 
 # ecg-analyzer
-Framework for visualization and algorithmic analyzation of ecg (electrocardiography) signals.
+C++ Framework for visualization and algorithmic analyzation of ecg (electrocardiography) signals.
 
-Highly customable, hardware accelerated realtime visualization of ecg signals in sweep charts on the gpu via OpenGL
+Highly customable, hardware accelerated realtime visualization of ecg signals in sweep charts on the gpu via OpenGL in C++
 
 ![visualization_example](https://user-images.githubusercontent.com/44288843/81840727-b16bba80-9549-11ea-8863-91453e66e537.jpg)
 
