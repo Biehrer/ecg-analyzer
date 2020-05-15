@@ -19,7 +19,7 @@ OGLSweepChart_C::~OGLSweepChart_C()
 
 
 OGLSweepChart_C::OGLSweepChart_C(int time_range_ms,
-                       int buffer_size,
+                       RingBufferSize_TP buffer_size,
                        float max_y_value,
                        float min_y_value,
                        const OGLChartGeometry_C& geometry,
@@ -34,7 +34,7 @@ OGLSweepChart_C::OGLSweepChart_C(int time_range_ms,
     _plot_area(geometry),
     _time_range_ms(time_range_ms),
     _input_buffer(buffer_size),
-    _ogl_data_series(buffer_size, time_range_ms, _input_buffer),
+    _ogl_data_series(_input_buffer.MaxSize(), time_range_ms, _input_buffer),
     _parent_widget(parent)
 {
     _max_y_axis_value = max_y_value;

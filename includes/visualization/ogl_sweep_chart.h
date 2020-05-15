@@ -40,19 +40,9 @@
 //! Starts overwriting old data, beginning at the beginning of the buffer, when the buffer is filled
 //!
 //! Coordinate systems used (Big letters adress a coordinate system)
-//! S - Screen coords
-//! W - OpenGL world coords
-//! Unit - world unit (millimeters)
+//! _S --- e.g: some_var_S - soome value in Screen coords
 //!
-//! Chart coordinate system:
-//!               __________________________________________________
-//! BOTTOM(Left) |                                                  | BOTTOM (Right)
-//!              |                                                  |
-//!       (x, y) |------------------------------------------------->| (time_range_ms, 0) (RIGHT)
-//!              |                                                  |
-//!    TOP(Left) |__________________________________________________| TOP (Right)
-//!
-
+//! See OGLChartGeometry for the chart coordinate system
 class OGLSweepChart_C
 {
 
@@ -60,11 +50,11 @@ class OGLSweepChart_C
 public:
 
     OGLSweepChart_C(int time_range_ms,
-               int buffer_size,
-               float max_y_Value, 
-               float min_y_value,
-               const OGLChartGeometry_C& geometry,
-               const QOpenGLWidget& parent);
+                    RingBufferSize_TP buffer_size,
+                    float max_y_Value, 
+                    float min_y_value,
+                    const OGLChartGeometry_C& geometry,
+                    const QOpenGLWidget& parent);
 
     ~OGLSweepChart_C();
 

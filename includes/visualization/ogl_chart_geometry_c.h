@@ -6,6 +6,17 @@
 //! Defines which datatype to use for position calculations
 using PositionType_TP = int;
 
+//! Defines the position and size of the chart inside the opengl context
+//! 
+//! Chart coordinate system:
+//! (screenpos_x, screenpos_y)  __________________________________________________  (screenpos_x + width, screenpos_y)
+//!              (BOTTOM-Left) |                                                  | (BOTTOM-Right)
+//!                            |                                                  |
+//!                            |------------------------------------------------->| [time_range_ms, y_max - y_min]
+//!                            |                                                  |
+//!                (TOP-Left)  |__________________________________________________| (TOP-Right) 
+//! (screenpos_x, screenpos_y + Height)                                            (screenpos_x + width, screenpos_y + height)
+//
 class OGLChartGeometry_C {
 
     // Construction / Destruction / Copying / ...
