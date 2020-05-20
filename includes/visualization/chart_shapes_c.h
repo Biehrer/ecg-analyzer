@@ -3,6 +3,7 @@
 // Project includes
 #include "ogl_chart_geometry_c.h"
 #include "chart_types.h"
+
 // Qt includes
 #include <qvector.h>
 
@@ -10,7 +11,6 @@ template<typename VertexType_TP>
 class ChartShapes_C  {
 
 public:
-
     static 
     const 
     QVector<VertexType_TP> 
@@ -76,10 +76,9 @@ public:
         // ----------------------------------------------
 
         // Creaete vertices
-        //QVector<VertexType_TP> surface_grid_lines;
         QVector<VertexType_TP> horizontal_line_pos;
         
-        // Horizontal lines
+        // Horizontal (spanning) lines (length of each line = chart_width )
         int number_of_horizontal_grid_lines = (max_y_val - min_y_val) / y_major_tick_dist_unit;
         VertexType_TP y_axis_major_tick_value = max_y_val;
 
@@ -98,7 +97,7 @@ public:
             horizontal_line_pos.push_back(geometry.GetZPosition());
         }
 
-        // Vertical lines
+        // Vertical (spanning) lines ( length of each line = chart height )
         QVector<VertexType_TP> vertical_line_pos;
 
         VertexType_TP x_axis_major_tick_value = time_range_ms;
@@ -119,6 +118,9 @@ public:
         return { horizontal_line_pos, vertical_line_pos }; 
     }
 
+    // This is not in use currently.
+    // Look at MakeSurfaceGridVertices() if you want to know how the axes/grid is created. 
+    // The surface grid does look much better than these axes
     //! Creates vertices used to draw the x- and y-axis
     //!
     //! \param geometry the chart geometry
@@ -141,7 +143,8 @@ public:
         float axis_pos_z = geometry.GetZPosition();
         float x_axis_height = axes_scale;
         float x_axis_width  = geometry.GetChartWidth();
-
+        // initialize P1 inside the half height of the plot area 
+        // This is the position which splits the plot area in two identical areas
         Position3D_TC<float> p1_x(geometry.GetLeftBottom()._x, 
                                   geometry.GetLeftBottom()._y + geometry.GetChartHeight() / 2, 
                                   axis_pos_z);
