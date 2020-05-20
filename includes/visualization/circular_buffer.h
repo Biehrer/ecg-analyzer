@@ -17,7 +17,8 @@ enum RingBufferSize_TP {
     Size64, Size128, Size256, Size512,
     Size1024, Size2048, Size4096, Size8192,
     Size16384, Size32768, Size65536, Size131072,
-    Size262144, Size524288, Size1048576, Size2097152
+    Size262144, Size524288, Size1048576, Size2097152, 
+    SizeINVALID
 };
 
 // a really stupid function
@@ -37,6 +38,8 @@ int TranslateRingBufferSize(RingBufferSize_TP size) {
     case Size524288: return 524288; case Size1048576: return 1048576;
     case Size2097152: return 2097152;
     }
+
+    return SizeINVALID;
 }
 
 //! Circular buffer class used as input bufer for OGLSweepChart_C
