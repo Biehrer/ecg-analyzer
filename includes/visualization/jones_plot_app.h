@@ -1,4 +1,5 @@
 #pragma once
+
 // Project includes
 #include "ui_JonesPlot.h"
 #include "ogl_plot_renderer_widget.h"
@@ -10,6 +11,7 @@
 
 // stl includes
 #include <thread>
+#include <functional>
 
 class JonesPlotApplication_C : public QMainWindow
 {
@@ -24,10 +26,15 @@ protected:
     virtual void resizeEvent(QResizeEvent* event);
 
 public:
+    void AddDataTest(double y_val, double x_val);
+
     void SendDatatToPlots();
 
-private:
-    QOpenGLPlotRendererWidget* plot_widget;
-    Ui::JonesPlotClass ui;
+    //template<typename YValDataType_TP, typename XValDataType_TP>
+    //static
+    //void AddDataTest(const YValDataType_TP & y_val, const XValDataType_TP & x_val);
 
+private:
+    QOpenGLPlotRendererWidget* _plot_widget;
+    Ui::JonesPlotClass ui;
 };

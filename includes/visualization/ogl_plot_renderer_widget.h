@@ -47,7 +47,7 @@ class QOpenGLPlotRendererWidget : public QOpenGLWidget
 
         // Construction / Destruction / Copying
 public:
-    QOpenGLPlotRendererWidget(QWidget* parent = 0);
+    QOpenGLPlotRendererWidget(unsigned int number_of_plots, QWidget* parent = 0);
     
     ~QOpenGLPlotRendererWidget();
 
@@ -150,4 +150,6 @@ private:
 
     //! Variable used as pseudo-timestamp
     int _pointcount;
+
+    unsigned int _number_of_plots;
 };

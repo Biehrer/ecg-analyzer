@@ -24,9 +24,10 @@ QOpenGLPlotRendererWidget::~QOpenGLPlotRendererWidget() {
     }
 }
 
-QOpenGLPlotRendererWidget::QOpenGLPlotRendererWidget(QWidget* parent)
+QOpenGLPlotRendererWidget::QOpenGLPlotRendererWidget(unsigned int number_of_plots , QWidget* parent)
     :
-      _prog()
+      _prog(), 
+     _number_of_plots(number_of_plots)
 {
     // Attention: DO NOT USE OPENGL COMMANDS INSIDE THE CONSTRUCTOR
 	_nearZ = 1.0;
@@ -90,9 +91,9 @@ void QOpenGLPlotRendererWidget::InitializePlots(int number_of_plots)
 
     // Chart properties
     RingBufferSize_TP chart_buffer_size = RingBufferSize_TP::Size65536;
-    int time_range_ms = 40000;
-    float max_y_axis_value = 10.0f;
-    float min_y_axis_value = -10.0f;
+    int time_range_ms = 2000;
+    float max_y_axis_value = 4.0f;
+    float min_y_axis_value = -4.0f;
 
     // Calculate position of the charts
     int offset = SREENWIDTH / 6;
@@ -130,8 +131,8 @@ void QOpenGLPlotRendererWidget::InitializePlots(int number_of_plots)
         plot->SetLeadLineColor(lead_line_color);
         plot->SetSurfaceGridColor(surface_grid_color);
         // Set up axes
-        plot->SetMajorTickValueXAxes(10000.0);
-        plot->SetMajorTickValueYAxes(5.0);
+        plot->SetMajorTickValueXAxes(time_range_ms / 4);
+        plot->SetMajorTickValueYAxes( (max_y_axis_value - min_y_axis_value ) / 4);
         // Set chart type
         plot->SetChartType(DrawingStyle_TP::LINE_SERIES);
 
@@ -153,7 +154,7 @@ void QOpenGLPlotRendererWidget::initializeGL()
 
     CreateLightSource();
 
-    InitializePlots(2);
+    InitializePlots(_number_of_plots);
 
     _paint_update_timer->start();
 }
