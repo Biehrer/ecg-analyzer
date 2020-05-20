@@ -96,7 +96,9 @@ public:
 
 
 //! Defines which clock to use to record timestamps
-using ClockType = std::chrono::system_clock;
+using ClockType = std::chrono::high_resolution_clock;
+typedef std::chrono::duration< double > double_prec_seconds;
+typedef std::chrono::time_point< ClockType, double_prec_seconds > timepoint_t;
 
 //! Representation of a timestamp 
 struct Timestamp_TP {
@@ -107,11 +109,10 @@ public:
     {
     }
 
-    Timestamp_TP(double current_time_sec)
+    Timestamp_TP(double current_time_s)
     {
-        auto converted_time = ClockType::from_time_t(time_t(current_time_sec/* * 1000.0*/)).time_since_epoch();
-        auto duration = std::chrono::duration_cast<std::chrono::seconds>(converted_time);
-        _timestamp = std::chrono::time_point<ClockType>(duration);
+        _timestamp = 
+            timepoint_t(std::chrono::duration_cast<std::chrono::milliseconds>(double_prec_seconds(current_time_s)) );
     }
 
     Timestamp_TP(const std::chrono::time_point<ClockType>& timestamp)
@@ -143,11 +144,12 @@ public:
     }
 
     //! Returns a pointer to the internal time_point object
-    std::chrono::time_point<ClockType>* GetTimestampPtr() { return &_timestamp; }
-
+    //std::chrono::time_point<ClockType>* GetTimestampPtr() { return &_timestamp; }
+    timepoint_t* GetTimestampPtr() { return &_timestamp; }
     // Private attributes
 private:
-    std::chrono::time_point<ClockType> _timestamp;
+    //std::chrono::time_point<ClockType> _timestamp;
+    timepoint_t _timestamp;
 };
 
 
