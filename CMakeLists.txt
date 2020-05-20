@@ -34,23 +34,35 @@ find_package(Qt5Gui)
 
 # add visualization and signal proc lib 
 if(USE_VISUALIZATION)
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/includes/visualization)
+    add_subdirectory(includes/visualization)
 endif()
 
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/includes/signal_proc_lib)
+add_subdirectory(includes/signal_proc_lib)
 
-add_executable(${PROJECT_NAME} main.cpp)
+#add_library( signalanalyzer 
+ #                           time_series_player.h
+ # )
+# wegen add_library evtl.:
+
+
+
+add_executable(${PROJECT_NAME} main.cpp 
+                        ${CMAKE_CURRENT_SOURCE_DIR}/includes/time_series_player.h)
+
+target_include_directories(signalanalyzer PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/includes/)
 
 # if visualization should be disabled, tell c++ to not include it in the main.cpp file
 # (hack to get through Linker errors)
 if(USE_VISUALIZATION)
-# define the variable USE_VISUALIZATION_CPP inside the cpp programm
-# syntax: CPP_NAME =&{CMAKE_NAME}
-# link to the visualization lib
-target_link_libraries(${PROJECT_NAME} PUBLIC visualization)
-target_compile_definitions(${PROJECT_NAME} PUBLIC USE_VISUALIZATION_CPP=${USE_VISUALIZATION}) 
- # copy the glsl shaders into the build directory for the visualization project
-file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/Resources/ DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/Resources/)
+    # link to the visualization lib
+    target_link_libraries(${PROJECT_NAME} PUBLIC visualization)
+
+    # define the variable USE_VISUALIZATION_CPP inside the cpp programm
+    # syntax: CPP_NAME =&{CMAKE_NAME}
+    target_compile_definitions(${PROJECT_NAME} PUBLIC USE_VISUALIZATION_CPP=${USE_VISUALIZATION}) 
+
+     # copy the glsl shaders into the build directory for the visualization project
+    file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/Resources/ DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/Resources/)
 endif()
 
 
@@ -60,5 +72,6 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
                                       Qt5::Widgets
                                       Qt5::Gui
                                       Qt5::Core
-                                      )
+                      )
+
 
