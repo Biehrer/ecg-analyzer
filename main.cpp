@@ -41,8 +41,6 @@ int main(int argc, char *argv[])
 
 #ifdef VISUALIZATION_ENABLED
     // temporary solution
-    //JonesPlotApplication_C w;
-    //w.show();
     QOpenGLPlotRendererWidget* plot_widget = new QOpenGLPlotRendererWidget(2);
     // setup widget
     // ..modify plots..(set axes min/max, tick values,..)
@@ -52,7 +50,7 @@ int main(int argc, char *argv[])
     double frequency_hz = 1000.0;
     double frequency_ms = (1.0 / frequency_hz) * 1000.0;
 
-    std::cout << ::endl << "Welcome!" << std::endl
+    std::cout << std::endl << "Welcome!" << std::endl
      << "select channel to display by entering the channel id : " << std::endl;
     const auto labels = signal.GetChannelLabels();
 
@@ -62,6 +60,7 @@ int main(int argc, char *argv[])
         ++channel_id;
     }
     std::cin >> channel_id;
+    std::cout << "start playing of data series from channel # :" << channel_id << std::endl;
 
     std::thread dataThread([&]()
     {
@@ -77,7 +76,6 @@ int main(int argc, char *argv[])
 
         while ( !signal_processed  ) { 
             if ( *time_series_begin_it < time_series_end ) {
-                //w.AddDataTest(*time_series_begin_it, *time_series_timestamps_begin_it);
                 plot_widget->AddDataToAllPlots(*time_series_timestamps_begin_it, *time_series_begin_it);
                 ++time_series_begin_it;
                 ++time_series_timestamps_begin_it;
@@ -108,9 +106,7 @@ int main(int argc, char *argv[])
 // If there is an error in a project file its recoginzed before other errors in third party dependencies
 
 
-    // create a time signal which has double values as x and y values
-    //TimeSeriesPlacer_C<double, double> wavedata_generator(signal);
-     //obtain the pointer to a member function
-    //wavedata_generator.Play(1000.0, 2, PushInterfaceFunction, w);
-    //std::this_thread::sleep_for(std::chrono::milliseconds(6000));
-    //wavedata_generator.Stop();
+//TimeSeriesPlacer_C<double, double> wavedata_generator(signal);
+//wavedata_generator.Play(1000.0, 2, PushInterfaceFunction, w);
+//std::this_thread::sleep_for(std::chrono::milliseconds(6000));
+//wavedata_generator.Stop();
