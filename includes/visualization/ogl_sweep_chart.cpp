@@ -257,8 +257,6 @@ void OGLSweepChart_C::Draw(QOpenGLShaderProgram& shader, QOpenGLShaderProgram& t
     DrawXYAxes(shader, text_shader);
 }
 
-// Todo: x-axes should always be at the position where the chart hast the value zero at the y axis.
-
 void OGLSweepChart_C::SetupAxes() 
 {
     const auto axes_vertices = ChartShapes_C<float>::MakesAxesVertices(_plot_area, 5.0); //CreateAxesVertices(5.0);
