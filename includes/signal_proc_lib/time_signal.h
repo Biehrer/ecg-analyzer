@@ -57,6 +57,8 @@ public:
     const std::vector<ECGChannelInfo_TP<DataType_TP>>& constData() const {
         return _data;
     }
+    //! load physionet database
+    void LoadFromMITFileFormat(const std::string& filename);
 
 private:
     std::vector<ECGChannelInfo_TP<DataType_TP>> _data;
@@ -71,6 +73,18 @@ TimeSignal_C<DataType_TP>::GetChannelLabels()
         labels.push_back(channel_data._label);
     }
     return labels;
+}
+
+template<typename DataType_TP>
+inline 
+void 
+TimeSignal_C<DataType_TP>::LoadFromMITFileFormat(const std::string & filename)
+{
+    MITFileIO_C reader;
+
+
+    const auto data = reader.readFromFile();
+
 }
 
 
