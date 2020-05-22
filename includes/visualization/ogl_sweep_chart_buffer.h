@@ -23,14 +23,15 @@ enum class DrawingStyle_TP {
     POINT_SERIES
 };
 
+template<typename DataType_TP>
 class OGLSweepChartBuffer_C {
 
     // Constructing / Copying / Destuction
 public:
 
     OGLSweepChartBuffer_C(int buffer_size, 
-                         double time_range_ms, 
-                         RingBuffer_TC<ChartPoint_TP<Position3D_TC<float>>>& input_buffer);
+                          double time_range_ms, 
+                          RingBuffer_TC<ChartPoint_TP<Position3D_TC<DataType_TP>>>& input_buffer);
 
     ~OGLSweepChartBuffer_C();
 
@@ -46,10 +47,10 @@ public:
     void Draw();
 
     //! Returns the x value last addded to the plot
-    float GetLastPlottedXValue();
+    DataType_TP GetLastPlottedXValue();
 
     //! Returns the y value last addded to the plot
-    float GetLastPlottedYValue();
+    DataType_TP GetLastPlottedYValue();
 
     //! Creates and allocates an empty OpenGL vertex buffer object used to store data for visualization
     void AllocateSeriesVbo();
@@ -70,7 +71,7 @@ private:
     //! Write data to the vbo for visualization of data points
     //!
     //! \param data the data to write to the vbo
-    void WriteToVbo(const QVector<float>& data);
+    void WriteToVbo(const QVector<DataType_TP>& data);
 
     //! Writes NAN-data inside the vertex buffer to remove data
     //! older than the timerange, for the viewer.
@@ -78,7 +79,6 @@ private:
     //! disables visualization of outdated lines (which are out of timerange) 
     //! by replacing the data with NAN values ( only inside the vertex buffer, not the input ring-buffer )
     void RemoveOutdatedDataInsideVBO();
-
 
     //! Increments the _point_count variable, which is used
     //! to tell opengl how many lines should be drawn from the vertex buffer
@@ -94,8 +94,8 @@ private:
     //! \param data the data array of ChartPoint_TP to look for.
     //! \returns on success, the offset to the timestamp value inside the ogl chart input ring-buffer. 
     //!     If nothing was found the function returns -1.
-    int FindIdxToTimestampInsideData(const Timestamp_TP & timestamp, const std::vector<ChartPoint_TP<Position3D_TC<float>>>& data);
-
+    int FindIdxToTimestampInsideData(const Timestamp_TP & timestamp,
+                                     const std::vector<ChartPoint_TP<Position3D_TC<DataType_TP>>>& data);
 
     // Private attributes
 private:
@@ -123,13 +123,13 @@ private:
     //! Indicates if the dataseries was already wrapped one time from the right to the left screen
     bool _dataseries_wrapped_once = false;
 
-    QVector<float> _no_line_vertices;
+    QVector<DataType_TP> _no_line_vertices;
 
-    float _last_plotted_y_value_S = 0;
+    DataType_TP _last_plotted_y_value_S = 0;
 
-    float _last_plotted_x_value_S = 0;
+    DataType_TP _last_plotted_x_value_S = 0;
 
-    RingBuffer_TC<ChartPoint_TP<Position3D_TC<float>>>& _input_buffer;
+    RingBuffer_TC<ChartPoint_TP<Position3D_TC<DataType_TP>>>& _input_buffer;
 
     GLenum _primitive_type = GL_LINE_STRIP;
 };

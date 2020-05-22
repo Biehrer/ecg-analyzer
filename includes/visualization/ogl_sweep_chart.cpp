@@ -9,7 +9,8 @@
 #endif
 
 
-OGLSweepChart_C::~OGLSweepChart_C()
+template<typename DataType_TP> 
+OGLSweepChart_C<DataType_TP>::~OGLSweepChart_C()
 {
     _y_axis_vbo.destroy();
     _x_axis_vbo.destroy();
@@ -18,12 +19,13 @@ OGLSweepChart_C::~OGLSweepChart_C()
 }
 
 
-OGLSweepChart_C::OGLSweepChart_C(int time_range_ms,
-                       RingBufferSize_TP buffer_size,
-                       float max_y_value,
-                       float min_y_value,
-                       const OGLChartGeometry_C& geometry,
-                       const QOpenGLWidget& parent)
+template<typename DataType_TP> 
+OGLSweepChart_C<DataType_TP>::OGLSweepChart_C(int time_range_ms,
+                                              RingBufferSize_TP buffer_size,
+                                              DataType_TP max_y_value,
+                                              DataType_TP min_y_value,
+                                              const OGLChartGeometry_C& geometry,
+                                              const QOpenGLWidget& parent)
     :  OGLBaseChart_C(geometry, parent),
     _lead_line_vbo(QOpenGLBuffer::VertexBuffer),
     _time_range_ms(time_range_ms),
@@ -34,7 +36,9 @@ OGLSweepChart_C::OGLSweepChart_C(int time_range_ms,
     _min_y_axis_value = min_y_value;
 }
 
-void OGLSweepChart_C::Initialize() 
+template<typename DataType_TP> 
+void 
+OGLSweepChart_C<DataType_TP>::Initialize()
 {
     DEBUG("Initialize OGLChart");
 
@@ -70,13 +74,17 @@ void OGLSweepChart_C::Initialize()
                              _major_tick_y_axes );
 }
 
-void OGLSweepChart_C::AddDatapoint(const float value, const Timestamp_TP & timestamp)
+template<typename DataType_TP>
+void
+OGLSweepChart_C<DataType_TP>::AddDatapoint(const DataType_TP value, const Timestamp_TP & timestamp)
 {
     // Don't add the value if its not inside the range, 
     // because its not visible eitherway -> better solution would be: Add it to the series but don't draw it!
     if ( value > _max_y_axis_value || value < _min_y_axis_value ) {
         return;
     }
+
+    // Attention: the bounding box is not templated and uses a using definition for the datatype !!
 
     // - (minus) because then the positive y axis is directing at the top of the screen
     float y_val_scaled_S = _plot_area.GetLeftTop()._y -
@@ -92,57 +100,66 @@ void OGLSweepChart_C::AddDatapoint(const float value, const Timestamp_TP & times
     DEBUG("Scaled x value: " << x_val_scaled_S << ", to value: " << x_ms_modulo);
     DEBUG("Scaled y value: " << y_val_scaled_S << ", to value: " << value);
     _input_buffer.InsertAtTail(
-        ChartPoint_TP<Position3D_TC<float>> (Position3D_TC<float>(x_val_scaled_S, 
+        ChartPoint_TP<Position3D_TC<DataType_TP>> (Position3D_TC<DataType_TP>(x_val_scaled_S, 
                                                                   y_val_scaled_S, 
                                                                   1.0f), 
                                                                   x_ms));
 }
 
 //! Uses the bounding box
-float OGLSweepChart_C::GetScreenCoordsFromYChartValue(float y_value) 
+template<typename DataType_TP> 
+DataType_TP
+OGLSweepChart_C<DataType_TP>::GetScreenCoordsFromYChartValue(DataType_TP y_value) 
 {
-   float y_value_S =  static_cast<float>(_bounding_box.GetLeftTop()._y) -
-                      ((y_value - _min_y_axis_value) / (_max_y_axis_value - _min_y_axis_value)) * 
-                      _bounding_box.GetChartHeight();
+   return static_cast<float>(_bounding_box.GetLeftTop()._y) -
+       ((y_value - _min_y_axis_value) / (_max_y_axis_value - _min_y_axis_value)) * 
+       _bounding_box.GetChartHeight();
 
-   return y_value_S;
 }
 
 
-float OGLSweepChart_C::GetScreenCoordsFromXChartValue(float x_value_ms)
+template<typename DataType_TP> 
+DataType_TP
+OGLSweepChart_C<DataType_TP>::GetScreenCoordsFromXChartValue(DataType_TP x_value_ms)
 {
-    // calculate new x-index when the dataseries has reached the left border of the plot
-    float x_val_wrap_corrected_ms = x_value_ms;
-
     // calculate x-value after wrapping
-    float x_value_S = static_cast<float>(_bounding_box.GetLeftBottom()._x) +
-                      ((x_val_wrap_corrected_ms) / (_time_range_ms)) * 
-                      _bounding_box.GetChartWidth();
+    return static_cast<DataType_TP>(_bounding_box.GetLeftBottom()._x) + 
+        ((x_value_ms) / (_time_range_ms)) *
+        _bounding_box.GetChartWidth();
 
-    return x_value_S;
 }
 
-void OGLSweepChart_C::SetChartType(DrawingStyle_TP chart_type)
+template<typename DataType_TP> 
+void
+OGLSweepChart_C<DataType_TP>::SetChartType(DrawingStyle_TP chart_type)
 {
     _ogl_data_series.SetPrimitiveType(chart_type);
 }
 
-void OGLSweepChart_C::SetMajorTickValueXAxes(float tick_value_ms)
+template<typename DataType_TP> 
+void
+OGLSweepChart_C<DataType_TP>::SetMajorTickValueXAxes(float tick_value_ms)
 {
     _major_tick_x_axes = tick_value_ms;
 }
 
-void OGLSweepChart_C::SetMajorTickValueYAxes(float tick_value_unit)
+template<typename DataType_TP> 
+void 
+OGLSweepChart_C<DataType_TP>::SetMajorTickValueYAxes(float tick_value_unit)
 {
     _major_tick_y_axes = tick_value_unit;
 }
 
-void OGLSweepChart_C::SetLeadLineColor(const QVector3D& color)
+template<typename DataType_TP> 
+void 
+OGLSweepChart_C<DataType_TP>::SetLeadLineColor(const QVector3D& color)
 {
     _lead_line_color = color;
 }
 
-void OGLSweepChart_C::Draw(QOpenGLShaderProgram& shader, 
+template<typename DataType_TP> 
+void 
+OGLSweepChart_C<DataType_TP>::Draw(QOpenGLShaderProgram& shader,
                            QOpenGLShaderProgram& text_shader) 
 {
     DrawSeries(shader);
@@ -152,7 +169,9 @@ void OGLSweepChart_C::Draw(QOpenGLShaderProgram& shader,
     DrawXYAxes(shader, text_shader);
 }
 
-void OGLSweepChart_C::CreateLeadLineVbo() 
+template<typename DataType_TP> 
+void 
+OGLSweepChart_C<DataType_TP>::CreateLeadLineVbo()
 {
     int buffer_size = 2 * 3;
     _number_of_bytes_lead_line = buffer_size * sizeof(float);
@@ -187,7 +206,9 @@ void OGLSweepChart_C::CreateLeadLineVbo()
     _lead_line_vertices[5] = _plot_area.GetZPosition();
 }
 
-void OGLSweepChart_C::UpdateLeadLinePosition(float x_value_new) 
+template<typename DataType_TP> 
+void 
+OGLSweepChart_C<DataType_TP>::UpdateLeadLinePosition(float x_value_new)
 {
     _lead_line_vertices[0] = x_value_new;
     _lead_line_vertices[3] = x_value_new;
@@ -196,8 +217,10 @@ void OGLSweepChart_C::UpdateLeadLinePosition(float x_value_new)
     _lead_line_vbo.write(0, _lead_line_vertices.constData(), _number_of_bytes_lead_line);
 }
 
+template<typename DataType_TP> 
 inline
-void OGLSweepChart_C::DrawLeadLine(QOpenGLShaderProgram& shader)
+void 
+OGLSweepChart_C<DataType_TP>::DrawLeadLine(QOpenGLShaderProgram& shader)
 {
     QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
     shader.bind();
@@ -213,7 +236,9 @@ void OGLSweepChart_C::DrawLeadLine(QOpenGLShaderProgram& shader)
     _lead_line_vbo.release();
 }
 
-void OGLSweepChart_C::DrawSeries(QOpenGLShaderProgram& shader)
+template<typename DataType_TP> 
+void 
+OGLSweepChart_C<DataType_TP>::DrawSeries(QOpenGLShaderProgram& shader)
 {
     auto* f = QOpenGLContext::currentContext()->functions();
     shader.bind();

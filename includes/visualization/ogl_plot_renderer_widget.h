@@ -41,6 +41,7 @@
 #define SREENWIDTH 1440
 #define SCREENHEIGHT 800
 
+using ChartDataType_TP = float;
 
 //! Definition of plot colors
 struct PlotColors_TP {
@@ -65,10 +66,10 @@ struct PlotDescription_TP
 
     unsigned int _id = 0;
     int _time_range_ms = 1000.0;
-    float _min_y = -5;
-    float _max_y = 5;
-    float _maj_tick_x = _time_range_ms / 4.0;
-    float _maj_tick_y = (_max_y - _min_y) / 4.0;
+    ChartDataType_TP _min_y = -5;
+    ChartDataType_TP _max_y = 5;
+    ChartDataType_TP _maj_tick_x = _time_range_ms / 4.0;
+    ChartDataType_TP _maj_tick_y = (_max_y - _min_y) / 4.0;
 };
 
 
@@ -86,7 +87,10 @@ public:
 public:
     //! Fast initialization of plots in a horizontal layout (shared timerange and max/min y values)
     //! Creates OGLSweepCharts
-    bool FastInitializePlots(int number_of_plots, int time_range_ms, float max_y, float min_y);
+    bool FastInitializePlots(int number_of_plots, 
+                            int time_range_ms,
+                            ChartDataType_TP max_y, 
+                            ChartDataType_TP min_y);
 
     //! Adds one plot
     void AddPlot(const PlotDescription_TP& plot_info);
@@ -98,16 +102,16 @@ public:
     void OnDataUpdateThreadFunction();
 
     //! Adds a datavalue to all active plots
-    void AddDataToAllPlots(float value_x, float value_y);
+    void AddDataToAllPlots(ChartDataType_TP value_x, ChartDataType_TP value_y);
 
     //! Returns the model view projection transform matrix
     const QMatrix4x4 GetModelViewProjection() const;
 
     //! Returns a ptr to a plot at a specific position inside the _plots vector
-    OGLSweepChart_C* GetPlotPtr(unsigned int plot_idx);
+    OGLSweepChart_C<ChartDataType_TP>* GetPlotPtr(unsigned int plot_idx);
 
     //! Returns a ptr to a plot by label
-    OGLSweepChart_C* GetPlotPtr(const std::string& plot_label);
+    OGLSweepChart_C<ChartDataType_TP>* GetPlotPtr(const std::string& plot_label);
 
    // Protected functions
 protected:
@@ -180,12 +184,12 @@ private:
     QOpenGLShaderProgram _text_shader;
 
     //! All plots contained in the current instance of this widget
-    std::vector<OGLSweepChart_C*> _plots;
+    std::vector<OGLSweepChart_C<ChartDataType_TP>*> _plots;
 
     // Access functions to modify the plots 
-    OGLSweepChart_C* GetPlot(int plot_id);
+    OGLSweepChart_C<ChartDataType_TP>* GetPlot(int plot_id);
 
-    OGLSweepChart_C* GetPlot(const std::string& plot_label); // iterates all plots and checks if a plot has plot_label
+    OGLSweepChart_C<ChartDataType_TP>* GetPlot(const std::string& plot_label); // iterates all plots and checks if a plot has plot_label
 
     Quad _light_source;
 

@@ -1,8 +1,9 @@
 #include "ogl_sweep_chart_buffer.h"
 
-OGLSweepChartBuffer_C::OGLSweepChartBuffer_C(int buffer_size,
-                                             double time_range_ms,
-                                             RingBuffer_TC<ChartPoint_TP<Position3D_TC<float>>>& input_buffer)
+template<typename DataType_TP>
+OGLSweepChartBuffer_C<DataType_TP>::OGLSweepChartBuffer_C(int buffer_size,
+                                                         double time_range_ms,
+                                                         RingBuffer_TC<ChartPoint_TP<Position3D_TC<DataType_TP>>>& input_buffer)
     :
     _vbo_buffer_size(buffer_size * 3 * sizeof(float)),
     _input_buffer(input_buffer),
@@ -15,19 +16,26 @@ OGLSweepChartBuffer_C::OGLSweepChartBuffer_C(int buffer_size,
 }
 
 
-OGLSweepChartBuffer_C::~OGLSweepChartBuffer_C(){
+template<typename DataType_TP> 
+OGLSweepChartBuffer_C<DataType_TP>::~OGLSweepChartBuffer_C(){
     _chart_vbo.destroy();
 }
 
-void OGLSweepChartBuffer_C::Bind() {
+template<typename DataType_TP> 
+void
+OGLSweepChartBuffer_C<DataType_TP>::Bind() {
     _chart_vbo.bind();
 }
 
-void OGLSweepChartBuffer_C::Release() {
+ template<typename DataType_TP> 
+ void
+ OGLSweepChartBuffer_C<DataType_TP>::Release() {
     _chart_vbo.release();
 }
 
-void OGLSweepChartBuffer_C::Draw()
+template<typename DataType_TP> 
+void
+OGLSweepChartBuffer_C<DataType_TP>::Draw()
 {
     auto* f = QOpenGLContext::currentContext()->functions();
      //Bind buffer and send data to the gpu
@@ -45,22 +53,25 @@ void OGLSweepChartBuffer_C::Draw()
 }
 
 
-float 
-OGLSweepChartBuffer_C::GetLastPlottedXValue()
+template<typename DataType_TP>
+DataType_TP
+OGLSweepChartBuffer_C<DataType_TP>::GetLastPlottedXValue()
 {
     return _last_plotted_x_value_S;
 }
 
 
-float 
-OGLSweepChartBuffer_C::GetLastPlottedYValue()
+template<typename DataType_TP> 
+DataType_TP
+OGLSweepChartBuffer_C<DataType_TP>::GetLastPlottedYValue()
 {
     return _last_plotted_y_value_S;
 }
 
 
+template<typename DataType_TP> 
 void
-OGLSweepChartBuffer_C::OnChartUpdate()
+OGLSweepChartBuffer_C<DataType_TP>::OnChartUpdate()
 {
     if ( _input_buffer.IsBufferEmpty() ) {
         return;
@@ -95,11 +106,15 @@ OGLSweepChartBuffer_C::OnChartUpdate()
 }
 
 
-int OGLSweepChartBuffer_C::GetNumberOfPoints() {
+ template<typename DataType_TP> 
+ int
+ OGLSweepChartBuffer_C<DataType_TP>::GetNumberOfPoints() {
     return _point_count;
 }
 
-void OGLSweepChartBuffer_C::SetPrimitiveType(DrawingStyle_TP primitive_type)
+template<typename DataType_TP> 
+void 
+OGLSweepChartBuffer_C<DataType_TP>::SetPrimitiveType(DrawingStyle_TP primitive_type)
 {
     switch ( primitive_type ) {
     
@@ -114,7 +129,9 @@ void OGLSweepChartBuffer_C::SetPrimitiveType(DrawingStyle_TP primitive_type)
 }
 
 
-void OGLSweepChartBuffer_C::AllocateSeriesVbo()
+template<typename DataType_TP> 
+void 
+OGLSweepChartBuffer_C<DataType_TP>::AllocateSeriesVbo()
 {
     QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
      // create empty chart buffer
@@ -129,10 +146,11 @@ void OGLSweepChartBuffer_C::AllocateSeriesVbo()
     _chart_vbo.release();
 }
 
+template<typename DataType_TP>
 inline
 int
-OGLSweepChartBuffer_C::FindIdxToTimestampInsideData(const Timestamp_TP& timestamp,
-    const std::vector<ChartPoint_TP<Position3D_TC<float>>>& data)
+OGLSweepChartBuffer_C<DataType_TP>::FindIdxToTimestampInsideData(const Timestamp_TP& timestamp,
+    const std::vector<ChartPoint_TP<Position3D_TC<DataType_TP>>>& data)
 {
     int current_idx = _vbo_current_series_idx / 3 / sizeof(float);
     //if( current_idx > _remove_series_idx ){
@@ -169,9 +187,10 @@ OGLSweepChartBuffer_C::FindIdxToTimestampInsideData(const Timestamp_TP& timestam
     
 }
 
+template<typename DataType_TP>
 inline
 void 
-OGLSweepChartBuffer_C::WriteToVbo(const QVector<float>& data)
+OGLSweepChartBuffer_C<DataType_TP>::WriteToVbo(const QVector<DataType_TP>& data)
 {
     int number_of_new_data_bytes = static_cast<int>(data.size()) * static_cast<int>(sizeof(float));
 
@@ -183,16 +202,18 @@ OGLSweepChartBuffer_C::WriteToVbo(const QVector<float>& data)
         IncrementPointCount(data.size() / 3);
     }
     else {
-         //buffer is full or not all new data can fit into it; 
-         //reset buffer index and start overwriting data at the beginning
-         //Calculate how much bytes can fit into the buffer until the end is reached
+         // buffer is full or not all new data can fit into it; 
+         // reset buffer index and start overwriting data at the beginning
+         // Calculate how much bytes can fit into the buffer until the end is reached
         int number_of_free_bytes_until_end = _vbo_buffer_size - _vbo_current_series_idx;
         int bytes_to_write_at_beginning = number_of_new_data_bytes - number_of_free_bytes_until_end;
         int bytes_to_write_until_end = number_of_new_data_bytes - bytes_to_write_at_beginning;
 
         if ( number_of_free_bytes_until_end > 0 ) {
              //Write data until the end of the buffer is reached
-            _chart_vbo.write(static_cast<int>(_vbo_current_series_idx), data.data(), bytes_to_write_until_end);
+            _chart_vbo.write(static_cast<int>(_vbo_current_series_idx), 
+                             data.data(),
+                             bytes_to_write_until_end);
             IncrementPointCount(number_of_free_bytes_until_end / sizeof(float) / 3);
         }
 
@@ -200,16 +221,22 @@ OGLSweepChartBuffer_C::WriteToVbo(const QVector<float>& data)
          //Reset the index to continue writing the rest of the data at the beginning
         _vbo_current_series_idx = 0;
         if ( bytes_to_write_at_beginning > 0 ) {
+            
             int data_memory_offset = bytes_to_write_until_end / sizeof(float);
-            _chart_vbo.write(static_cast<int>(_vbo_current_series_idx), (data.constData() + data_memory_offset), bytes_to_write_at_beginning);
+            _chart_vbo.write(static_cast<int>(_vbo_current_series_idx), 
+                            (data.constData() + data_memory_offset), 
+                            bytes_to_write_at_beginning);
+
             _vbo_current_series_idx += bytes_to_write_at_beginning;
         }
     }
 }
 
+
+template<typename DataType_TP>
 inline 
 void 
-OGLSweepChartBuffer_C::IncrementPointCount(size_t increment)
+OGLSweepChartBuffer_C<DataType_TP>::IncrementPointCount(size_t increment)
 {
      // Count points; stop counting points after one wrap
     if ( !_dataseries_wrapped_once ) {
@@ -218,9 +245,10 @@ OGLSweepChartBuffer_C::IncrementPointCount(size_t increment)
 }
 
 
+template<typename DataType_TP>
 inline
 void
-OGLSweepChartBuffer_C::RemoveOutdatedDataInsideVBO()
+OGLSweepChartBuffer_C<DataType_TP>::RemoveOutdatedDataInsideVBO()
 {
     size_t last_added_tstamp_ms = _input_buffer.GetLatestItem()._timestamp.GetSeconds();
 

@@ -3,11 +3,7 @@
 // Project includes
 #include "ogl_base_chart.h"
 #include "circular_buffer.h"
-#include "ogl_chart_geometry_c.h"
-#include "chart_shapes_c.h"
-#include "chart_types.h"
 #include "ogl_sweep_chart_buffer.h"
-#include "text_renderer_2d.h"
 
 // STL includes
 #include <iostream>
@@ -66,6 +62,8 @@
 //!     ...
 //! }
 //
+
+template <typename DataType_TP>
 class OGLSweepChart_C : public OGLBaseChart_C
 {
     // Constructor / Destructor / Copying..
@@ -73,8 +71,8 @@ public:
 
     OGLSweepChart_C(int time_range_ms,
                     RingBufferSize_TP buffer_size,
-                    float max_y_Value, 
-                    float min_y_value,
+                    DataType_TP max_y_Value,
+                    DataType_TP min_y_value,
                     const OGLChartGeometry_C& geometry,
                     const QOpenGLWidget& parent);
 
@@ -91,17 +89,17 @@ public:
     //! This function maps data to a plot point which means data is mapped to a specific position in the plot itself (not the window the plot is placed in)
     //!
     // Todo template the chart class for different datatypes
-    void AddDatapoint(const float value, const Timestamp_TP& timestamp);
+    void AddDatapoint(const DataType_TP value, const Timestamp_TP& timestamp);
 
     //! Draws the chart inside the opengl context from which this function is called
     //template<DrawingStyle_TP type = DrawingStyle_TP::LINE_SERIES >
     void Draw( QOpenGLShaderProgram& shader, QOpenGLShaderProgram& text_shader);
 
     //! Returns the y-screen coordinates of a given plot y-value
-    virtual float GetScreenCoordsFromYChartValue(float y_value);
+    DataType_TP GetScreenCoordsFromYChartValue(DataType_TP y_value);
 
     //! Returns the y-screen coordinates of a given plot x-value
-    virtual float GetScreenCoordsFromXChartValue(float x_value);
+    DataType_TP GetScreenCoordsFromXChartValue(DataType_TP x_value);
 
     //! Sets the chart type: 
     //! - Line chart(LINE_SERIES): 
@@ -163,16 +161,16 @@ private:
     double _time_range_ms;
 
     //! Input buffer used to store user data
-    RingBuffer_TC<ChartPoint_TP<Position3D_TC<float>>> _input_buffer;
+    RingBuffer_TC<ChartPoint_TP<Position3D_TC< DataType_TP >>> _input_buffer;
 
     //! Buffer for visualization - the user does not know this one
-    OGLSweepChartBuffer_C _ogl_data_series;
+    OGLSweepChartBuffer_C<DataType_TP> _ogl_data_series;
 
     //! The y component of the last value plotted
-    float _last_plotted_y_value_S = 0;
+    DataType_TP _last_plotted_y_value_S = 0;
 
     //! The x component of the last value plotted
-    float _last_plotted_x_value_S = 0;
+    DataType_TP _last_plotted_x_value_S = 0;
 
     // Colors for the shader
     QVector3D _lead_line_color;
