@@ -4,7 +4,7 @@ C++ libs for visualization and algorithmic analyzation of ecg signals.
 
 customable, hardware accelerated realtime visualization of ecg signals in sweep charts on the gpu via OpenGL in C++
 
-![visualization_example](https://user-images.githubusercontent.com/44288843/81840727-b16bba80-9549-11ea-8863-91453e66e537.jpg)
+![bb](https://user-images.githubusercontent.com/44288843/82672250-67b55b00-9c40-11ea-8014-09ff70e12b38.png)
 
 https://github.com/Biehrer/ecg-analyzer
 ## Get started
