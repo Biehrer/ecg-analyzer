@@ -59,15 +59,17 @@ int main(int argc, char *argv[])
         std::cout <<"channel id " << channel_id << " = "<< channel_label << std::endl;
         ++channel_id;
     }
+    
     std::cin >> channel_id;
     std::cout << "start playing of data series from channel # :" << channel_id << std::endl;
 
+    // Start a thread which adds the data to the plot(s)
     std::thread dataThread([&]()
     {
         const auto& data = signal.constData();
         const auto& channel_data = data[channel_id]._data;
         const auto& timestamps = data[channel_id]._timestamps;
-        // pointer to the data
+        // iterator to the data
         auto time_series_begin_it = channel_data.begin();
         auto time_series_timestamps_begin_it = timestamps.begin();
 
@@ -81,6 +83,7 @@ int main(int argc, char *argv[])
                 ++time_series_timestamps_begin_it;
             }else{
                 signal_processed = true;
+                std::cout << "processing finished; thread returns" << std::endl;
             }
 
            std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>(frequency_ms)));
@@ -93,20 +96,60 @@ int main(int argc, char *argv[])
 	return a.exec();
 }
 
-// Coding guidelines
+
+////////////////////////////////////////////////////
+// 
+//    Coding guidelines
+//
+////////////////////////////////////////////////////
+
+//////////////////////
+// Text format:
+// - Use only spaces and no tabs !
+// - Always leave 4 spaces to the left side of the page on each line! 
+
+//////////////////////
 // variables:
+//
+// - member variables start with a underscore:
 // _var = member Variable
+//
+// - local variables do not:
+// some_var = local variable
+//
+// - separate words by underscore and not camel case:
+// number_of_points and NOT numberOfPoints;
 
+//////////////////////
+// functions:
+// - Use CamelCase as function name:
+//   FunctionNamesInCamelCase()
 
+//////////////////////
+// Parantheses of IF and WHILE statements:
+//
+// if there is one condition:
+//     if ( condition1 ) {
+//        DoStuff();
+//     }
+//
+// if there is more than one condition:
+//     if ( condition1 &&
+//          condition2 )
+//       {
+//            DoStuff();
+//       }
+
+//////////////////////
 // order of includes:
 //
 // project includes
 //   qt includes
 //      stl includes
-// If there is an error in a project file its recoginzed before other errors in third party dependencies
-
+//
+//=> If there is an error in a project file its recoginzed before other errors in third party dependencies
 
 //TimeSeriesPlacer_C<double, double> wavedata_generator(signal);
 //wavedata_generator.Play(1000.0, 2, PushInterfaceFunction, w);
 //std::this_thread::sleep_for(std::chrono::milliseconds(6000));
-//wavedata_generator.Stop();
+//wavedata_generator.Stop();  
