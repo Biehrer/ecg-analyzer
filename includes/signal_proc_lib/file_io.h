@@ -48,6 +48,8 @@ public:
     template<class Type_IT>
     int64_t CountLines();
 
+    bool IsOpen() { return _filestream.is_open(); }
+
     //! CLoses the file
     //! Returns true if the file was closed
     //! Returns false if the file is already closed or 
