@@ -21,6 +21,8 @@ add_library( visualization
                             "JonesPlot.ui"
                             "ogl_plot_renderer_widget.h"
                             "ogl_plot_renderer_widget.cpp"
+                            "ogl_base_chart.h"
+                            "ogl_base_chart.cpp"
                             "ogl_sweep_chart.h" 
                             "ogl_sweep_chart.cpp"
                             "ogl_sweep_chart_buffer.h"
