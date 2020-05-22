@@ -24,10 +24,10 @@ QOpenGLPlotRendererWidget::~QOpenGLPlotRendererWidget() {
     }
 }
 
-QOpenGLPlotRendererWidget::QOpenGLPlotRendererWidget(unsigned int number_of_plots , QWidget* parent)
+QOpenGLPlotRendererWidget::QOpenGLPlotRendererWidget(/*unsigned int number_of_plots ,*/ QWidget* parent)
     :
       _prog(), 
-     _number_of_plots(number_of_plots)
+     _number_of_plots(0)
 {
     // Attention: DO NOT USE OPENGL COMMANDS INSIDE THE CONSTRUCTOR
 	_nearZ = 1.0;
@@ -64,7 +64,7 @@ void QOpenGLPlotRendererWidget::OnDataUpdateThreadFunction()
         value_rad = _pointcount * (2.0 * pi) / 360.0;
         data_value = 5.0 * std::sin(value_rad);
         for ( auto& plot : _plots ) {
-            plot->AddDataTimestamp(data_value, timestamp);
+            plot->AddDatapoint(data_value, timestamp);
         }
         ++_pointcount;
         //DEBUG("Thread added point (# " << _pointcount << "): " << data_value);
@@ -75,13 +75,31 @@ void QOpenGLPlotRendererWidget::OnDataUpdateThreadFunction()
 void QOpenGLPlotRendererWidget::AddDataToAllPlots(float value_x, float value_y) 
 {
     for ( auto& plot : _plots ) {
-        plot->AddDataTimestamp(value_y, Timestamp_TP(value_x));
+        plot->AddDatapoint(value_y, Timestamp_TP(value_x));
     }
 }
 
 const QMatrix4x4 QOpenGLPlotRendererWidget::GetModelViewProjection() const
 {
     return *_MVP;
+}
+
+OGLSweepChart_C * QOpenGLPlotRendererWidget::GetPlotPtr(unsigned int plot_idx)
+{
+    if ( plot_idx < _plots.size() ) {
+        return _plots[plot_idx];
+    }
+
+    return nullptr;
+}
+
+OGLSweepChart_C * QOpenGLPlotRendererWidget::GetPlotPtr(const std::string & plot_label) {
+    for ( const auto& plot : _plots ) {
+        if ( plot_label == plot->GetLabel() ) {
+            return plot;
+        }
+    }
+    return nullptr;
 }
 
 
@@ -95,12 +113,17 @@ void InitializePlot(const std::string& label,
 
 }
 
-void QOpenGLPlotRendererWidget::FastInitializePlots(int number_of_plots, 
+bool QOpenGLPlotRendererWidget::FastInitializePlots(int number_of_plots, 
                                                     int time_range_ms, 
                                                     float max_y,
                                                     float min_y) 
 {
     DEBUG("initialize plots");
+
+    if ( !_ogl_initialized ) {
+        return false;
+    }
+
     // Chart properties
     RingBufferSize_TP chart_buffer_size = RingBufferSize_TP::Size65536;
 
@@ -136,8 +159,10 @@ void QOpenGLPlotRendererWidget::FastInitializePlots(int number_of_plots,
                                  static_cast<float>(27.0f/255.0f) );
     QVector3D bounding_box_color(1.0f, 1.0f, 1.0f);
     QVector3D text_color(1.0f, 1.0f, 1.0f);
-
+    unsigned int plot_idx = 0;
     for ( auto& plot : _plots ) {
+        plot->SetID(plot_idx);
+        ++plot_idx;
         // Setup colors
         plot->SetSeriesColor(series_color);
         plot->SetAxesColor(axes_color);
@@ -146,8 +171,8 @@ void QOpenGLPlotRendererWidget::FastInitializePlots(int number_of_plots,
         plot->SetLeadLineColor(lead_line_color);
         plot->SetSurfaceGridColor(surface_grid_color);
         // Set up axes
-        plot->SetMajorTickValueXAxes(time_range_ms / 4);
-        plot->SetMajorTickValueYAxes( (max_y - min_y ) / 4);
+        plot->SetMajorTickValueXAxes(time_range_ms / 3);
+        plot->SetMajorTickValueYAxes( (max_y - min_y ) / 3);
         // Set chart type
         plot->SetChartType(DrawingStyle_TP::LINE_SERIES);
 
@@ -156,10 +181,16 @@ void QOpenGLPlotRendererWidget::FastInitializePlots(int number_of_plots,
     }
 
     this->update();
+    return true;
 }
+
 // Inside PlotManager_C / PlotController_C 
 void QOpenGLPlotRendererWidget::AddPlot( const PlotDescription_TP& plot_info)
 {
+    if ( !_ogl_initialized ) {
+        return;
+    }
+
     // Create plot
     _plots.push_back(new OGLSweepChart_C(plot_info._time_range_ms,
                                          plot_info._buffer_size, 
@@ -215,6 +246,8 @@ void QOpenGLPlotRendererWidget::initializeGL()
     FastInitializePlots(_number_of_plots, 10000.0, 10, -10);
 
     _paint_update_timer->start();
+    
+    _ogl_initialized = true;
 }
 
 

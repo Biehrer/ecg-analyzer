@@ -38,7 +38,8 @@ OGLBaseChart_C::OGLBaseChart_C(const OGLChartGeometry_C& geometry,
     _parent_widget(parent)
 {
     // Set the plot area just a little bit smaller than the bounding box
-    PositionType_TP offset = 30; // must not exceed 40 % of the bounding box height or width or calculations will 
+    // must not exceed 40 % of the bounding box height or width or calculations will fail 
+    PositionType_TP offset = 30; 
 
     auto left_btm = _bounding_box.GetLeftBottom();
     _plot_area.SetLeftBottom(left_btm + Position3D_TC<PositionType_TP>(offset, offset, 0));
@@ -80,6 +81,8 @@ void OGLBaseChart_C::InitializeAxesDescription(const QVector<float>& horizontal_
     auto current_y_description = max_y_val;
 
     for ( auto plot_desc_y_it = _plot_axes.begin(); plot_desc_y_it != plot_axes_horizontal_end; ++plot_desc_y_it ) {
+       
+        // for the first half: 
         // Start with the first
         int pos_x = _bounding_box.GetLeftBottom()._x + offset_x_S;
         int pos_y = horizontal_grid_vertices.at(vec_offset_idx) + offset_y_S;
@@ -196,15 +199,14 @@ OGLBaseChart_C::CreateSurfaceGrid(int x_major_tick_dist_ms, int y_major_tick_dis
 {
     auto surface_grid_vertices =
         ChartShapes_C<float>::CreateSurfaceGridVertices(_plot_area,
-            time_range_ms,
-            max_y,
-            min_y,
-            x_major_tick_dist_ms,
-            y_major_tick_dist_unit);
+                                                        time_range_ms,
+                                                        max_y,
+                                                        min_y,
+                                                        x_major_tick_dist_ms,
+                                                        y_major_tick_dist_unit);
 
     auto& horizontal_grid_vertices = surface_grid_vertices.first;
     auto& vertical_grid_vertices = surface_grid_vertices.second;
-
 
     QVector<float> combined_vertices;
     int num_of_combined_verts = horizontal_grid_vertices.size() + vertical_grid_vertices.size();
@@ -240,6 +242,11 @@ const std::string & OGLBaseChart_C::GetLabel()
     return _label;
 }
 
+unsigned int OGLBaseChart_C::GetID()
+{
+    return _id;
+}
+
 
 //inline
 void OGLBaseChart_C::DrawXYAxes(QOpenGLShaderProgram& shader, QOpenGLShaderProgram& text_shader)
@@ -253,15 +260,14 @@ void OGLBaseChart_C::DrawXYAxes(QOpenGLShaderProgram& shader, QOpenGLShaderProgr
     //   f->glDrawArrays(GL_TRIANGLES, 0, 6);
     //   f->glDisableVertexAttribArray(0);
     //   _y_axis_vbo.release();
-
     //   _x_axis_vbo.bind();
-       //f->glEnableVertexAttribArray(0);
-       //f->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
-       //f->glDrawArrays(GL_TRIANGLES, 0, 6);
-       //f->glDisableVertexAttribArray(0);
+    // f->glEnableVertexAttribArray(0);
+    // f->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+    // f->glDrawArrays(GL_TRIANGLES, 0, 6);
+    // f->glDisableVertexAttribArray(0);
     //   _x_axis_vbo.release();
 
-       // Draw the axes descriptions
+    // Draw the axes descriptions
     for ( const auto& description : _plot_axes ) {
         // => Cherno 2 in 1 shader 
         // -> approach: bind a white 1x1 texture to use flat colors and bind a 1.0 color to just draw the texture, 
@@ -284,7 +290,6 @@ void OGLBaseChart_C::DrawBoundingBox(QOpenGLShaderProgram& shader)
     f->glDisableVertexAttribArray(0);
     _bb_vbo.release();
 }
-
 
 void OGLBaseChart_C::CreateBoundingBox()
 {

@@ -29,59 +29,83 @@ int main(int argc, char *argv[])
         std::cout << std::to_string(*argv[idx]) << std::endl;
     }
 
-    //Do this before QApplication a(argc, arv)
+    // Do this ogl stuff before the line: QApplication a(argc, arv)
     QCoreApplication::setAttribute(Qt::AA_UseDesktopOpenGL);
     QApplication::setAttribute(Qt::AA_UseDesktopOpenGL);
     QApplication a(argc, argv);
 
-    // The data values of the time series inside the sample file is signed int
-    // -> but they are stored as doubles -> <double>
+    // Create a time signal and fill it with data
     TimeSignal_C<double> signal;
     signal.ReadG11Data("C://Development//projects//EcgAnalyzer//ecg-analyzer//resources//G11Data.dat");
+    
 
-#ifdef VISUALIZATION_ENABLED
-    // temporary solution
-    QOpenGLPlotRendererWidget* plot_widget = new QOpenGLPlotRendererWidget(2);
-    // setup widget
-    // ..modify plots..(set axes min/max, tick values,..)
-    // show widget
+    #ifdef VISUALIZATION_ENABLED
+    // Create the visualization widget
+    QOpenGLPlotRendererWidget* plot_widget = new QOpenGLPlotRendererWidget();
     plot_widget->show();
 
-    double frequency_hz = 1000.0;
-    double frequency_ms = (1.0 / frequency_hz) * 1000.0;
-
-    std::cout << std::endl << "Welcome!" << std::endl
-     << "select channel to display by entering the channel id : " << std::endl;
-    const auto labels = signal.GetChannelLabels();
-
-    int channel_id = 0;
-    for ( const auto& channel_label : labels ) {
-        std::cout <<"channel id " << channel_id << " = "<< channel_label << std::endl;
-        ++channel_id;
+    // Fast initialization of plots
+    // in a vertical layout
+    int number_of_plots = 2;
+    bool success =  plot_widget->FastInitializePlots(number_of_plots, 10000.0, 3, -3);
+    if ( !success ) {
+        throw std::runtime_error("plot initialization failed! Abort");
     }
-    
-    std::cin >> channel_id;
-    std::cout << "start playing of data series from channel # :" << channel_id << std::endl;
+
+    // Alternative to fast initialize: 
+    // describe the plot using the PlotDescription_TP struct and 
+    // add the plot to the plot_widget by calling
+    // AddPlot(...)  with the PlotDescription_TP object ::
+
+    // PlotDescription_TP plot0_info;
+    // plot0_info._geometry = OGLChartGeometry(pos_x, pos_y, width, height)
+    // ...
+    // plot_widget->AddPlot(plot0_info);
+
+    //int channel_id = ReadChannelFromUser<double>(signal);
 
     // Start a thread which adds the data to the plot(s)
-    std::thread dataThread([&]()
-    {
-        const auto& data = signal.constData();
-        const auto& channel_data = data[channel_id]._data;
-        const auto& timestamps = data[channel_id]._timestamps;
-        // iterator to the data
-        auto time_series_begin_it = channel_data.begin();
-        auto time_series_timestamps_begin_it = timestamps.begin();
+    std::thread dataThread( [&] () {
+        // assign plot labels just for fun
+        auto plot_0 = plot_widget->GetPlotPtr(0);
+        plot_0->SetLabel("plot 0");
+        auto plot_1 = plot_widget->GetPlotPtr(1);
+        plot_1->SetLabel("plot 1");
 
+        // Get data of all channels
+        const auto& data = signal.constData();
+
+        // data for plot 0
+        int plot0_id = plot_0->GetID();
+        const auto& plot0_data = data[plot0_id]._data;
+        const auto& plot0_timestamps = data[plot0_id]._timestamps;
+        // data to plot 1
+        int plot1_id = plot_1->GetID();
+        const auto& plot1_data = data[plot1_id]._data;
+        const auto& plot1_timestamps = data[plot1_id]._timestamps;
+
+        // iterator to the data for plot 0
+        auto series_1_begin_it = plot0_data.begin();
+        auto timestamps_1_begin_it = plot0_timestamps.begin();
+        // iterator to the data for plot 1
+        auto series_2_begin_it = plot1_data.begin();
+        auto timestamps_2_begin_it = plot1_timestamps.begin();
+
+        double frequency_hz = 1000.0;
+        double frequency_ms = (1.0 / frequency_hz) * 1000.0;
         bool signal_processed = false;
-        int64_t time_series_end = data.size();
+        int64_t time_series_end = plot0_data.size();
 
         while ( !signal_processed  ) { 
-            if ( *time_series_begin_it < time_series_end ) {
-                plot_widget->AddDataToAllPlots(*time_series_timestamps_begin_it, *time_series_begin_it);
-                ++time_series_begin_it;
-                ++time_series_timestamps_begin_it;
-            }else{
+            if ( *series_1_begin_it < time_series_end ) {
+                plot_0->AddDatapoint(*series_1_begin_it, *timestamps_1_begin_it);
+                plot_1->AddDatapoint(*series_2_begin_it, *timestamps_2_begin_it);
+
+                ++series_1_begin_it;
+                ++timestamps_1_begin_it;
+                ++series_2_begin_it;
+                ++timestamps_2_begin_it;
+            } else {
                 signal_processed = true;
                 std::cout << "processing finished; thread returns" << std::endl;
             }
@@ -89,11 +113,27 @@ int main(int argc, char *argv[])
            std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>(frequency_ms)));
        }
    });
-
    dataThread.detach();
+   #endif
 
-#endif
 	return a.exec();
+}
+
+template<typename DataType_TP>
+int ReadChannelFromUser(const TimeSignal_C<DataType_TP>& signal) 
+{
+    std::cout << std::endl << "Welcome!" << std::endl
+        << "select channel to display by entering the channel id : " << std::endl;
+
+    // Ask the user to which channel from the signal should be visualized
+    int channel_id = 0;
+    for ( const auto& channel_label : signal.GetChannelLabels() ) {
+        std::cout <<"channel id " << channel_id << " = "<< channel_label << std::endl;
+        ++channel_id;
+    }
+    std::cin >> channel_id;
+    std::cout << "start playing of data series from channel # :" << channel_id << std::endl;
+
 }
 
 

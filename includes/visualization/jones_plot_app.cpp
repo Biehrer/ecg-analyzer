@@ -26,7 +26,7 @@ JonesPlotApplication_C::JonesPlotApplication_C(QWidget *parent)
     ui.setupUi(this);
 
     unsigned int number_of_plots = 2;
-    _plot_widget = new QOpenGLPlotRendererWidget(number_of_plots, this);
+    _plot_widget = new QOpenGLPlotRendererWidget(/*number_of_plots,*/ this);
     _plot_widget->show();
 
     connect(ui._btn_add_point, &QPushButton::clicked, this, &JonesPlotApplication_C::SendDatatToPlots);
@@ -42,7 +42,6 @@ void JonesPlotApplication_C::AddDataTest(double y_val, double x_val) {
     _plot_widget->AddDataToAllPlots(y_val, x_val);
 }
 
-void JonesPlotApplication_C::SendDatatToPlots()
-{
+void JonesPlotApplication_C::SendDatatToPlots() {
     _plot_widget->AddDataToAllPlots(ui._lineEdit_xVal->text().toFloat(), ui._lineEdit_yVal->text().toFloat());
 }

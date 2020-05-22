@@ -54,8 +54,6 @@ struct PlotColors_TP {
     QVector3D _bounding_box = QVector3D(1.0f, 1.0f, 1.0f);
 };
 
-// alternative to long parameter list:
-// pass struct to IinitialziePlot function
 //! All the info required to initialize a plot
 struct PlotDescription_TP
 {
@@ -79,7 +77,8 @@ class QOpenGLPlotRendererWidget : public QOpenGLWidget
 	Q_OBJECT
         // Construction / Destruction / Copying
 public:
-    QOpenGLPlotRendererWidget(unsigned int number_of_plots, QWidget* parent = 0);
+    QOpenGLPlotRendererWidget(/*unsigned int number_of_plots,*/ 
+                              QWidget* parent = 0);
     
     ~QOpenGLPlotRendererWidget();
 
@@ -87,7 +86,7 @@ public:
 public:
     //! Fast initialization of plots in a horizontal layout (shared timerange and max/min y values)
     //! Creates OGLSweepCharts
-    void FastInitializePlots(int number_of_plots, int time_range_ms, float max_y, float min_y);
+    bool FastInitializePlots(int number_of_plots, int time_range_ms, float max_y, float min_y);
 
     //! Adds one plot
     void AddPlot(const PlotDescription_TP& plot_info);
@@ -103,6 +102,12 @@ public:
 
     //! Returns the model view projection transform matrix
     const QMatrix4x4 GetModelViewProjection() const;
+
+    //! Returns a ptr to a plot at a specific position inside the _plots vector
+    OGLSweepChart_C* GetPlotPtr(unsigned int plot_idx);
+
+    //! Returns a ptr to a plot by label
+    OGLSweepChart_C* GetPlotPtr(const std::string& plot_label);
 
    // Protected functions
 protected:
@@ -202,4 +207,6 @@ private:
     unsigned int _number_of_plots;
 
     unsigned int _chart_idx = 0;
+
+    bool _ogl_initialized = false;
 };
