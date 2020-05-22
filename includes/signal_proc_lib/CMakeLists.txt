@@ -11,8 +11,9 @@ find_package(Qt5Gui)
 
 add_library( signal_proc_lib
                             file_io.h
+                            mit_file_io.h
                             time_signal.h
-                          #  time_series_player.h
+                          # time_series_player.h
 )
 
  # link libs
