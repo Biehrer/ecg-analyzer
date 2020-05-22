@@ -12,7 +12,7 @@ using PositionType_TP = int;
 //! (screenpos_x, screenpos_y)  __________________________________________________  (screenpos_x + width, screenpos_y)
 //!              (BOTTOM-Left) |                                                  | (BOTTOM-Right)
 //!                            |                                                  |
-//!                            |------------------------------------------------->| [time_range_ms, y_max - y_min]
+//!                            |------------------------------------------------->| [time_range_ms, (y_max - y_min) / 2]
 //!                            |                                                  |
 //!                (TOP-Left)  |__________________________________________________| (TOP-Right) 
 //! (screenpos_x, screenpos_y + Height)                                            (screenpos_x + width, screenpos_y + height)
