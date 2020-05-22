@@ -78,7 +78,8 @@ void OGLChartGeometry_C::SetLeftTop(const Position3D_TC<PositionType_TP>& left_t
     _left_top._x = left_top._x; 
     _left_top._y = left_top._y;
     _left_top._z = left_top._z;
-
+    RecalculateHeight();
+    RecalculateWidth();
 }
 
 void OGLChartGeometry_C::SetLeftBottom(const Position3D_TC<PositionType_TP>& left_bottom)
@@ -95,6 +96,8 @@ void OGLChartGeometry_C::SetRightTop(const Position3D_TC<PositionType_TP>& right
     _right_top._x = right_top._x;
     _right_top._y = right_top._y;
     _right_top._z = right_top._z;
+    RecalculateHeight();
+    RecalculateWidth();
 }
 
 void OGLChartGeometry_C::SetRightBottom(const Position3D_TC<PositionType_TP>& right_bottom)
@@ -106,19 +109,19 @@ void OGLChartGeometry_C::SetRightBottom(const Position3D_TC<PositionType_TP>& ri
     RecalculateWidth();
 }
 
-int OGLChartGeometry_C::GetZPosition() const
+PositionType_TP OGLChartGeometry_C::GetZPosition() const
 {
     return _z_pos;
 }
 
 
-int OGLChartGeometry_C::GetChartWidth() const
+PositionType_TP OGLChartGeometry_C::GetChartWidth() const
 {
     return _width_S;
 }
 
 
-int OGLChartGeometry_C::GetChartHeight() const
+PositionType_TP OGLChartGeometry_C::GetChartHeight() const
 {
     return _height_S;
 }

@@ -4,7 +4,7 @@
 #include "chart_types.h"
 
 //! Defines which datatype to use for position calculations
-using PositionType_TP = int;
+using PositionType_TP = float;
 
 //! Defines the position and size of the chart inside the opengl context
 //! 
