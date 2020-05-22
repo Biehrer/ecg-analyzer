@@ -12,8 +12,6 @@
 // Qt includes
 #include <qvector.h>
 
-
-
 //! Representation of a position in 3d space containing three components: x, y and z
 template<typename ElementType_TP>
 class Position3D_TC {
@@ -115,8 +113,13 @@ public:
             timepoint_t(std::chrono::duration_cast<std::chrono::milliseconds>(double_prec_seconds(current_time_s)) );
     }
 
-    Timestamp_TP(const std::chrono::time_point<ClockType>& timestamp)
+    Timestamp_TP(const timepoint_t& timestamp)
         : _timestamp(timestamp)
+    {
+    }
+
+    Timestamp_TP(Timestamp_TP& timestamp)
+        : _timestamp(*timestamp.GetTimestampPtr())
     {
     }
 
@@ -146,9 +149,9 @@ public:
     //! Returns a pointer to the internal time_point object
     //std::chrono::time_point<ClockType>* GetTimestampPtr() { return &_timestamp; }
     timepoint_t* GetTimestampPtr() { return &_timestamp; }
+
     // Private attributes
 private:
-    //std::chrono::time_point<ClockType> _timestamp;
     timepoint_t _timestamp;
 };
 
