@@ -16,9 +16,9 @@ find_package(Freetype REQUIRED)
 message(STATUS "FREETYPE_INCLUDE_DIR_ft2build=${FREETYPE_INCLUDE_DIR_ft2build}")
 
 add_library( visualization 
-                            "jones_plot_app.h" 
-                            "jones_plot_app.cpp"
-                            "JonesPlot.ui"
+                           # "jones_plot_app.h" 
+                           # "jones_plot_app.cpp"
+                           # "JonesPlot.ui"
                             "ogl_plot_renderer_widget.h"
                             "ogl_plot_renderer_widget.cpp"
                             "ogl_base_chart.h"

@@ -39,15 +39,12 @@ endif()
 
 add_subdirectory(includes/signal_proc_lib)
 
-#add_library( signalanalyzer 
- #                           time_series_player.h
- # )
-# wegen add_library evtl.:
-
-
-
 add_executable(${PROJECT_NAME} main.cpp 
-                        ${CMAKE_CURRENT_SOURCE_DIR}/includes/time_series_player.h)
+                        ${CMAKE_CURRENT_SOURCE_DIR}/includes/time_series_player.h
+                        ${CMAKE_CURRENT_SOURCE_DIR}/includes/jones_plot_app.h
+                        ${CMAKE_CURRENT_SOURCE_DIR}/includes/jones_plot_app.cpp
+                        ${CMAKE_CURRENT_SOURCE_DIR}/includes/JonesPlot.ui
+              )
 
 target_include_directories(signalanalyzer PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/includes/)
 

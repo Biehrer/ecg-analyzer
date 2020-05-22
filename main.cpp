@@ -1,7 +1,6 @@
 // Visualization lib includes
 #ifdef USE_VISUALIZATION_CPP // (VISUALIZATION_ENABLED_CPP == TRUE) 
 #define VISUALIZATION_ENABLED TRUE
-#include "includes/visualization/jones_plot_app.h"
 #include "includes/visualization/ogl_plot_renderer_widget.h"
 #else
 #endif
@@ -9,8 +8,10 @@
 // Signal proc lib includes
 #include "includes/signal_proc_lib/time_signal.h"
 #include "includes/signal_proc_lib/file_io.h"
-//#include "includes/signal_proc_lib/time_series_player.h"
-#include "time_series_player.h"
+
+// Project includes
+#include "time_series_player.h" // see std::invoke for member function bindings or other possibility to pass a member func
+#include "jones_plot_app.h"
 
 // Qt includes
 #include <QtWidgets/QApplication>
@@ -37,7 +38,6 @@ int main(int argc, char *argv[])
     // Create a time signal and fill it with data
     TimeSignal_C<double> signal;
     signal.ReadG11Data("C://Development//projects//EcgAnalyzer//ecg-analyzer//resources//G11Data.dat");
-    
 
     #ifdef VISUALIZATION_ENABLED
     // Create the visualization widget
@@ -62,7 +62,7 @@ int main(int argc, char *argv[])
     // ...
     // plot_widget->AddPlot(plot0_info);
 
-    //int channel_id = ReadChannelFromUser<double>(signal);
+    // int channel_id = ReadChannelFromUser<double>(signal);
 
     // Start a thread which adds the data to the plot(s)
     std::thread dataThread( [&] () {
@@ -83,6 +83,8 @@ int main(int argc, char *argv[])
         int plot1_id = plot_1->GetID();
         const auto& plot1_data = data[plot1_id]._data;
         const auto& plot1_timestamps = data[plot1_id]._timestamps;
+        // Hide all this pointer stuff in convenience methods so we can use:
+        // GetChannelData(int channel_idx)
 
         // iterator to the data for plot 0
         auto series_1_begin_it = plot0_data.begin();
@@ -135,7 +137,6 @@ int ReadChannelFromUser(const TimeSignal_C<DataType_TP>& signal)
     std::cout << "start playing of data series from channel # :" << channel_id << std::endl;
 
 }
-
 
 ////////////////////////////////////////////////////
 // 
