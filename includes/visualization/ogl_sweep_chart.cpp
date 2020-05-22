@@ -70,7 +70,7 @@ void OGLSweepChart_C::Initialize()
                              _major_tick_y_axes );
 }
 
-void OGLSweepChart_C::AddDataTimestamp(const float value, const Timestamp_TP & timestamp)
+void OGLSweepChart_C::AddDatapoint(const float value, const Timestamp_TP & timestamp)
 {
     // Don't add the value if its not inside the range, 
     // because its not visible eitherway -> better solution would be: Add it to the series but don't draw it!
@@ -79,29 +79,31 @@ void OGLSweepChart_C::AddDataTimestamp(const float value, const Timestamp_TP & t
     }
 
     // - (minus) because then the positive y axis is directing at the top of the screen
-    float y_val_scaled_S = static_cast<float>(_plot_area.GetLeftTop()._y) -
+    float y_val_scaled_S = _plot_area.GetLeftTop()._y -
                           ((value - _min_y_axis_value) / (_max_y_axis_value - _min_y_axis_value)) * 
-        _plot_area.GetChartHeight();
+                          _plot_area.GetChartHeight();
 
     auto x_ms = timestamp.GetMilliseconds();
     // use modulo to wrap the dataseries
-    float x_val_scaled_S = static_cast<float>(_plot_area.GetLeftBottom()._x) +
-                                             ( ( x_ms % static_cast<int>(_time_range_ms) ) / _time_range_ms ) *
-        _plot_area.GetChartWidth();
+    float x_val_scaled_S = _plot_area.GetLeftBottom()._x +
+                           ( ( x_ms % static_cast<int>(_time_range_ms) ) / _time_range_ms ) *
+                           _plot_area.GetChartWidth();
 
     DEBUG("Scaled x value: " << x_val_scaled_S << ", to value: " << x_ms_modulo);
     DEBUG("Scaled y value: " << y_val_scaled_S << ", to value: " << value);
     _input_buffer.InsertAtTail(
         ChartPoint_TP<Position3D_TC<float>> (Position3D_TC<float>(x_val_scaled_S, 
                                                                   y_val_scaled_S, 
-                                                                  1.0f), x_ms));
+                                                                  1.0f), 
+                                                                  x_ms));
 }
 
 //! Uses the bounding box
 float OGLSweepChart_C::GetScreenCoordsFromYChartValue(float y_value) 
 {
    float y_value_S =  static_cast<float>(_bounding_box.GetLeftTop()._y) -
-        ((y_value - _min_y_axis_value) / (_max_y_axis_value - _min_y_axis_value)) * _bounding_box.GetChartHeight();
+                      ((y_value - _min_y_axis_value) / (_max_y_axis_value - _min_y_axis_value)) * 
+                      _bounding_box.GetChartHeight();
 
    return y_value_S;
 }
@@ -114,7 +116,8 @@ float OGLSweepChart_C::GetScreenCoordsFromXChartValue(float x_value_ms)
 
     // calculate x-value after wrapping
     float x_value_S = static_cast<float>(_bounding_box.GetLeftBottom()._x) +
-                     ((x_val_wrap_corrected_ms) / (_time_range_ms)) * _bounding_box.GetChartWidth();
+                      ((x_val_wrap_corrected_ms) / (_time_range_ms)) * 
+                      _bounding_box.GetChartWidth();
 
     return x_value_S;
 }
@@ -139,10 +142,11 @@ void OGLSweepChart_C::SetLeadLineColor(const QVector3D& color)
     _lead_line_color = color;
 }
 
-void OGLSweepChart_C::Draw(QOpenGLShaderProgram& shader, QOpenGLShaderProgram& text_shader) 
+void OGLSweepChart_C::Draw(QOpenGLShaderProgram& shader, 
+                           QOpenGLShaderProgram& text_shader) 
 {
     DrawSeries(shader);
-    DrawBoundingBox(shader);
+    //DrawBoundingBox(shader);
     DrawLeadLine(shader);
     DrawSurfaceGrid(shader);
     DrawXYAxes(shader, text_shader);

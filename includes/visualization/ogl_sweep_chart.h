@@ -44,6 +44,28 @@
 //! _S --- e.g: some_var_S = some value in Screen coords
 //!
 //! See OGLChartGeometry for the chart coordinate system
+
+//! 
+//! Class usage:
+//! 
+//! // Create the chart
+//! OGLSweepChart_C chart(...);
+//! // Setup the chart
+//! chart.SetMajorTickValue(..)
+//! chart.SetLabel("some_chart");
+//! ...
+//! // after setup call Initialize
+//! chart.Initialize();
+//! // now you can use the .Draw() method inside the QOpenGLWidget paintgl() method
+//! 
+//! void paintGL() 
+//! {
+//!    clearColor(r, g, b, a)
+//!     ...
+//!     chart.Draw(flat_color_shader, text_shader)
+//!     ...
+//! }
+//
 class OGLSweepChart_C : public OGLBaseChart_C
 {
     // Constructor / Destructor / Copying..
@@ -60,7 +82,8 @@ public:
 
 // Public access functions
 public:
-    //! TODO: ..
+    //! Initializes the charts internal objects. 
+    //! Must be called before the chart can be draw.
     void Initialize();
 
     //! Appends a new data value to the chart which consistss of a x-value(ms) and y-value(no unit) component.
@@ -68,7 +91,7 @@ public:
     //! This function maps data to a plot point which means data is mapped to a specific position in the plot itself (not the window the plot is placed in)
     //!
     // Todo template the chart class for different datatypes
-    void AddDataTimestamp(const float value, const Timestamp_TP& timestamp);
+    void AddDatapoint(const float value, const Timestamp_TP& timestamp);
 
     //! Draws the chart inside the opengl context from which this function is called
     //template<DrawingStyle_TP type = DrawingStyle_TP::LINE_SERIES >
@@ -98,63 +121,19 @@ public:
     //! The major tick value is used to draw the horizontal grid lines
     void SetMajorTickValueYAxes(float tick_value_unit);
 
-    ////! Set the color of the x- and y-axes
-    //void SetAxesColor(const QVector3D& color);
-    //
-    ////! Set color for text rendering (e.g axes units)
-    //void SetTextColor(const QVector3D & color);
-
-    ////! Set the data series color
-    //void SetSeriesColor(const QVector3D& color);
-    //
-    ////! Set the bounding box color
-    //void SetBoundingBoxColor(const QVector3D& color);
-    //
-    ////! Set the color of the surface grid
-    //void SetSurfaceGridColor(const QVector3D& color);
-    //
     //! Set the color of the lead line
     void SetLeadLineColor(const QVector3D& color);
 
-    //! Sets the model view projection matrix used for text rendering (e.g. axes units)
-    //void SetModelViewProjection(QMatrix4x4 model_view_projection);
-
-
 // Private helper functions
 private:
-
-    //! Create the text for displaying axes units
-    /*void InitializeAxesDescription(const QVector<float>& horizontal_grid_vertices, 
-                                   const QVector<float>& vertical_grid_vertices, 
-                                   float scale);
-*/
-    //! Draws the x- and y-axis inside the opengl context
-    //! from which the function is called
-    //void DrawXYAxes(QOpenGLShaderProgram& shader, QOpenGLShaderProgram& text_shader);
-
-    //! Draws the border bounding box of the plot area inside the opengl context
-    //void DrawBoundingBox(QOpenGLShaderProgram& shader);
-
     //! Draws the data series to the opengl context inside the plot-area
     void DrawSeries(QOpenGLShaderProgram& shader);
     
-    //! Draws the surface grid
-    //void DrawSurfaceGrid(QOpenGLShaderProgram& shader);
-
     //! Draws the lead line
     void DrawLeadLine(QOpenGLShaderProgram& shader);
 
-    //! Creates the vbo used to draw the bounding box of the chart
-    //void CreateBoundingBox();
-
-    //! Creates a vbo used to draw the grid of the chart
-    //std::pair<QVector<float>, QVector<float>> CreateSurfaceGrid(int x_dist_unit, int y_dist_unit);
-
     //! Creates the vbo used to draw the lead line indicating the most current datapoint
     void CreateLeadLineVbo();
-
-    //! Creates and fills vertex buffer objects used for the axes of the chart
-    //void SetupAxes();
 
     //! Update the current position of the lead line. 
     //! Used to assign the last visualized point as lead-line position
@@ -209,5 +188,4 @@ private:
 
     //! Model view projection transform matrix for text rendering
     QMatrix4x4 _chart_mvp;
-
  };
