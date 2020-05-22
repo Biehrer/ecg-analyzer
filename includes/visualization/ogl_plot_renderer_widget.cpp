@@ -85,15 +85,24 @@ const QMatrix4x4 QOpenGLPlotRendererWidget::GetModelViewProjection() const
 }
 
 
-void QOpenGLPlotRendererWidget::InitializePlots(int number_of_plots) 
+
+void InitializePlot(const std::string& label, 
+                    int time_range_ms, 
+                    float min_y, 
+                    float max_y, 
+                    const OGLChartGeometry_C& geometry ) 
+{
+
+}
+
+void QOpenGLPlotRendererWidget::FastInitializePlots(int number_of_plots, 
+                                                    int time_range_ms, 
+                                                    float max_y,
+                                                    float min_y) 
 {
     DEBUG("initialize plots");
-
     // Chart properties
     RingBufferSize_TP chart_buffer_size = RingBufferSize_TP::Size65536;
-    int time_range_ms = 2000;
-    float max_y_axis_value = 4.0f;
-    float min_y_axis_value = -4.0f;
 
     // Calculate position of the charts
     int offset = SREENWIDTH / 6;
@@ -107,10 +116,16 @@ void QOpenGLPlotRendererWidget::InitializePlots(int number_of_plots)
 
     // Create plots
     for ( int chart_idx = 0; chart_idx < number_of_plots; ++chart_idx ) {
-        int chart_pos_y = (chart_height + chart_to_chart_offset_S) * chart_idx + chart_offset_from_origin_S; 
+
+        int chart_pos_y = chart_idx * (chart_height + chart_to_chart_offset_S) + 
+                          chart_offset_from_origin_S; 
         OGLChartGeometry_C geometry(chart_pos_x, chart_pos_y, chart_width, chart_height);
-        _plots.push_back( new OGLSweepChart_C(time_range_ms, chart_buffer_size, max_y_axis_value, min_y_axis_value, geometry, *this) );
-        std::cout << "chart pos (idx=" << chart_idx << "): " << chart_pos_y << std::endl;
+        _plots.push_back( new OGLSweepChart_C(time_range_ms,
+                                             chart_buffer_size, 
+                                             max_y, 
+                                             min_y, 
+                                             geometry, 
+                                             *this) );
     }
 
     QVector3D series_color(0.0f, 1.0f, 0.0f);
@@ -132,7 +147,7 @@ void QOpenGLPlotRendererWidget::InitializePlots(int number_of_plots)
         plot->SetSurfaceGridColor(surface_grid_color);
         // Set up axes
         plot->SetMajorTickValueXAxes(time_range_ms / 4);
-        plot->SetMajorTickValueYAxes( (max_y_axis_value - min_y_axis_value ) / 4);
+        plot->SetMajorTickValueYAxes( (max_y - min_y ) / 4);
         // Set chart type
         plot->SetChartType(DrawingStyle_TP::LINE_SERIES);
 
@@ -141,6 +156,49 @@ void QOpenGLPlotRendererWidget::InitializePlots(int number_of_plots)
     }
 
     this->update();
+}
+// Inside PlotManager_C / PlotController_C 
+void QOpenGLPlotRendererWidget::AddPlot( const PlotDescription_TP& plot_info)
+{
+    // Create plot
+    _plots.push_back(new OGLSweepChart_C(plot_info._time_range_ms,
+                                         plot_info._buffer_size, 
+                                         plot_info._max_y,
+                                         plot_info._min_y,
+                                         plot_info._geometry, 
+                                         *this));
+    ++_number_of_plots;
+
+    auto* plot = *(_plots.end() - 1);
+    plot->SetLabel(plot_info._label);
+    plot->SetID(plot_info._id);
+    // Setup colors
+    plot->SetSeriesColor(plot_info._colors._series);
+    plot->SetAxesColor(plot_info._colors._axes);
+    plot->SetTextColor(plot_info._colors._text);
+    plot->SetBoundingBoxColor(plot_info._colors._bounding_box);
+    plot->SetLeadLineColor(plot_info._colors._lead_line);
+    plot->SetSurfaceGridColor(plot_info._colors._surface_grid);
+    // Set up axes
+    plot->SetMajorTickValueXAxes(plot_info._maj_tick_x);
+    plot->SetMajorTickValueYAxes(plot_info._maj_tick_y);
+    // Set chart type ( Point or Line series )
+    plot->SetChartType(plot_info._chart_type);
+    // Initialize
+    plot->Initialize();
+    this->update();
+}
+
+bool QOpenGLPlotRendererWidget::RemovePlot(const std::string & label)
+{
+    for ( auto plot_it = _plots.begin(); plot_it < _plots.end(); ++plot_it ) {
+        if ( label == (*plot_it)->GetLabel() ) {
+            // match
+            _plots.erase(plot_it);
+             return true;
+        }
+    }
+     return false;
 }
 
 
@@ -154,7 +212,7 @@ void QOpenGLPlotRendererWidget::initializeGL()
 
     CreateLightSource();
 
-    InitializePlots(_number_of_plots);
+    FastInitializePlots(_number_of_plots, 10000.0, 10, -10);
 
     _paint_update_timer->start();
 }
@@ -376,6 +434,33 @@ bool QOpenGLPlotRendererWidget::CreateShader(QOpenGLShaderProgram& shader,
 
     shader.release();
     return success;
+}
+
+OGLSweepChart_C* 
+QOpenGLPlotRendererWidget::GetPlot(int plot_id)
+{
+        if ( plot_id > _plots.size() ||
+            plot_id < 0 )
+        {
+            return nullptr;
+        }
+
+        return _plots[plot_id];
+}
+
+// Label must be set before this function can be used.
+// if there is no label set, use GetPlot(int plot_id) to set the label, 
+// if you forget to set the label on the creation of the OGLSweepChart_C
+OGLSweepChart_C * 
+QOpenGLPlotRendererWidget::GetPlot(const std::string & plot_label) 
+{
+    for ( auto& plot : _plots ) {
+        plot->GetLabel() == plot_label;
+        return plot;
+    }
+
+     // no match
+    return nullptr;
 }
 
 

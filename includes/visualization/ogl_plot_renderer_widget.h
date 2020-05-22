@@ -41,10 +41,42 @@
 #define SREENWIDTH 1440
 #define SCREENHEIGHT 800
 
+
+//! Definition of plot colors
+struct PlotColors_TP {
+    QVector3D _series = QVector3D(0.0f, 1.0f, 0.0f);
+    QVector3D _axes = QVector3D(1.0f, 1.0f, 1.0f);
+    QVector3D _lead_line = QVector3D(1.0f, 0.01f, 0.0f);
+    QVector3D _surface_grid = QVector3D(static_cast<float>(235.0f / 255.0f),
+                                        static_cast<float>(225.0f / 255.0f),
+                                         static_cast<float>(27.0f / 255.0f) );
+    QVector3D _text = QVector3D(1.0f, 1.0f, 1.0f);
+    QVector3D _bounding_box = QVector3D(1.0f, 1.0f, 1.0f);
+};
+
+// alternative to long parameter list:
+// pass struct to IinitialziePlot function
+//! All the info required to initialize a plot
+struct PlotDescription_TP
+{
+    std::string _label = "unnamed";
+    OGLChartGeometry_C _geometry;
+    PlotColors_TP _colors;
+    DrawingStyle_TP _chart_type = DrawingStyle_TP::LINE_SERIES;
+    RingBufferSize_TP _buffer_size = RingBufferSize_TP::Size32768;
+
+    unsigned int _id = 0;
+    int _time_range_ms = 1000.0;
+    float _min_y = -5;
+    float _max_y = 5;
+    float _maj_tick_x = _time_range_ms / 4.0;
+    float _maj_tick_y = (_max_y - _min_y) / 4.0;
+};
+
+
 class QOpenGLPlotRendererWidget : public QOpenGLWidget
 {
 	Q_OBJECT
-
         // Construction / Destruction / Copying
 public:
     QOpenGLPlotRendererWidget(unsigned int number_of_plots, QWidget* parent = 0);
@@ -53,10 +85,23 @@ public:
 
     // Public access functions
 public:
+    //! Fast initialization of plots in a horizontal layout (shared timerange and max/min y values)
+    //! Creates OGLSweepCharts
+    void FastInitializePlots(int number_of_plots, int time_range_ms, float max_y, float min_y);
+
+    //! Adds one plot
+    void AddPlot(const PlotDescription_TP& plot_info);
+
+    //! Removes one plot
+    bool RemovePlot(const std::string& label);
+    
+    // Unused function
     void OnDataUpdateThreadFunction();
 
+    //! Adds a datavalue to all active plots
     void AddDataToAllPlots(float value_x, float value_y);
 
+    //! Returns the model view projection transform matrix
     const QMatrix4x4 GetModelViewProjection() const;
 
    // Protected functions
@@ -78,9 +123,7 @@ protected:
 
     // Private helper functions
 private:
-    //! Creates the OGL charts
-    void InitializePlots(int number_of_plots);
-
+    
     //! Initializes OpenGL functions
     void InitializeGLParameters();
 
@@ -134,6 +177,11 @@ private:
     //! All plots contained in the current instance of this widget
     std::vector<OGLSweepChart_C*> _plots;
 
+    // Access functions to modify the plots 
+    OGLSweepChart_C* GetPlot(int plot_id);
+
+    OGLSweepChart_C* GetPlot(const std::string& plot_label); // iterates all plots and checks if a plot has plot_label
+
     Quad _light_source;
 
     //! number of frames since the start of the programm
@@ -152,4 +200,6 @@ private:
     int _pointcount;
 
     unsigned int _number_of_plots;
+
+    unsigned int _chart_idx = 0;
 };
