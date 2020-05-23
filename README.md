@@ -31,3 +31,4 @@ Some steps are necessary because of the projects early stage:
 - Go to includes/CMakeList.txt and change the filepath in the following line to the location where your Freetype 2 build directy is located:
 set(ENV{FREETYPE_DIR} "C:/Development/libs/freetype-build/")
 
+See main.cpp for example usage of the visualization module
