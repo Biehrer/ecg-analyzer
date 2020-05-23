@@ -14,9 +14,6 @@
 class FileIO_C {
 
 public:
-    FileIO_C();
-
-public:
     //! Opens the file @ filename
     //! Returns true on success
     bool OpenFile(const std::string& filename);
@@ -67,13 +64,10 @@ private:
 
     std::string _filename;
 
-    bool _is_open;
+    bool _is_open = false;
 };
 
-FileIO_C::FileIO_C() {
-    _is_open = false;
-}
-
+inline
 bool
 FileIO_C::OpenFile(const std::string & filename)
 {
@@ -166,7 +160,7 @@ void FileIO_C::Read2DPoints() {
 
 //template<>
 //void FileIO_C::ReadUntil(const std::string& stop_string) {}
-
+inline
 const
 std::string FileIO_C::ReadLine()
 {
@@ -195,6 +189,9 @@ void FileIO_C::ReadCSV(char delemitter)
     //}
 }
 
+// instead of using inline as hack: 
+// put all the non-templated functions inside a cpp file to get around linking errors!(multiple defined symbols)
+inline
 bool FileIO_C::CloseFile()
 {
     if ( _filestream.is_open() ) {
@@ -233,11 +230,13 @@ int64_t FileIO_C::CountLines()
     return count;
 }
 
+inline
 std::ifstream* FileIO_C::GetFile()
 {
     return &_filestream;
 }
 
+inline
 bool
 FileIO_C::IsEof() {
     return _filestream.eof();

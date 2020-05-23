@@ -2,12 +2,15 @@
 
 // Project includes
 #include "ui_JonesPlot.h"
-#include "ogl_plot_renderer_widget.h"
+//#include "../includes/visualization/ogl_plot_renderer_widget.h"
+#include "../includes/signal_proc_lib/time_signal.h"
+//#include "../includes/signal_proc_lib/time_signal.h"
 
 // Qt includes
 #include <QtWidgets/QMainWindow>
 #include <qopenglfunctions.h>
 #include <QString>
+#include <qobject.h>
 
 // stl includes
 #include <thread>
@@ -26,15 +29,15 @@ protected:
     virtual void resizeEvent(QResizeEvent* event);
 
 public:
-    void AddDataTest(double y_val, double x_val);
+    //void AddDataTest(double y_val, double x_val);
 
-    void SendDatatToPlots();
+    //void SendDatatToPlots();
 
     //template<typename YValDataType_TP, typename XValDataType_TP>
     //static
     //void AddDataTest(const YValDataType_TP & y_val, const XValDataType_TP & x_val);
-
+    void Setup();
 private:
-    QOpenGLPlotRendererWidget* _plot_widget;
+    //QOpenGLPlotRendererWidget* _plot_widget;
     Ui::JonesPlotClass ui;
 };

@@ -23,7 +23,7 @@ QOpenGLPlotRendererWidget::~QOpenGLPlotRendererWidget() {
     }
 }
 
-QOpenGLPlotRendererWidget::QOpenGLPlotRendererWidget(/*unsigned int number_of_plots ,*/ QWidget* parent)
+QOpenGLPlotRendererWidget::QOpenGLPlotRendererWidget(QWidget* parent)
     :
       _prog(), 
      _number_of_plots(0)
@@ -53,9 +53,9 @@ QOpenGLPlotRendererWidget::QOpenGLPlotRendererWidget(/*unsigned int number_of_pl
 void QOpenGLPlotRendererWidget::OnDataUpdateThreadFunction()
 {
     Timestamp_TP timestamp;
-    double pi = 3.1415026589; 
-    double value_rad = 0;
-    double data_value = 0;
+    ChartDataType_TP pi = 3.1415026589;
+    ChartDataType_TP value_rad = 0;
+    ChartDataType_TP data_value = 0;
  
     while(true)
     {
@@ -104,19 +104,20 @@ QOpenGLPlotRendererWidget::GetPlotPtr(const std::string & plot_label) {
 }
 
 
-void InitializePlot(const std::string& label, 
-                    int time_range_ms, 
-                    float min_y, 
-                    float max_y, 
-                    const OGLChartGeometry_C& geometry ) 
-{
+//void InitializePlot(const std::string& label, 
+//                    int time_range_ms, 
+//                    float min_y, 
+//                    float max_y, 
+//                    const OGLChartGeometry_C& geometry ) 
+//{
+//
+//}
 
-}
-
-bool QOpenGLPlotRendererWidget::FastInitializePlots(int number_of_plots, 
-                                                    int time_range_ms, 
-                                                    ChartDataType_TP max_y,
-                                                    ChartDataType_TP min_y)
+bool 
+QOpenGLPlotRendererWidget::FastInitializePlots(int number_of_plots, 
+                                               int time_range_ms, 
+                                               ChartDataType_TP max_y,
+                                               ChartDataType_TP min_y)
 {
     DEBUG("initialize plots");
 
@@ -126,14 +127,14 @@ bool QOpenGLPlotRendererWidget::FastInitializePlots(int number_of_plots,
 
     // Chart properties
     RingBufferSize_TP chart_buffer_size = RingBufferSize_TP::Size65536;
+    
+    int offset_x = static_cast<double>(this->width()) * 0.05;
+    int offset_y = static_cast<double>(this->height()) * 0.15;
+    int chart_width = this->width() - offset_x;
+    int chart_height = (this->height() - offset_y ) / number_of_plots;
 
-    // Calculate position of the charts
-    int offset = SREENWIDTH / 6;
-    int chart_width = SREENWIDTH - offset;
-    int chart_height = SCREENHEIGHT / number_of_plots;
     // Chart is aligned at the left side of the screen
     int chart_pos_x = 10;
-
     int chart_to_chart_offset_S = 10;
     int chart_offset_from_origin_S = 4;
 
@@ -143,7 +144,7 @@ bool QOpenGLPlotRendererWidget::FastInitializePlots(int number_of_plots,
         int chart_pos_y = chart_idx * (chart_height + chart_to_chart_offset_S) + 
                           chart_offset_from_origin_S; 
         OGLChartGeometry_C geometry(chart_pos_x, chart_pos_y, chart_width, chart_height);
-        _plots.push_back( new OGLSweepChart_C< ChartDataType_TP>(time_range_ms,
+        _plots.push_back( new OGLSweepChart_C<ChartDataType_TP>(time_range_ms,
                                                                  chart_buffer_size, 
                                                                  max_y, 
                                                                  min_y, 
@@ -159,6 +160,7 @@ bool QOpenGLPlotRendererWidget::FastInitializePlots(int number_of_plots,
                                  static_cast<float>(27.0f/255.0f) );
     QVector3D bounding_box_color(1.0f, 1.0f, 1.0f);
     QVector3D text_color(1.0f, 1.0f, 1.0f);
+
     unsigned int plot_idx = 0;
     for ( auto& plot : _plots ) {
         plot->SetID(plot_idx);
@@ -175,7 +177,6 @@ bool QOpenGLPlotRendererWidget::FastInitializePlots(int number_of_plots,
         plot->SetMajorTickValueYAxes( (max_y - min_y ) / 3);
         // Set chart type
         plot->SetChartType(DrawingStyle_TP::LINE_SERIES);
-
         // Initialize
         plot->Initialize();
     }
@@ -259,10 +260,15 @@ void QOpenGLPlotRendererWidget::resizeGL(int width, int height)
 
     _projection_mat->setToIdentity();
     _view_mat->setToIdentity();
-    _projection_mat->ortho(QRect(0, 0, this->width(),this->height()));
-	f->glViewport(0, 0, this->width(), this->height());
+    //_projection_mat->ortho(QRect(0, 0, this->width(),this->height()));
+	//f->glViewport(0, 0, this->width(), this->height());
+
+    _projection_mat->ortho(QRect(0, 0, width,height));
+    f->glViewport(0, 0, width, height);
 	this->update();
 
+    int h_width = this->width();
+    int h_height = this->height();
     // Alternative: Trigger a signal which is activated, when the viewport is resized
     // =>..Check whats better for performance
     *_MVP = *(_projection_mat) * *(_view_mat) * *(_model_mat);

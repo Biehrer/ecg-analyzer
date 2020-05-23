@@ -38,9 +38,6 @@
 #include <qglobalstatic.h>
 
 // Project defines
-#define SREENWIDTH 1440
-#define SCREENHEIGHT 800
-
 using ChartDataType_TP = float;
 
 //! Definition of plot colors
@@ -78,8 +75,7 @@ class QOpenGLPlotRendererWidget : public QOpenGLWidget
 	Q_OBJECT
         // Construction / Destruction / Copying
 public:
-    QOpenGLPlotRendererWidget(/*unsigned int number_of_plots,*/ 
-                              QWidget* parent = 0);
+    QOpenGLPlotRendererWidget(QWidget* parent = 0);
     
     ~QOpenGLPlotRendererWidget();
 
@@ -189,8 +185,8 @@ private:
     // Access functions to modify the plots 
     OGLSweepChart_C<ChartDataType_TP>* GetPlot(int plot_id);
 
-    OGLSweepChart_C<ChartDataType_TP>* GetPlot(const std::string& plot_label); // iterates all plots and checks if a plot has plot_label
-
+    OGLSweepChart_C<ChartDataType_TP>* GetPlot(const std::string& plot_label); 
+    
     Quad _light_source;
 
     //! number of frames since the start of the programm

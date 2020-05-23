@@ -150,12 +150,12 @@ void OGLBaseChart_C::SetModelViewProjection(QMatrix4x4 model_view_projection)
 
 void OGLBaseChart_C::SetupAxes()
 {
-    const auto axes_vertices = ChartShapes_C<float>::MakesAxesVertices(_plot_area, 5.0); //CreateAxesVertices(5.0);
+    const auto axes_vertices = ChartShapes_C<float>::MakesAxesVertices(_plot_area, 5.0); 
     auto& x_axis_vertices = axes_vertices._x_axis_vertices;
     auto& y_axis_vertices = axes_vertices._y_axis_vertices;
 
     QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
-    // Setup OGL Chart buffer - empty 
+    
     _x_axis_vbo.create();
     _x_axis_vbo.bind();
     f->glEnableVertexAttribArray(0);
@@ -166,7 +166,6 @@ void OGLBaseChart_C::SetupAxes()
     f->glDisableVertexAttribArray(0);
     _x_axis_vbo.release();
 
-    // Setup OGL Chart buffer - empty 
     _y_axis_vbo.create();
     _y_axis_vbo.bind();
     f->glEnableVertexAttribArray(0);
@@ -176,7 +175,6 @@ void OGLBaseChart_C::SetupAxes()
     f->glDisableVertexAttribArray(0);
     _y_axis_vbo.release();
 }
-
 
 //inline
 void OGLBaseChart_C::DrawSurfaceGrid(QOpenGLShaderProgram& shader)
@@ -275,7 +273,6 @@ void OGLBaseChart_C::DrawXYAxes(QOpenGLShaderProgram& shader, QOpenGLShaderProgr
         description.RenderText(text_shader, _text_color, _chart_mvp);
     }
 }
-
 
 //inline
 void OGLBaseChart_C::DrawBoundingBox(QOpenGLShaderProgram& shader)

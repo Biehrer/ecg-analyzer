@@ -39,17 +39,26 @@ endif()
 
 add_subdirectory(includes/signal_proc_lib)
 
+
+
 add_executable(${PROJECT_NAME} main.cpp 
-                        ${CMAKE_CURRENT_SOURCE_DIR}/includes/time_series_player.h
+                  #      ${CMAKE_CURRENT_SOURCE_DIR}/includes/time_series_player.h
                         ${CMAKE_CURRENT_SOURCE_DIR}/includes/jones_plot_app.h
                         ${CMAKE_CURRENT_SOURCE_DIR}/includes/jones_plot_app.cpp
                         ${CMAKE_CURRENT_SOURCE_DIR}/includes/JonesPlot.ui
+
               )
+
+
+#add_library( ${PROJECT_NAME} time_series_player.h
+ #                           jones_plot_app.h
+  #                          jones_plot_app.cpp
+   #                         JonesPlot.ui
+    #       )
 
 target_include_directories(signalanalyzer PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/includes/)
 
-# if visualization should be disabled, tell c++ to not include it in the main.cpp file
-# (hack to get through Linker errors)
+
 if(USE_VISUALIZATION)
     # link to the visualization lib
     target_link_libraries(${PROJECT_NAME} PUBLIC visualization)

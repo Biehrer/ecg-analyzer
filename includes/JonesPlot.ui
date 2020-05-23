@@ -6,72 +6,46 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>600</width>
-    <height>400</height>
+    <width>681</width>
+    <height>478</height>
    </rect>
+  </property>
+  <property name="sizePolicy">
+   <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
+    <horstretch>0</horstretch>
+    <verstretch>0</verstretch>
+   </sizepolicy>
   </property>
   <property name="windowTitle">
    <string>JonesPlot</string>
   </property>
-  <widget class="QWidget" name="centralWidget">
-   <widget class="QWidget" name="verticalLayoutWidget">
+  <widget class="QWidget" name="_central_widget">
+   <property name="sizePolicy">
+    <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
+     <horstretch>0</horstretch>
+     <verstretch>0</verstretch>
+    </sizepolicy>
+   </property>
+   <widget class="QWidget" name="gridLayoutWidget">
     <property name="geometry">
      <rect>
-      <x>0</x>
-      <y>0</y>
-      <width>311</width>
-      <height>131</height>
+      <x>10</x>
+      <y>10</y>
+      <width>651</width>
+      <height>411</height>
      </rect>
     </property>
-    <layout class="QVBoxLayout" name="verticalLayout">
-     <item>
-      <widget class="QLabel" name="_label_xVal">
-       <property name="accessibleName">
-        <string>_label_xVal</string>
-       </property>
-       <property name="text">
-        <string>X:</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QLineEdit" name="_lineEdit_xVal">
-       <property name="accessibleName">
-        <string>_line_edit_xVal</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QLabel" name="_label_yVal">
-       <property name="accessibleName">
-        <string>_label_yVal</string>
-       </property>
-       <property name="text">
-        <string>Y:</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QLineEdit" name="_lineEdit_yVal">
-       <property name="accessibleName">
-        <string>_line_edit_yVal</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QPushButton" name="_btn_add_point">
-       <property name="accessibleName">
-        <string>_btn_add_point</string>
-       </property>
-       <property name="text">
-        <string>Add point</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <spacer name="_vertical_spacer_addPoint">
+    <layout class="QGridLayout" name="_grid_layout_main">
+     <property name="sizeConstraint">
+      <enum>QLayout::SetMaximumSize</enum>
+     </property>
+     <item row="2" column="0">
+      <spacer name="verticalSpacer">
        <property name="orientation">
         <enum>Qt::Vertical</enum>
+       </property>
+       <property name="sizeType">
+        <enum>QSizePolicy::Fixed</enum>
        </property>
        <property name="sizeHint" stdset="0">
         <size>
@@ -81,6 +55,37 @@
        </property>
       </spacer>
      </item>
+     <item row="3" column="0">
+      <widget class="QOpenGLPlotRendererWidget" name="_openGL_widget">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="0">
+      <layout class="QHBoxLayout" name="_top_button_layout">
+       <property name="sizeConstraint">
+        <enum>QLayout::SetMaximumSize</enum>
+       </property>
+       <item>
+        <widget class="QPushButton" name="_btn_settings">
+         <property name="text">
+          <string>Plot settings</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="_btn_load_signal">
+         <property name="text">
+          <string>Load Signal</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
     </layout>
    </widget>
   </widget>
@@ -89,7 +94,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>600</width>
+     <width>681</width>
      <height>21</height>
     </rect>
    </property>
@@ -105,6 +110,13 @@
   <widget class="QStatusBar" name="statusBar"/>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
+ <customwidgets>
+  <customwidget>
+   <class>QOpenGLPlotRendererWidget</class>
+   <extends>QOpenGLWidget</extends>
+   <header>../includes/visualization/ogl_plot_renderer_widget.h</header>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections/>
 </ui>

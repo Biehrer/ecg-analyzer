@@ -16,17 +16,14 @@ find_package(Freetype REQUIRED)
 message(STATUS "FREETYPE_INCLUDE_DIR_ft2build=${FREETYPE_INCLUDE_DIR_ft2build}")
 
 add_library( visualization 
-                           # "jones_plot_app.h" 
-                           # "jones_plot_app.cpp"
-                           # "JonesPlot.ui"
                             "ogl_plot_renderer_widget.h"
                             "ogl_plot_renderer_widget.cpp"
                             "ogl_base_chart.h"
                             "ogl_base_chart.cpp"
                             "ogl_sweep_chart.h" 
-                            "ogl_sweep_chart.cpp"
+                            #"ogl_sweep_chart.cpp"
                             "ogl_sweep_chart_buffer.h"
-                            "ogl_sweep_chart_buffer.cpp"
+                            #"ogl_sweep_chart_buffer.cpp"
                             "ogl_chart_geometry_c.h"
                             "ogl_chart_geometry_c.cpp"
                             "chart_shapes_c.h"
@@ -36,6 +33,7 @@ add_library( visualization
                             "ShapeGenerator.h" 
                             "ShapeData.h"
            )
+
  # link libs
 target_link_libraries(visualization Qt5::Widgets
                                     Qt5::Gui
