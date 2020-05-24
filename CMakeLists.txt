@@ -40,21 +40,15 @@ endif()
 add_subdirectory(includes/signal_proc_lib)
 
 
-
 add_executable(${PROJECT_NAME} main.cpp 
-                  #      ${CMAKE_CURRENT_SOURCE_DIR}/includes/time_series_player.h
+                      # ${CMAKE_CURRENT_SOURCE_DIR}/includes/time_series_player.h
                         ${CMAKE_CURRENT_SOURCE_DIR}/includes/jones_plot_app.h
                         ${CMAKE_CURRENT_SOURCE_DIR}/includes/jones_plot_app.cpp
                         ${CMAKE_CURRENT_SOURCE_DIR}/includes/JonesPlot.ui
+                        ${CMAKE_CURRENT_SOURCE_DIR}/includes/plot_model.h 
+                        ${CMAKE_CURRENT_SOURCE_DIR}/includes/plot_model.cpp
+                        )
 
-              )
-
-
-#add_library( ${PROJECT_NAME} time_series_player.h
- #                           jones_plot_app.h
-  #                          jones_plot_app.cpp
-   #                         JonesPlot.ui
-    #       )
 
 target_include_directories(signalanalyzer PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/includes/)
 
@@ -77,7 +71,6 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
                                       signal_proc_lib
                                       Qt5::Widgets
                                       Qt5::Gui
-                                      Qt5::Core
-                      )
+                                      Qt5::Core)
 
 

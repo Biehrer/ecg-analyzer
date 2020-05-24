@@ -6,6 +6,8 @@
 #include "../includes/signal_proc_lib/time_signal.h"
 //#include "../includes/signal_proc_lib/time_signal.h"
 
+#include "plot_model.h"
+
 // Qt includes
 #include <QtWidgets/QMainWindow>
 #include <qopenglfunctions.h>
@@ -40,4 +42,11 @@ public:
 private:
     //QOpenGLPlotRendererWidget* _plot_widget;
     Ui::JonesPlotClass ui;
+
+    PlotModel_C _plot_model;
+public slots:
+
+    void OnButtonSettingsPage();
+
+    void OnButtonHomePage();
 };

@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>681</width>
-    <height>478</height>
+    <width>718</width>
+    <height>506</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -26,26 +26,109 @@
      <verstretch>0</verstretch>
     </sizepolicy>
    </property>
-   <widget class="QWidget" name="gridLayoutWidget">
+   <widget class="QWidget" name="gridLayoutWidget_3">
     <property name="geometry">
      <rect>
       <x>10</x>
       <y>10</y>
-      <width>651</width>
-      <height>411</height>
+      <width>701</width>
+      <height>451</height>
      </rect>
     </property>
-    <layout class="QGridLayout" name="_grid_layout_main">
-     <property name="sizeConstraint">
-      <enum>QLayout::SetMaximumSize</enum>
-     </property>
+    <layout class="QGridLayout" name="_grid_layout_general">
      <item row="2" column="0">
+      <layout class="QHBoxLayout" name="_stacked_widget_layout">
+       <property name="sizeConstraint">
+        <enum>QLayout::SetMaximumSize</enum>
+       </property>
+       <item>
+        <widget class="QStackedWidget" name="_stacked_widget">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="currentIndex">
+          <number>0</number>
+         </property>
+         <widget class="QWidget" name="_plot_page_stckd">
+          <widget class="QWidget" name="gridLayoutWidget">
+           <property name="geometry">
+            <rect>
+             <x>0</x>
+             <y>20</y>
+             <width>681</width>
+             <height>421</height>
+            </rect>
+           </property>
+           <layout class="QGridLayout" name="_grid_layout_main">
+            <property name="sizeConstraint">
+             <enum>QLayout::SetMaximumSize</enum>
+            </property>
+            <item row="2" column="0">
+             <layout class="QVBoxLayout" name="verticalLayout">
+              <item>
+               <widget class="QOpenGLPlotRendererWidget" name="_openGL_widget">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </item>
+           </layout>
+          </widget>
+         </widget>
+         <widget class="QWidget" name="_settings_page_stckd">
+          <property name="enabled">
+           <bool>true</bool>
+          </property>
+          <widget class="QWidget" name="gridLayoutWidget_2">
+           <property name="geometry">
+            <rect>
+             <x>10</x>
+             <y>20</y>
+             <width>661</width>
+             <height>391</height>
+            </rect>
+           </property>
+           <layout class="QGridLayout" name="_grid_layout_page_settings">
+            <item row="2" column="0">
+             <layout class="QVBoxLayout" name="_vertical_layout_page_Settings">
+              <item>
+               <widget class="QTableView" name="_plot_settings_table_view"/>
+              </item>
+             </layout>
+            </item>
+            <item row="1" column="0">
+             <layout class="QHBoxLayout" name="_horizontal_layout_page_settings">
+              <item>
+               <widget class="QLabel" name="_label_settings">
+                <property name="text">
+                 <string>Plot settings</string>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </item>
+           </layout>
+          </widget>
+         </widget>
+        </widget>
+       </item>
+      </layout>
+     </item>
+     <item row="1" column="0">
       <spacer name="verticalSpacer">
        <property name="orientation">
         <enum>Qt::Vertical</enum>
        </property>
        <property name="sizeType">
-        <enum>QSizePolicy::Fixed</enum>
+        <enum>QSizePolicy::Minimum</enum>
        </property>
        <property name="sizeHint" stdset="0">
         <size>
@@ -55,21 +138,18 @@
        </property>
       </spacer>
      </item>
-     <item row="3" column="0">
-      <widget class="QOpenGLPlotRendererWidget" name="_openGL_widget">
-       <property name="sizePolicy">
-        <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-         <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
-       </property>
-      </widget>
-     </item>
-     <item row="1" column="0">
-      <layout class="QHBoxLayout" name="_top_button_layout">
+     <item row="0" column="0">
+      <layout class="QHBoxLayout" name="_nav_button_layout">
        <property name="sizeConstraint">
         <enum>QLayout::SetMaximumSize</enum>
        </property>
+       <item>
+        <widget class="QPushButton" name="_btn_home">
+         <property name="text">
+          <string>Plots</string>
+         </property>
+        </widget>
+       </item>
        <item>
         <widget class="QPushButton" name="_btn_settings">
          <property name="text">
@@ -84,6 +164,13 @@
          </property>
         </widget>
        </item>
+       <item>
+        <widget class="QPushButton" name="_btn_serial_port">
+         <property name="text">
+          <string>Serial Port</string>
+         </property>
+        </widget>
+       </item>
       </layout>
      </item>
     </layout>
@@ -94,7 +181,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>681</width>
+     <width>718</width>
      <height>21</height>
     </rect>
    </property>

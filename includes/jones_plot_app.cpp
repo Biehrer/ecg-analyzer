@@ -7,8 +7,6 @@ void JonesPlotApplication_C::resizeEvent(QResizeEvent* event)
 {
     int width = event->size().width();
     int height = event->size().height();
-    int i_height = this->height();
-    int i_width = this->width();
     //ui._openGL_widget->resize(event->size().width(), event->size().height());
     ui._central_widget->resize(width, height);
 }
@@ -28,26 +26,27 @@ JonesPlotApplication_C::JonesPlotApplication_C(QWidget *parent)
     //    format.setProfile(QSurfaceFormat::NoProfile);
     //    QSurfaceFormat::setDefaultFormat(format);
     ui.setupUi(this);
-    
-    connect(this, SIGNAL(resize()), ui._openGL_widget, SLOT(resize()));
+    ui._central_widget->setLayout(ui._grid_layout_general);
 
-    ui._central_widget->setLayout(ui._grid_layout_main);
-
+    ui._plot_page_stckd->setLayout(ui._grid_layout_main);
+    ui._settings_page_stckd->setLayout(ui._grid_layout_page_settings);
     ui._openGL_widget->show();
     this->update();
-    //connect(_paint_update_timer, SIGNAL(timeout()), this, SLOT(update()));
-
+    
+    
+    ui._plot_settings_table_view->setModel(&_plot_model);
+    ui._plot_settings_table_view->show();
+    // manage stacked widget pages 
+    ui._stacked_widget->addWidget(ui._plot_page_stckd);
+    ui._stacked_widget->addWidget(ui._settings_page_stckd);
+    connect(ui._btn_settings, SIGNAL(clicked()), this, SLOT(OnButtonSettingsPage()));
+    connect(ui._btn_home, SIGNAL(clicked()), this, SLOT(OnButtonHomePage()));
 }
+
+
 
 void JonesPlotApplication_C::Setup() 
 {
-    int height = ui._openGL_widget->height();
-    int width = ui._openGL_widget->width();
-
-    int thi_height = this->height();
-    int thi_width = this->width();
-    int u_height = ui._central_widget->height();
-
     int number_of_plots = 2;
     bool success = ui._openGL_widget->FastInitializePlots(number_of_plots, 10000.0, 3, -3);
     if ( !success ) {
@@ -124,6 +123,48 @@ void JonesPlotApplication_C::Setup()
         }
     });
     dataThread.detach();
+
+
+   
+}
+
+
+void JonesPlotApplication_C::OnButtonHomePage()
+{
+    int _stacked_idx_home = 0;
+    /*ui._openGL_widget->show();
+    ui._plot_page_stckd->show();
+    ui._settings_page_stckd->hide();
+*/
+    //ui._central_widget->setLayout(ui._grid_layout_main);
+
+    ui._stacked_widget->setCurrentIndex(_stacked_idx_home);
+}
+
+void JonesPlotApplication_C::OnButtonSettingsPage() 
+{
+    int _stacked_idx_settings = 1;
+    /*ui._openGL_widget->hide();
+    ui._openGL_widget->setHidden(true);
+    ui._openGL_widget->lower();
+
+    ui._plot_settings_table_view->show();
+    ui._plot_settings_table_view->topLevelWidget();
+    ui._plot_settings_table_view->activateWindow();
+    ui._plot_settings_table_view->raise();
+
+    ui._openGL_widget->setVisible(false);
+
+    ui._settings_page_stckd->show();
+    ui._settings_page_stckd->topLevelWidget();
+    ui._settings_page_stckd->activateWindow();
+*/
+    //ui._plot_page_stckd->hide();
+   
+    //ui._central_widget->setLayout(ui._grid_layout_page_settings);
+
+    //ui._plot_page_stckd->setEnabled(false);
+    ui._stacked_widget->setCurrentIndex(_stacked_idx_settings);
 }
 
 //template<typename YValDataType_TP, typename XValDataType_TP>
