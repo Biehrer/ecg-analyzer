@@ -30,10 +30,11 @@ JonesPlotApplication_C::JonesPlotApplication_C(QWidget *parent)
 
     ui._plot_page_stckd->setLayout(ui._grid_layout_main);
     ui._settings_page_stckd->setLayout(ui._grid_layout_page_settings);
+
+    ui._openGL_widget->SetModel(&_plot_model);
     ui._openGL_widget->show();
-    this->update();
-    
-    
+    //this->update();
+    //_plot_model.a
     ui._plot_settings_table_view->setModel(&_plot_model);
     ui._plot_settings_table_view->show();
     // manage stacked widget pages 
@@ -48,10 +49,18 @@ JonesPlotApplication_C::JonesPlotApplication_C(QWidget *parent)
 void JonesPlotApplication_C::Setup() 
 {
     int number_of_plots = 2;
-    bool success = ui._openGL_widget->FastInitializePlots(number_of_plots, 10000.0, 3, -3);
+    //bool success = ui._openGL_widget->FastInitializePlots(number_of_plots, 10000.0, 3, -3);
+    bool success = _plot_model.FastInitializePlots(number_of_plots, 
+                                                    ui._openGL_widget->width(), 
+                                                    ui._openGL_widget->height(),
+                                                    10000.0, 
+                                                    3,
+                                                   -3);
+
     if ( !success ) {
         throw std::runtime_error("plot initialization failed! Abort");
     }
+
      // Alternative to fast initialize: 
     // describe the plot using the PlotDescription_TP struct and 
     // add the plot to the plot_widget by calling
@@ -62,6 +71,9 @@ void JonesPlotApplication_C::Setup()
     // ...
     // plot_widget.AddPlot(plot0_info);
 
+    TimeSignal_C<float> test;
+    test.LoadFromMITFileFormat("C://Development//projects//EcgAnalyzer//ecg-analyzer//resources//00ed2097-cd14-4f03-ab33-853da5be5550.dat");
+
     // Start a thread which adds the data to the plot(s)
     std::thread dataThread([&]() {
 
@@ -70,10 +82,10 @@ void JonesPlotApplication_C::Setup()
         signal.ReadG11Data("C://Development//projects//EcgAnalyzer//ecg-analyzer//resources//G11Data.dat");
 
         // assign plot labels just for fun
-        auto plot_0 = ui._openGL_widget->GetPlotPtr(0);
-        plot_0->SetLabel("plot 0");
-        auto plot_1 = ui._openGL_widget->GetPlotPtr(1);
-        plot_1->SetLabel("plot 1");
+        auto plot_0 = _plot_model.GetPlotPtr(0);//ui._openGL_widget->GetPlotPtr(0);
+        //plot_0->SetLabel("plot 0");
+        auto plot_1 = _plot_model.GetPlotPtr(1);//ui._openGL_widget->GetPlotPtr(1);
+        //plot_1->SetLabel("plot 1");
 
         // Get data of all channels
         const auto& data = signal.constData();
@@ -81,7 +93,7 @@ void JonesPlotApplication_C::Setup()
             throw std::runtime_error("Signal is empty!!");
         }
         // data for plot 0
-        int plot0_id = plot_0->GetID() + 2;
+        int plot0_id = 2;//plot_0->GetID() + 2;
         const auto& plot0_data = data[plot0_id]._data;
         const auto& plot0_timestamps = data[plot0_id]._timestamps;
         // iterator to the data for plot 0
@@ -89,7 +101,7 @@ void JonesPlotApplication_C::Setup()
         auto timestamps_1_begin_it = plot0_timestamps.begin();
 
         // data to plot 1
-        int plot1_id = plot_1->GetID() + 3;
+        int plot1_id = 4;//plot_1->GetID() + 3;
         const auto& plot1_data = data[plot1_id]._data;
         const auto& plot1_timestamps = data[plot1_id]._timestamps;
         // iterator to the data for plot 1
@@ -97,8 +109,7 @@ void JonesPlotApplication_C::Setup()
         auto timestamps_2_begin_it = plot1_timestamps.begin();
         
         // Hide all this pointer stuff in convenience methods so we can use:
-        // GetChannelData(int channel_idx)
-
+        
         double frequency_hz = data[plot0_id]._sample_rate_hz;
         double frequency_ms = (1.0 / frequency_hz) * 1000.0;
         bool signal_processed = false;

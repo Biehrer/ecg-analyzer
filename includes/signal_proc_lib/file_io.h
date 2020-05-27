@@ -10,7 +10,7 @@
 #include <iterator>
 #include <map>
 #include <tuple>
-
+#include <array>
 class FileIO_C {
 
 public:
@@ -24,6 +24,8 @@ public:
     //! Read2DPoints one line from the file
     const std::string ReadLine();
 
+    bool ReadBytes(const int number_of_bytes, char* buffer);
+
     // Reads multiple rows with multiple columns fast because the number of rows is known
     template<typename DataFormat_TP>
     const std::vector<DataFormat_TP> ReadRows(uint64_t num_cols, uint64_t num_rows);
@@ -32,9 +34,6 @@ public:
     //! How to pass info: read the whole file -> pass n_rows = INF
     template<typename DataFormat_TP>
     std::map<unsigned int, std::vector<DataFormat_TP>> ReadColumnData(uint32_t n_cols, uint32_t n_rows);
-
-    //template<class yValType, class xValType, uint32_t length>
-    //void ReadSeparatedColumnData(char delemitter);
 
     template<class yVal, class xVal, uint32_t data_length>
     void Read2DPoints();
@@ -167,6 +166,14 @@ std::string FileIO_C::ReadLine()
     std::string line;
     std::getline(_filestream, line);
     return line;
+}
+
+inline
+bool
+FileIO_C::ReadBytes(const int number_of_bytes, char* buffer)
+{
+    _filestream.read(buffer, number_of_bytes);
+    return true;
 }
 
 template<class yValType, class xValType, uint32_t length>

@@ -15,8 +15,7 @@ OGLBaseChart_C::~OGLBaseChart_C() {
     _surface_grid_vbo.destroy();
 }
 
-void OGLBaseChart_C::SetLabel(const std::string & label)
-{
+void OGLBaseChart_C::SetLabel(const std::string & label){
     _label = label;
 }
 
@@ -27,7 +26,7 @@ void OGLBaseChart_C::SetID(unsigned int id)
 
 
 OGLBaseChart_C::OGLBaseChart_C(const OGLChartGeometry_C& geometry,
-                              const QOpenGLWidget& parent)
+                              const QObject& parent)
     :
     _x_axis_vbo(QOpenGLBuffer::VertexBuffer),
     _y_axis_vbo(QOpenGLBuffer::VertexBuffer),

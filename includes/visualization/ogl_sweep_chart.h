@@ -74,7 +74,7 @@ public:
                     DataType_TP max_y_Value,
                     DataType_TP min_y_value,
                     const OGLChartGeometry_C& geometry,
-                    const QOpenGLWidget& parent);
+                    const QObject& parent);
 
     ~OGLSweepChart_C();
 
@@ -206,7 +206,7 @@ private:
      DataType_TP max_y_value,
      DataType_TP min_y_value,
      const OGLChartGeometry_C& geometry,
-     const QOpenGLWidget& parent)
+     const QObject& parent)
      : OGLBaseChart_C(geometry, parent),
      _lead_line_vbo(QOpenGLBuffer::VertexBuffer),
      _time_range_ms(time_range_ms),

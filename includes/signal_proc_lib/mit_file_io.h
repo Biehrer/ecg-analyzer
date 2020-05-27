@@ -28,8 +28,10 @@ struct MITChannelData_TP {
     //std::map<MITHeaderChannelInfo_TP, /*std::vector<> vector with body data*/ >
 };
 
+template<typename SampleDataType_TP>
 class MITFileIO_C {
 
+public:
     bool OpenFile(const std::string& filename);
 
     const MITChannelData_TP Read();
@@ -43,23 +45,59 @@ private:
     FileIO_C _filereader;
 };
 
-const MITChannelData_TP MITFileIO_C::Read() {
-}
+//const MITChannelData_TP MITFileIO_C::ReadMITDatFile() {
+//
+//    //char data[2] = _filereader.ReadBytes(2);
+//}
 
+template<typename SampleDataType_TP>
 bool
-MITFileIO_C::OpenFile(const std::string& filename) 
+MITFileIO_C<SampleDataType_TP>::OpenFile(const std::string& filename)
 {
-    if( !_filereader.IsOpen() ) {
+    if ( !_filereader.IsOpen() ) {
         _filereader.OpenFile(filename);
+        return true;
+    }
+    else {
+        return false;
     }
 }
 
-bool 
-MITFileIO_C::CloseFile() {
+
+template<typename SampleDataType_TP>
+const MITChannelData_TP MITFileIO_C<SampleDataType_TP>::Read()
+{
+    int sample_size_bytes = 2;
+    char* buffer = new char[sample_size_bytes];
+
+    auto success = _filereader.ReadBytes(sample_size_bytes, buffer);
+    uint16_t sample;
+    sample << *buffer;
+
+    delete buffer;
+    return MITChannelData_TP();
+}
+
+
+template<typename SampleDataType_TP>
+bool
+MITFileIO_C<SampleDataType_TP>::CloseFile()
+{
     if ( _filereader.IsOpen() ) {
         _filereader.CloseFile();
+        return true;
+    }
+    else {
+        return true;
     }
 }
 
-std::vector< MITHeaderChannelInfo_TP > MITFileIO_C::ReadMITHeader() {}
+
+template<typename SampleDataType_TP>
+std::vector< MITHeaderChannelInfo_TP>
+MITFileIO_C<SampleDataType_TP>::ReadMITHeader()
+{
+    return{};
+}
+
 

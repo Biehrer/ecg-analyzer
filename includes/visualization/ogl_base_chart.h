@@ -36,7 +36,7 @@ class OGLBaseChart_C {
         // Constructor / Destructor / Copying..
     public:
         OGLBaseChart_C(const OGLChartGeometry_C& geometry,
-                       const QOpenGLWidget& parent);
+                       const QObject& parent);
 
         ~OGLBaseChart_C();
 
@@ -148,7 +148,7 @@ class OGLBaseChart_C {
         QMatrix4x4 _chart_mvp;
 
         //! The parent widget with the opengl context
-        const QOpenGLWidget& _parent_widget;
+        const QObject& _parent_widget;
 
         // the label (name) of the plot (avR, I, II,...)
         std::string _label = "";

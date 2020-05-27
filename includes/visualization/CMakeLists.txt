@@ -32,6 +32,8 @@ add_library( visualization
                             "chart_types.h"
                             "ShapeGenerator.h" 
                             "ShapeData.h"
+                            "plot_model.h"
+                            "plot_model.cpp"
            )
 
  # link libs

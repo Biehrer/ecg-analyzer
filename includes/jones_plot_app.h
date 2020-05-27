@@ -6,7 +6,7 @@
 #include "../includes/signal_proc_lib/time_signal.h"
 //#include "../includes/signal_proc_lib/time_signal.h"
 
-#include "plot_model.h"
+//#include "plot_model.h"
 
 // Qt includes
 #include <QtWidgets/QMainWindow>

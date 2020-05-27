@@ -2,6 +2,7 @@
 
 // Project includes
 #include "file_io.h"
+#include "mit_file_io.h"
 
 // STL includes
 #include <iostream>
@@ -80,11 +81,12 @@ inline
 void 
 TimeSignal_C<DataType_TP>::LoadFromMITFileFormat(const std::string & filename)
 {
+   
     MITFileIO_C reader;
-
-
-    const auto data = reader.readFromFile();
-
+    reader.OpenFile(filename);
+    //reader.ReadMITHeader();
+    reader.Read();
+    //const auto data = reader.readFromFile();
 }
 
 
