@@ -32,6 +32,7 @@ find_package(Qt5Core)
 find_package(Qt5Widgets)
 find_package(Qt5Gui)
 
+
 # add visualization and signal proc lib 
 if(USE_VISUALIZATION)
     add_subdirectory(includes/visualization)
@@ -45,8 +46,6 @@ add_executable(${PROJECT_NAME} main.cpp
                         ${CMAKE_CURRENT_SOURCE_DIR}/includes/jones_plot_app.h
                         ${CMAKE_CURRENT_SOURCE_DIR}/includes/jones_plot_app.cpp
                         ${CMAKE_CURRENT_SOURCE_DIR}/includes/JonesPlot.ui
-                        ${CMAKE_CURRENT_SOURCE_DIR}/includes/plot_model.h 
-                        ${CMAKE_CURRENT_SOURCE_DIR}/includes/plot_model.cpp
                         )
 
 
@@ -71,6 +70,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
                                       signal_proc_lib
                                       Qt5::Widgets
                                       Qt5::Gui
-                                      Qt5::Core)
+                                      Qt5::Core
+                                     )
 
 

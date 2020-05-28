@@ -2,6 +2,8 @@
 
 // Project includes
 #include "file_io.h"
+// WFDB includes
+#include "wfdb/wfdb.h"
 
 // There is a c++ wfdb library which offers functions to get MIT data from .hea and .dat files
 
@@ -30,6 +32,8 @@ struct MITChannelData_TP {
 
 template<typename SampleDataType_TP>
 class MITFileIO_C {
+public:
+    MITFileIO_C() = default;
 
 public:
     bool OpenFile(const std::string& filename);
@@ -62,7 +66,6 @@ MITFileIO_C<SampleDataType_TP>::OpenFile(const std::string& filename)
         return false;
     }
 }
-
 
 template<typename SampleDataType_TP>
 const MITChannelData_TP MITFileIO_C<SampleDataType_TP>::Read()

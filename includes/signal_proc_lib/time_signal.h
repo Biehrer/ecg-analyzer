@@ -82,7 +82,7 @@ void
 TimeSignal_C<DataType_TP>::LoadFromMITFileFormat(const std::string & filename)
 {
    
-    MITFileIO_C reader;
+    MITFileIO_C<DataType_TP> reader;
     reader.OpenFile(filename);
     //reader.ReadMITHeader();
     reader.Read();
