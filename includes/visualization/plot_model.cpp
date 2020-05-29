@@ -10,14 +10,6 @@ PlotModel_C::PlotModel_C( QObject* parent)
     //setRoleNames(roles);
     _view_data.reserve(COLS * ROWS);
     _view_data.resize(COLS * ROWS);
-    //_view_data[0] = "ID 0";
-    //_view_data[1] = " 10000";
-    //_view_data[2] = "10";
-    //_view_data[3] = "-10";
-    //_view_data[4] = " ID 1";
-    //_view_data[5] = "10000";
-    //_view_data[6] = " 10 ";
-    //_view_data[7] = " -10";
 }
 
 
@@ -57,16 +49,9 @@ bool PlotModel_C::setData(const QModelIndex &index, const QVariant &value, int r
     if ( role == Qt::EditRole ) {
         //if ( !checkIndex(index) )
             //return false;
-        //save value from editor to member m_gridData
+        //save value from editor to member 
         int row = index.row() - 1;
         _view_data[(row * COLS + index.column() )] = value.toString();
-        //for presentation purposes only: build and emit a joined string
-        //QString result;
-        //for ( int row = 0; row < ROWS; row++ ) {
-        //    for ( int col = 0; col < COLS; col++ )
-        //        result += m_gridData[row][col] + ' ';
-        //}
-        //emit editCompleted(result);
         return true;
     }
     return false;
@@ -208,14 +193,6 @@ bool PlotModel_C::FastInitializePlots(int number_of_plots,
 
     // update view
     RecreateData();
-    
-    //we identify the top left cell
-    //QModelIndex topLeft = createIndex(0, 0);
-    //QModelIndex bottom_right = createIndex(number_of_plots, COLS);
-    //emit a signal to make the view reread identified data
-    //emit dataChanged(topLeft, bottom_right, { Qt::DisplayRole });
-
-    //this->data();
     return true;
 }
 
