@@ -53,13 +53,15 @@ void JonesPlotApplication_C::Setup()
     bool success = _plot_model.FastInitializePlots(number_of_plots, 
                                                     ui._openGL_widget->width(), 
                                                     ui._openGL_widget->height(),
-                                                    10000.0, 
-                                                    3,
-                                                   -3);
+                                                    1000.0, 
+                                                    10,
+                                                   -10);
 
     if ( !success ) {
         throw std::runtime_error("plot initialization failed! Abort");
-    }
+    }  
+    
+    ui._plot_settings_table_view->setModel(&_plot_model);
 
      // Alternative to fast initialize: 
     // describe the plot using the PlotDescription_TP struct and 
@@ -71,15 +73,16 @@ void JonesPlotApplication_C::Setup()
     // ...
     // plot_widget.AddPlot(plot0_info);
 
-    TimeSignal_C<float> test;
-    test.LoadFromMITFileFormat("C:\\Development\\00ed2097-cd14-4f03-ab33-853da5be5550");
-
+    
     // Start a thread which adds the data to the plot(s)
     std::thread dataThread([&]() {
 
         // Create a time signal and fill it with data
+        //TimeSignal_C<float> signal;
+        //signal.ReadG11Data("C://Development//projects//EcgAnalyzer//ecg-analyzer//resources//G11Data.dat");
+
         TimeSignal_C<float> signal;
-        signal.ReadG11Data("C://Development//projects//EcgAnalyzer//ecg-analyzer//resources//G11Data.dat");
+        signal.LoadFromMITFileFormat("C:\\Development\\00ed2097-cd14-4f03-ab33-853da5be5550");
 
         // assign plot labels just for fun
         auto plot_0 = _plot_model.GetPlotPtr(0);//ui._openGL_widget->GetPlotPtr(0);
@@ -96,27 +99,27 @@ void JonesPlotApplication_C::Setup()
         int plot0_id = 2;//plot_0->GetID() + 2;
         const auto& plot0_data = data[plot0_id]._data;
         const auto& plot0_timestamps = data[plot0_id]._timestamps;
-        // iterator to the data for plot 0
-        auto series_1_begin_it = plot0_data.begin();
-        auto timestamps_1_begin_it = plot0_timestamps.begin();
-
+        
         // data to plot 1
         int plot1_id = 4;//plot_1->GetID() + 3;
         const auto& plot1_data = data[plot1_id]._data;
         const auto& plot1_timestamps = data[plot1_id]._timestamps;
+
+        // iterator to the data for plot 0
+        auto series_1_begin_it = plot0_data.begin();
+        auto timestamps_1_begin_it = plot0_timestamps.begin();
         // iterator to the data for plot 1
         auto series_2_begin_it = plot1_data.begin();
         auto timestamps_2_begin_it = plot1_timestamps.begin();
         
         // Hide all this pointer stuff in convenience methods so we can use:
-        
         double frequency_hz = data[plot0_id]._sample_rate_hz;
         double frequency_ms = (1.0 / frequency_hz) * 1000.0;
         bool signal_processed = false;
-        int64_t time_series_end = plot0_data.size();
-
+        //int64_t time_series_end = plot0_data.size() -1;
+        auto time_series_end = plot0_data.end();
         while ( !signal_processed ) {
-            if ( *series_1_begin_it < time_series_end ) {
+            if ( series_1_begin_it != time_series_end ) {
                 plot_0->AddDatapoint(*series_1_begin_it, *timestamps_1_begin_it);
                 plot_1->AddDatapoint(*series_2_begin_it, *timestamps_2_begin_it);
 

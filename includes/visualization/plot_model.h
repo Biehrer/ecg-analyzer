@@ -15,6 +15,7 @@
 // STL includes
 #include <vector>
 #include <string>
+
 const int COLS = 7;
 const int ROWS = 2;
 
@@ -71,9 +72,40 @@ class PlotModel_C : public QAbstractTableModel
 
 public:
     PlotModel_C( QObject *parent = nullptr);
+
+public:
+
+    //! Removes a plot from the view
+    void RemovePlot(unsigned int plot_id);
+
+    bool RemovePlot(const std::string& plot_label);
+
+    void AddPlot(const PlotDescription_TP & plot_info);
+
+    //! Fast initialization of plots in a horizontal layout (shared timerange and max/min y values)
+    //! Creates OGLSweepCharts
+    bool FastInitializePlots(int number_of_plots,
+        int view_width,
+        int view_height,
+        int time_range_ms,
+        float  max_y,
+        float  min_y);
+
+
+    OGLSweepChart_C<ModelDataType_TP>* GetPlotPtr(unsigned int plot_idx);
+
+    OGLSweepChart_C<ModelDataType_TP>* GetPlotPtr(const std::string & plot_label);
+
+    std::vector<OGLSweepChart_C<ModelDataType_TP >*>& Data();
+
+    const std::vector<OGLSweepChart_C<ModelDataType_TP >*>& constData() const;
     
     //!
     QVariant headerData(int section, Qt::Orientation orientation, int role) const;
+
+    bool setData(const QModelIndex &index, const QVariant &value, int role = Qt::EditRole) override;
+
+    Qt::ItemFlags flags(const QModelIndex &index) const override;
     
     //!
     int rowCount(const QModelIndex &parent = QModelIndex()) const override;
@@ -87,37 +119,10 @@ public:
     //! Adds a plot to the view
     //! Writes PlotDescription_TP to _data as string -> implement to String method 
     //void AddPlot(PlotDescription_TP description);
-
+    
     // Recreaes the view data
     void RecreateData();
 
-    //! Removes a plot from the view
-    void RemovePlot(unsigned int plot_id);
-
-    bool RemovePlot(const std::string& plot_label);
-
-    void AddPlot(const PlotDescription_TP & plot_info);
-
-
-    //bool PlotModel_C::setData(const QModelIndex &index, const QVariant &value, int role);
-
-    //! Fast initialization of plots in a horizontal layout (shared timerange and max/min y values)
-    //! Creates OGLSweepCharts
-    bool FastInitializePlots(int number_of_plots,
-                            int view_width,
-                            int view_height,
-                            int time_range_ms,
-                            float  max_y,
-                            float  min_y);
-
-    
-    OGLSweepChart_C<ModelDataType_TP>* GetPlotPtr(unsigned int plot_idx);
-
-    OGLSweepChart_C<ModelDataType_TP>* GetPlotPtr(const std::string & plot_label);
-
-    std::vector<OGLSweepChart_C<ModelDataType_TP >*>& Data();
-
-    const std::vector<OGLSweepChart_C<ModelDataType_TP >*>& constData() const;
 private:
     //!
     std::vector<OGLSweepChart_C<ModelDataType_TP >*> _plots;
