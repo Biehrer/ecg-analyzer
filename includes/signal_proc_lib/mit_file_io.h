@@ -24,7 +24,7 @@ extern "C"{
 //! https://physionet.org/physiotools/wag/header-5.htm
 //!
  template<typename SampleDataType_TP>
-struct MITHeaderChannelInfo_TP {
+struct MITDataChannel_TP {
     //! name of the record
     std::string _filename;
     //! channel label
@@ -47,19 +47,16 @@ struct MITHeaderChannelInfo_TP {
     std::vector<SampleDataType_TP> _data;
 };
 
-//struct MITChannelData_TP {
-    //std::map<MITHeaderChannelInfo_TP, /*std::vector<> vector with body data*/ >
-//};
-
 template<typename SampleDataType_TP>
 class MITFileIO_C {
 public:
     MITFileIO_C() = default;
 
+    ~MITFileIO_C();
 public:
     bool OpenFile(const std::string& filename);
 
-    const std::vector<MITHeaderChannelInfo_TP<SampleDataType_TP>> Read(char* record_path);
+    const std::vector<MITDataChannel_TP<SampleDataType_TP>> Read(char* record_path);
 
     bool CloseFile();
 
@@ -68,16 +65,15 @@ public:
     const std::string GetWFDBPath();
 
 private:
-    std::vector< MITHeaderChannelInfo_TP<SampleDataType_TP> > ReadMITHeader();
-
-private:
     FileIO_C _filereader;
 };
 
-//const MITChannelData_TP MITFileIO_C::ReadMITDatFile() {
-//
-//    //char data[2] = _filereader.ReadBytes(2);
-//}
+template<typename SampleDataType_TP>
+inline 
+MITFileIO_C<SampleDataType_TP>::~MITFileIO_C() 
+{
+    // wfdbquit();
+}
 
 template<typename SampleDataType_TP>
 inline
@@ -97,7 +93,7 @@ MITFileIO_C<SampleDataType_TP>::OpenFile(const std::string& filename)
 template<typename SampleDataType_TP>
 inline
 const 
-std::vector<MITHeaderChannelInfo_TP<SampleDataType_TP>>
+std::vector<MITDataChannel_TP<SampleDataType_TP>>
 MITFileIO_C<SampleDataType_TP>::Read(char* record_path)
 {
     int number_of_signals = isigopen(record_path, NULL, 0);
@@ -111,7 +107,7 @@ MITFileIO_C<SampleDataType_TP>::Read(char* record_path)
     signal_info = (WFDB_Siginfo *)malloc(number_of_signals * sizeof(WFDB_Siginfo));
     number_of_signals = isigopen(record_path, signal_info, number_of_signals);
 
-    std::vector<MITHeaderChannelInfo_TP<SampleDataType_TP>> channel_data;
+    std::vector<MITDataChannel_TP<SampleDataType_TP>> channel_data;
     channel_data.reserve(number_of_signals);
     channel_data.resize(number_of_signals);
 
@@ -144,7 +140,7 @@ MITFileIO_C<SampleDataType_TP>::Read(char* record_path)
     // for ( int channel_count = 0; channel_count < number_of_signals; ++channel_count) {
         // assume num_samples is equal for all channels
         int number_of_samples = channel_data[/*channel_count*/0]._num_samples;
-        // Read a sample from each channel and store it inside the corresponding MITHeaderChannelInfo_TP object
+        // Read a sample from each channel and store it inside the corresponding MITDataChannel_TP object
         for ( int sample_count = 0; sample_count < number_of_samples; ++sample_count ) {
              // error codes
              //-1 End of data (contents of vector not valid)
@@ -193,15 +189,4 @@ MITFileIO_C<SampleDataType_TP>::GetWFDBPath()
 {
     return std::to_string(getwfdb());
 }
-
-
-
-template<typename SampleDataType_TP>
-inline
-std::vector< MITHeaderChannelInfo_TP<SampleDataType_TP>>
-MITFileIO_C<SampleDataType_TP>::ReadMITHeader()
-{
-    return{};
-}
-
 
