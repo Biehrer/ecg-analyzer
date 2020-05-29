@@ -8,16 +8,16 @@ PlotModel_C::PlotModel_C( QObject* parent)
     //roles[TypeRole] = "type";
     //roles[SizeRole] = "size";
     //setRoleNames(roles);
-    //_data.reserve(COLS * ROWS);
-    //_data.resize(COLS * ROWS);
-    //_data[0] = "ID 0";
-    //_data[1] = " 10000";
-    //_data[2] = "10";
-    //_data[3] = "-10";
-    //_data[4] = " ID 1";
-    //_data[5] = "10000";
-    //_data[6] = " 10 ";
-    //_data[7] = " -10";
+    _view_data.reserve(COLS * ROWS);
+    _view_data.resize(COLS * ROWS);
+    //_view_data[0] = "ID 0";
+    //_view_data[1] = " 10000";
+    //_view_data[2] = "10";
+    //_view_data[3] = "-10";
+    //_view_data[4] = " ID 1";
+    //_view_data[5] = "10000";
+    //_view_data[6] = " 10 ";
+    //_view_data[7] = " -10";
 }
 
 
@@ -47,9 +47,35 @@ PlotModel_C::headerData(int section, Qt::Orientation orientation, int role) cons
     return QVariant();
 }
 
+Qt::ItemFlags PlotModel_C::flags(const QModelIndex &index) const
+{
+    return Qt::ItemIsEditable | QAbstractTableModel::flags(index);
+}
+
+bool PlotModel_C::setData(const QModelIndex &index, const QVariant &value, int role)
+{
+    if ( role == Qt::EditRole ) {
+        //if ( !checkIndex(index) )
+            //return false;
+        //save value from editor to member m_gridData
+        int row = index.row() - 1;
+        _view_data[(row * COLS + index.column() )] = value.toString();
+        //for presentation purposes only: build and emit a joined string
+        //QString result;
+        //for ( int row = 0; row < ROWS; row++ ) {
+        //    for ( int col = 0; col < COLS; col++ )
+        //        result += m_gridData[row][col] + ' ';
+        //}
+        //emit editCompleted(result);
+        return true;
+    }
+    return false;
+}
+
 int PlotModel_C::rowCount(const QModelIndex & parent) const
 {
     return ROWS;
+    //return _plots.size();
 }
 
 int PlotModel_C::columnCount(const QModelIndex & parent) const
@@ -58,86 +84,53 @@ int PlotModel_C::columnCount(const QModelIndex & parent) const
 }
 
 QVariant 
-PlotModel_C::data(const QModelIndex & index, int role) const
+PlotModel_C::data(const QModelIndex & index, int role) const 
 {
-
     int row = index.row();
     int col = index.column();
-    // generate a log message when this method gets called
-    qDebug() << QString("row %1, col%2, role %3")
-        .arg(row).arg(col).arg(role);
-
+   
     switch ( role ) {
+
     case Qt::DisplayRole:
-        //if ( row == 0 && col == 1 ) return QString("<--left");
-        //if ( row == 1 && col == 1 ) return QString("right-->");
-        //if( row == 0 )
-        //return QString("Row%1, Column%2")
-            //.arg(row + 1)
-            //.arg(col + 1);
+        return QString(_view_data[(COLS * row + col)]);
 
-        return QString(_view_data[col + row * COLS]);
-
-    //case Qt::FontRole:
-    //    if ( row == 0 && col == 0 ) { //change font only for cell(0,0)
-    //        QFont boldFont;
-    //        boldFont.setBold(true);
-    //        return boldFont;
-    //    }
-    //    break;
-    //case Qt::BackgroundRole:
-    //    if ( row == 1 && col == 2 )  //change background only for cell(1,2)
-    //        return QBrush(Qt::red);
-    //    break;
-    //case Qt::TextAlignmentRole:
-    //    if ( row == 1 && col == 1 ) //change text alignment only for cell(1,1)
-    //        return Qt::AlignRight + Qt::AlignVCenter;
-    //    break;
-    //case Qt::CheckStateRole:
-    //    if ( row == 1 && col == 0 ) //add a checkbox to cell(1,0)
-    //        return Qt::Checked;
-    //    break;
+        //case Qt::FontRole:
+        //    if ( row == 0 && col == 0 ) { //change font only for cell(0,0)
+        //        QFont boldFont;
+        //        boldFont.setBold(true);
+        //        return boldFont;
+        //    }
+        //    break;
     }
     return QVariant();
 }
-//
-//void PlotModel_C::AddPlot(PlotDescription_TP description) {
-//
-//    _raw_data.push_back(description);
-//    
-//    RecreateData();
-//    //_data[0] = "ID 0";
-//    //_data[1] = " 10000";
-//    //_data[2] = "10";
-//    //_data[3] = "-10";
-//    //_data[4] = " ID 1";
-//    //_data[5] = "10000";
-//    //_data[6] = " 10 ";
-//    //_data[7] = " -10";
-//    //emit this->dataChanged();
-//}
-//
 
 
-void PlotModel_C::RecreateData() {
-    // emit data changed event and repaint the whole view with the new data
-    // We draw everything new: reserve
-    _view_data.reserve(COLS * ROWS);
-    _view_data.resize(COLS * ROWS);
+void 
+PlotModel_C::RecreateData() 
+{
+    int number_of_plots = _plots.size();
+    _view_data.reserve(COLS * number_of_plots);
+    _view_data.resize(COLS * number_of_plots);
 
-    int plot_idx = 0;
-    for ( auto r_id = 0; r_id < COLS * ROWS; r_id = r_id + COLS ) {
-        //QVector<QString> plot_data = _raw_data[plot_idx].ToPlotModelString();
-        ////_data[r_id] = plot_data[0];
-        //_data[r_id + 1] = plot_data[1];
-        //_data[r_id + 2] = plot_data[2];
-        //_data[r_id + 3] = plot_data[3];
-        //_data[r_id + 4] = plot_data[4];
-        //_data[r_id + 5] = plot_data[5];
-        //_data[r_id + 6] = plot_data[6];
-        //++plot_idx;
+    int c_id = 0;
+    for ( int r_id = 1; r_id <= number_of_plots; ++r_id ) {
+            setData(createIndex(r_id, c_id), _plots[r_id-1]->GetID());
+            QString label = QString::fromStdString(_plots[r_id-1]->GetLabel());
+            setData(createIndex(r_id, c_id+1), QVariant(label));
+            setData(createIndex(r_id, c_id+2), QVariant(_plots[r_id-1]->GetTimerangeMs()));
+            setData(createIndex(r_id, c_id+3), QVariant(_plots[r_id-1]->GetMaxValueYAxes()));
+            setData(createIndex(r_id, c_id+4), QVariant(_plots[r_id-1]->GetMinValueYAxes()));
+            setData(createIndex(r_id, c_id+5), QVariant(_plots[r_id-1]->GetMajorTickValueXAxes()));
+            setData(createIndex(r_id, c_id+6), QVariant(_plots[r_id-1]->GetMajorTickValueYAxes()));
     }
+   
+    QModelIndex topLeft = createIndex(0, 0);
+    QModelIndex bottom_right = createIndex(number_of_plots, COLS);
+    //emit a signal to make the view reread identified data
+    emit dataChanged(topLeft, bottom_right, { Qt::DisplayRole });
 }
+
 void PlotModel_C::RemovePlot(unsigned int plot_id)
 {
     for ( auto plot_it = _plots.begin(); plot_it < _plots.end(); ++plot_it ) {
@@ -151,8 +144,8 @@ bool PlotModel_C::FastInitializePlots(int number_of_plots,
                                       int view_width, 
                                       int view_height,
                                       int time_range_ms,
-                                      float  max_y, 
-                                      float  min_y)
+                                      float max_y, 
+                                      float min_y)
 {
     DEBUG("initialize plots");
 
@@ -169,8 +162,6 @@ bool PlotModel_C::FastInitializePlots(int number_of_plots,
     int chart_to_chart_offset_S = 10;
     int chart_offset_from_origin_S = 4;
 
-    _view_data.resize(COLS * ROWS /* num_plots * COLS */);
-
     // Create plots
     for( int chart_idx = 0; chart_idx < number_of_plots; ++chart_idx ) {
 
@@ -183,14 +174,6 @@ bool PlotModel_C::FastInitializePlots(int number_of_plots,
                                                     min_y,
                                                     geometry,
                                                     *this));
-
-       // add the plot info to the table view string array
-       //-> must change when the label is set again later!
-       // use beginRemoveRows() and beginInsertRows() ! this must work without col and row constants
-       //_view_data[chart_idx] = chart_idx; // id
-       //_view_data[chart_idx + 1] = "plot"; // label 
-       //...
-       //_view_data[chart_idx + 6] = maj_tick_y;
     }
 
     QVector3D series_color(0.0f, 1.0f, 0.0f);
@@ -205,6 +188,7 @@ bool PlotModel_C::FastInitializePlots(int number_of_plots,
     unsigned int plot_idx = 0;
     for ( auto& plot : _plots ) {
         plot->SetID(plot_idx);
+        plot->SetLabel("plot #" + std::to_string(plot_idx));
         ++plot_idx;
         // Setup colors
         plot->SetSeriesColor(series_color);
@@ -214,14 +198,24 @@ bool PlotModel_C::FastInitializePlots(int number_of_plots,
         plot->SetLeadLineColor(lead_line_color);
         plot->SetSurfaceGridColor(surface_grid_color);
         // Set up axes
-        plot->SetMajorTickValueXAxes(time_range_ms / 3);
-        plot->SetMajorTickValueYAxes((max_y - min_y) / 3);
+        plot->SetMajorTickValueXAxes(time_range_ms / 4);
+        plot->SetMajorTickValueYAxes((max_y - min_y) / 4);
         // Set chart type
         plot->SetChartType(DrawingStyle_TP::LINE_SERIES);
         // Initialize
         plot->Initialize();
     }
 
+    // update view
+    RecreateData();
+    
+    //we identify the top left cell
+    //QModelIndex topLeft = createIndex(0, 0);
+    //QModelIndex bottom_right = createIndex(number_of_plots, COLS);
+    //emit a signal to make the view reread identified data
+    //emit dataChanged(topLeft, bottom_right, { Qt::DisplayRole });
+
+    //this->data();
     return true;
 }
 
