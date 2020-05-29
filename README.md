@@ -12,6 +12,7 @@ https://github.com/Biehrer/ecg-analyzer
 required dependencies:
 - Qt5 (Core/Widgets/GUI module)
 - Freetype II
+- WFDB C-Library (& Curl)
 
 ### How 2 build:
 
