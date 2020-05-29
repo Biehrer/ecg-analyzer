@@ -114,10 +114,21 @@ public:
 
     //! Set the major tick value for the x-axes.
     void SetMajorTickValueXAxes(float tick_value_ms);
+    float GetMajorTickValueXAxes();
 
     //! Set the major tick value for the y axis
     //! The major tick value is used to draw the horizontal grid lines
     void SetMajorTickValueYAxes(float tick_value_unit);
+    float GetMajorTickValueYAxes();
+
+    void SetMaxValueYAxes(const DataType_TP max_y_val);
+    DataType_TP GetMaxValueYAxes();
+
+    void SetMinValueYAxes(const DataType_TP min_y_val);
+    DataType_TP GetMinValueYAxes();
+
+    void SetTimerangeMs(double time_range_ms);
+    double GetTimerangeMs();
 
     //! Set the color of the lead line
     void SetLeadLineColor(const QVector3D& color);
@@ -325,10 +336,61 @@ private:
  }
 
  template<typename DataType_TP>
+ inline float OGLSweepChart_C<DataType_TP>::GetMajorTickValueXAxes()
+ {
+     return _major_tick_x_axes;
+ }
+
+ template<typename DataType_TP>
  void
      OGLSweepChart_C<DataType_TP>::SetMajorTickValueYAxes(float tick_value_unit)
  {
      _major_tick_y_axes = tick_value_unit;
+ }
+
+ template<typename DataType_TP>
+ inline float OGLSweepChart_C<DataType_TP>::GetMajorTickValueYAxes()
+ {
+     return _major_tick_y_axes;
+ }
+
+ template<typename DataType_TP>
+ inline void OGLSweepChart_C<DataType_TP>::SetMaxValueYAxes(const DataType_TP max_y_val)
+ {
+     _max_y_axis_value = max_y_val;
+ }
+
+ template<typename DataType_TP>
+ inline DataType_TP OGLSweepChart_C<DataType_TP>::GetMaxValueYAxes()
+ {
+     return _max_y_axis_value;
+ }
+
+ template<typename DataType_TP>
+ inline void OGLSweepChart_C<DataType_TP>::SetMinValueYAxes(const DataType_TP min_y_val)
+ {
+     _min_y_axis_value = min_y_val;
+ }
+
+ template<typename DataType_TP>
+ inline DataType_TP OGLSweepChart_C<DataType_TP>::GetMinValueYAxes()
+ {
+     return _min_y_axis_value;
+ }
+
+ template<typename DataType_TP>
+ inline 
+ void 
+ OGLSweepChart_C<DataType_TP>::SetTimerangeMs(double time_range_ms)
+ {
+     _time_range_ms = time_range_ms;
+ }
+
+ template<typename DataType_TP>
+ inline 
+double OGLSweepChart_C<DataType_TP>::GetTimerangeMs()
+ {
+     return _time_range_ms;
  }
 
  template<typename DataType_TP>

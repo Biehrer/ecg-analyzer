@@ -26,17 +26,33 @@ public:
     }
 
     double _high_hz = 0.0;
+
     double _low_hz = 0.0;
+
+    //! sample rate in hz
     double _sample_rate_hz = 0.0;
 
-    // Name of the lead (e.g eindhoven or leeds)
-    // avL, avF, II, I
+    //! Name of the lead (e.g eindhoven or leeds)
+    //! avL, avF, II, I
     std::string _label = "";
-    uint32_t _range_mv = 0;
+
+    //! SI-unit
+    std::string _units = "mV";
+
+    //! Range in mV
+    uint32_t _range_mV = 0;
+
+    //! Channel ID
     uint32_t _id = 0;
+
+    //! scale / gain factor
     uint32_t _scale = 0;
+
+    //! Channel samples
     std::vector<DataFormat_TP> _data;
-    // optional -> use inheritance
+
+    //! Channel timestamps. Each timestamp at a specific 
+    //! position corresponds to the sample value at the same position inside the _data vector member
     std::vector<DataFormat_TP> _timestamps;
 };
 
@@ -48,10 +64,6 @@ public:
     //TimeSignal_C() = default;
     
 public:
-    //! \param filename the filename 
-    //! \returns vector, each element one line of the file
-    std::vector<std::string> LoadDataFromFile(const std::string& filename, int estimated_size);
-
     //! load physionet database file
     //!
     //! \param filename the path to the record WITHOUT the file suffix (.dat/.hea)
@@ -65,6 +77,12 @@ public:
     const std::vector<ECGChannelInfo_TP<DataType_TP>>& constData() const {
         return _data;
     }
+
+    // Private helper functions
+private:
+    void GenerateTimestamps(std::vector<DataType_TP>& timestamp_vec,
+        unsigned int num_samples,
+        double sample_rate_hz);
 
 private:
     std::vector<ECGChannelInfo_TP<DataType_TP>> _data;
@@ -82,7 +100,6 @@ TimeSignal_C<DataType_TP>::GetChannelLabels()
 }
 
 template<typename DataType_TP>
-//inline
 void 
 TimeSignal_C<DataType_TP>::LoadFromMITFileFormat(const std::string filename)
 {
@@ -99,40 +116,46 @@ TimeSignal_C<DataType_TP>::LoadFromMITFileFormat(const std::string filename)
     auto record_name = filename.substr(last_bslash_pos + 1);
     char record[128];
     strcpy_s(record, record_name.size() + 1, record_name.c_str());
-    auto data = reader.Read(record);
+    auto mit_data = reader.Read(record);
 
-}
+    // Translate to ECGChannelInfo_TP
+    std::vector<ECGChannelInfo_TP<DataType_TP>> ecg_data;
+    ecg_data.reserve(mit_data.size());
+    ecg_data.resize(mit_data.size());
+    unsigned int channel_idx = 0;
+    for ( const auto& mit_channel : mit_data ) {
 
+        ecg_data[channel_idx]._sample_rate_hz = mit_channel._sample_frequency_hz;
+        ecg_data[channel_idx]._data = mit_channel._data;
+        ecg_data[channel_idx]._label = mit_channel._description;
+        ecg_data[channel_idx]._id = channel_idx;
+        // ecg_data[channel_idx]._scale = /* Todo */;
+        // ecg_data[channel_idx]._range_mV = /* Todo */;
+        ecg_data[channel_idx]._units = mit_channel._units;
 
-template<typename DataType_TP>
-//inline 
-std::vector<std::string>
-TimeSignal_C<DataType_TP>::LoadDataFromFile(const std::string & filename, int estimated_size)
-{
-    FileIO_C filereader;
-    bool success = filereader.OpenFile(filename);
+        // scale y values to the real voltage range (physical units)
+        std::for_each(ecg_data[channel_idx]._data.begin(),
+                      ecg_data[channel_idx]._data.end(),
+            [&](auto& element)
+        {
+            element = (element - mit_channel._adc_baseline_0U_output_mV) / mit_channel._gain;
+        });
 
-    if ( !success ) {
-        return {};
+        GenerateTimestamps(ecg_data[channel_idx]._timestamps,
+            mit_channel._num_samples,
+            mit_channel._sample_frequency_hz);
+
+        ++channel_idx;
     }
 
-    std::vector<std::string> lines;
-    lines.reserve(estimated_size);
-
-    while ( !filereader.IsEof() ) {
-        lines.push_back(filereader.ReadLine());
-    }
-
-    filereader.CloseFile();
-    return lines;
+    // Set data
+    _data = ecg_data;
 }
 
 template<typename DataType_TP>
 void
 TimeSignal_C<DataType_TP>::ReadG11Data(const std::string& filename)
 {
-    // auto line_strings = LoadDataFromFile(filename, 100000);
-
     FileIO_C filereader;
     bool success = filereader.OpenFile(filename);
 
@@ -174,7 +197,7 @@ TimeSignal_C<DataType_TP>::ReadG11Data(const std::string& filename)
         } else if ( key_str == "Label" ) {
             channels[current_channel_idx]._label = value_str;
         } else if ( key_str == "Range" ) {
-            channels[current_channel_idx]._range_mv = std::stoi(value_str);
+            channels[current_channel_idx]._range_mV = std::stoi(value_str);
         } else if ( key_str == "Sample rate" ) {
             channels[current_channel_idx]._sample_rate_hz = std::atof(value_str.c_str());
         } else if (key_str == "Scale"){
@@ -216,8 +239,8 @@ TimeSignal_C<DataType_TP>::ReadG11Data(const std::string& filename)
         // scale y values to the real voltage range
         auto max_y_val_dataset = *max_element(ecg_channel._data.begin(),
                                               ecg_channel._data.end()); 
-        auto scale_factor = ecg_channel._range_mv / max_y_val_dataset;
-
+        auto scale_factor = ecg_channel._range_mV / max_y_val_dataset;
+        ecg_channel._scale = scale_factor;
         std::for_each(ecg_channel._data.begin(), 
                       ecg_channel._data.end(), 
             [&](auto& element)
@@ -227,15 +250,27 @@ TimeSignal_C<DataType_TP>::ReadG11Data(const std::string& filename)
         
         // Calculate x-values if there are none values inside the timestamps attribute
         if( ecg_channel._timestamps.empty() ) {
-            int number_of_samples = ecg_channel._data.size();
-            ecg_channel._timestamps.reserve(number_of_samples);
-            auto t_dist_s = 1.0 / ecg_channel._sample_rate_hz;
-            for ( int sample_idx = 0; sample_idx < number_of_samples; ++sample_idx ) {
-                ecg_channel._timestamps.emplace_back(t_dist_s * sample_idx);
-            }
+            GenerateTimestamps(ecg_channel._timestamps, 
+                ecg_channel._data.size(),
+                ecg_channel._sample_rate_hz);
         }
     }
 
     // Set the data
     _data = channels;
+}
+
+
+template<typename DataType_TP>
+void
+TimeSignal_C<DataType_TP>::GenerateTimestamps(std::vector<DataType_TP>& timestamp_vec, 
+                                              unsigned int num_samples, 
+                                              double sample_rate_hz) 
+{
+    timestamp_vec.reserve(num_samples);
+    double t_dist_s = 1.0 / sample_rate_hz;
+    for (unsigned int sample_idx = 0; sample_idx < num_samples; ++sample_idx ) {
+        timestamp_vec.emplace_back(t_dist_s * sample_idx);
+    }
+
 }
