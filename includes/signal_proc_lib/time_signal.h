@@ -14,6 +14,8 @@
 #include <fstream>
 #include<iterator>
 #include <streambuf>
+#include <cstddef>         // std::size_t
+
 
 template<typename DataFormat_TP>
 struct ECGChannelInfo_TP {
@@ -50,6 +52,11 @@ public:
     //! \returns vector, each element one line of the file
     std::vector<std::string> LoadDataFromFile(const std::string& filename, int estimated_size);
 
+    //! load physionet database file
+    //!
+    //! \param filename the path to the record WITHOUT the file suffix (.dat/.hea)
+    void LoadFromMITFileFormat(const std::string filename);
+
     // For the custom dataset I use
     void ReadG11Data(const std::string& filename);
 
@@ -58,8 +65,6 @@ public:
     const std::vector<ECGChannelInfo_TP<DataType_TP>>& constData() const {
         return _data;
     }
-    //! load physionet database
-    void LoadFromMITFileFormat(const std::string& filename);
 
 private:
     std::vector<ECGChannelInfo_TP<DataType_TP>> _data;
@@ -77,16 +82,25 @@ TimeSignal_C<DataType_TP>::GetChannelLabels()
 }
 
 template<typename DataType_TP>
-inline 
+//inline
 void 
-TimeSignal_C<DataType_TP>::LoadFromMITFileFormat(const std::string & filename)
+TimeSignal_C<DataType_TP>::LoadFromMITFileFormat(const std::string filename)
 {
-   
     MITFileIO_C<DataType_TP> reader;
-    reader.OpenFile(filename);
-    //reader.ReadMITHeader();
-    reader.Read();
-    //const auto data = reader.readFromFile();
+    // Prepare wfdb path variable
+    auto last_bslash_pos = filename.find_last_of('/\\');
+    auto database_path = filename.substr(0, last_bslash_pos);
+
+    char database[128];
+    strcpy_s(database, database_path.size() + 1, database_path.c_str() );
+    reader.SetWFDBPath(database);
+
+    // read
+    auto record_name = filename.substr(last_bslash_pos + 1);
+    char record[128];
+    strcpy_s(record, record_name.size() + 1, record_name.c_str());
+    auto data = reader.Read(record);
+
 }
 
 

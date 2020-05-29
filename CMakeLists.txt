@@ -32,14 +32,12 @@ find_package(Qt5Core)
 find_package(Qt5Widgets)
 find_package(Qt5Gui)
 
-
 # add visualization and signal proc lib 
 if(USE_VISUALIZATION)
     add_subdirectory(includes/visualization)
 endif()
 
 add_subdirectory(includes/signal_proc_lib)
-
 
 add_executable(${PROJECT_NAME} main.cpp 
                       # ${CMAKE_CURRENT_SOURCE_DIR}/includes/time_series_player.h
@@ -74,3 +72,4 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
                                      )
 
 
+target_compile_definitions(signalanalyzer PRIVATE __cplusplus)

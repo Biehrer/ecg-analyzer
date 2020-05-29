@@ -72,7 +72,7 @@ void JonesPlotApplication_C::Setup()
     // plot_widget.AddPlot(plot0_info);
 
     TimeSignal_C<float> test;
-    test.LoadFromMITFileFormat("C://Development//projects//EcgAnalyzer//ecg-analyzer//resources//00ed2097-cd14-4f03-ab33-853da5be5550.dat");
+    test.LoadFromMITFileFormat("C:\\Development\\00ed2097-cd14-4f03-ab33-853da5be5550");
 
     // Start a thread which adds the data to the plot(s)
     std::thread dataThread([&]() {
