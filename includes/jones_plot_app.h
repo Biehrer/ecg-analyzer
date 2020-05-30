@@ -2,11 +2,9 @@
 
 // Project includes
 #include "ui_JonesPlot.h"
-//#include "../includes/visualization/ogl_plot_renderer_widget.h"
-#include "../includes/signal_proc_lib/time_signal.h"
 //#include "../includes/signal_proc_lib/time_signal.h"
 
-//#include "plot_model.h"
+#include "load_signal_dialog.h"
 
 // Qt includes
 #include <QtWidgets/QMainWindow>
@@ -31,22 +29,19 @@ protected:
     virtual void resizeEvent(QResizeEvent* event);
 
 public:
-    //void AddDataTest(double y_val, double x_val);
-
-    //void SendDatatToPlots();
-
-    //template<typename YValDataType_TP, typename XValDataType_TP>
-    //static
-    //void AddDataTest(const YValDataType_TP & y_val, const XValDataType_TP & x_val);
     void Setup();
 private:
-    //QOpenGLPlotRendererWidget* _plot_widget;
     Ui::JonesPlotClass ui;
 
     PlotModel_C _plot_model;
+
 public slots:
 
     void OnButtonSettingsPage();
 
     void OnButtonHomePage();
+
+    void OnButtonSignalsPage();
+
+    void OnGainChanged(int new_gain);
 };

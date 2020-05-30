@@ -1,6 +1,5 @@
 #include "plot_model.h"
 
-
 PlotModel_C::PlotModel_C( QObject* parent) 
     : QAbstractTableModel(parent)
 {
@@ -11,7 +10,6 @@ PlotModel_C::PlotModel_C( QObject* parent)
     _view_data.reserve(COLS * ROWS);
     _view_data.resize(COLS * ROWS);
 }
-
 
 // Sets the first row and determines the layout ( with #COLS items)
 QVariant 
@@ -47,13 +45,15 @@ Qt::ItemFlags PlotModel_C::flags(const QModelIndex &index) const
 bool PlotModel_C::setData(const QModelIndex &index, const QVariant &value, int role)
 {
     if ( role == Qt::EditRole ) {
-        //if ( !checkIndex(index) )
-            //return false;
-        //save value from editor to member 
-        int row = index.row() - 1;
-        _view_data[(row * COLS + index.column() )] = value.toString();
+
+        if ( !index.isValid() ) {
+            return false;
+        }
+
+        _view_data[((index.row() - 1) * COLS + index.column() )] = value.toString();
         return true;
     }
+
     return false;
 }
 
@@ -109,11 +109,19 @@ PlotModel_C::RecreateData()
             setData(createIndex(r_id, c_id+5), QVariant(_plots[r_id-1]->GetMajorTickValueXAxes()));
             setData(createIndex(r_id, c_id+6), QVariant(_plots[r_id-1]->GetMajorTickValueYAxes()));
     }
-   
-    QModelIndex topLeft = createIndex(0, 0);
-    QModelIndex bottom_right = createIndex(number_of_plots, COLS);
+
     //emit a signal to make the view reread identified data
-    emit dataChanged(topLeft, bottom_right, { Qt::DisplayRole });
+    emit dataChanged(createIndex(0, 0), //  top left table index
+                     createIndex(number_of_plots, COLS), // bottom right table index
+                     {Qt::DisplayRole});
+}
+
+// can cause locks -  but this is called from the ui thread so we dont care
+void PlotModel_C::SetGain(const float gain) {
+    //_sig_gain.store(gain);
+    for ( auto& plot : _plots ) {
+        plot->SetGain(gain);
+    }
 }
 
 void PlotModel_C::RemovePlot(unsigned int plot_id)

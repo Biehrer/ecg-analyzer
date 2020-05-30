@@ -44,7 +44,15 @@ add_executable(${PROJECT_NAME} main.cpp
                         ${CMAKE_CURRENT_SOURCE_DIR}/includes/jones_plot_app.h
                         ${CMAKE_CURRENT_SOURCE_DIR}/includes/jones_plot_app.cpp
                         ${CMAKE_CURRENT_SOURCE_DIR}/includes/JonesPlot.ui
-                        )
+
+                        ${CMAKE_CURRENT_SOURCE_DIR}/includes/load_signal_dialog.h
+                        ${CMAKE_CURRENT_SOURCE_DIR}/includes/load_signal_dialog.cpp
+                        ${CMAKE_CURRENT_SOURCE_DIR}/includes/loadsignaldialog.ui
+
+                        ${CMAKE_CURRENT_SOURCE_DIR}/includes/create_sig_from_file_widget.h
+                        ${CMAKE_CURRENT_SOURCE_DIR}/includes/create_sig_from_file_widget.cpp
+                        ${CMAKE_CURRENT_SOURCE_DIR}/includes/create_sig_from_file_widget.ui
+                      )
 
 
 target_include_directories(signalanalyzer PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/includes/)

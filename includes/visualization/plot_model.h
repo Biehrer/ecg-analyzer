@@ -15,6 +15,7 @@
 // STL includes
 #include <vector>
 #include <string>
+#include <atomic>
 
 const int COLS = 7;
 const int ROWS = 2;
@@ -122,9 +123,14 @@ public:
     // Recreaes the view data
     void RecreateData();
 
+    void SetGain(const float gain);
+
 private:
-    //!
+    //! the data this model manages
     std::vector<OGLSweepChart_C<ModelDataType_TP >*> _plots;
 
+    //! data for the view
     QVector<QString> _view_data;
+
+    std::atomic<float> _sig_gain;
 };

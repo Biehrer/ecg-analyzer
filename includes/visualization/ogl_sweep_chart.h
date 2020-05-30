@@ -14,6 +14,7 @@
 #include <chrono>
 #include <time.h>
 #include <ctime>
+#include <atomic>
 
 // Qt includes
 #include <qlist.h>
@@ -133,6 +134,8 @@ public:
     //! Set the color of the lead line
     void SetLeadLineColor(const QVector3D& color);
 
+    void SetGain(const float new_gain);
+
 // Private helper functions
 private:
     //! Draws the data series to the opengl context inside the plot-area
@@ -197,6 +200,8 @@ private:
 
     //! Model view projection transform matrix for text rendering
     QMatrix4x4 _chart_mvp;
+
+    std::atomic<float> _gain = 1.0f;
  };
 
 #ifdef DEBUG_INFO
@@ -275,12 +280,11 @@ private:
      //if ( value > _max_y_axis_value || value < _min_y_axis_value ) {
      //    return;
      //}
-
      // Attention: the bounding box is not templated and uses a using definition for the datatype !!
 
      // - (minus) because then the positive y axis is directing at the top of the screen
      float y_val_scaled_S = _plot_area.GetLeftTop()._y -
-         ((value - _min_y_axis_value) / (_max_y_axis_value - _min_y_axis_value)) *
+         (((value * _gain.load()) - _min_y_axis_value) / (_max_y_axis_value - _min_y_axis_value)) *
          _plot_area.GetChartHeight();
 
      auto x_ms = timestamp.GetMilliseconds();
@@ -398,6 +402,13 @@ double OGLSweepChart_C<DataType_TP>::GetTimerangeMs()
 OGLSweepChart_C<DataType_TP>::SetLeadLineColor(const QVector3D& color)
  {
      _lead_line_color = color;
+ }
+
+ template<typename DataType_TP>
+ //inline 
+ void
+ OGLSweepChart_C<DataType_TP>::SetGain(const float new_gain) {
+     _gain.store(new_gain);
  }
 
  template<typename DataType_TP>
