@@ -7,10 +7,18 @@ PlotModel_C::PlotModel_C( QObject* parent)
     //roles[TypeRole] = "type";
     //roles[SizeRole] = "size";
     //setRoleNames(roles);
-    _view_data.reserve(COLS * ROWS);
-    _view_data.resize(COLS * ROWS);
 }
 
+enum OGLPlotProperty {
+
+    PLOT_ID,
+    PLOT_LABEL,
+    PLOT_TIMERANGE,
+    PLOT_YMAX,
+    PLOT_YMIN,
+    PLOT_MAJTICK_X,
+    PLOT_MAJTICK_Y
+};
 // Sets the first row and determines the layout ( with #COLS items)
 QVariant 
 PlotModel_C::headerData(int section, Qt::Orientation orientation, int role) const
@@ -50,8 +58,39 @@ bool PlotModel_C::setData(const QModelIndex &index, const QVariant &value, int r
             return false;
         }
 
-        _view_data[((index.row() - 1) * COLS + index.column() )] = value.toString();
-        return true;
+        int row = index.row() -1;
+
+        switch ( index.column() ) {
+            case OGLPlotProperty::PLOT_ID:
+                _plots[row]->SetID(value.toInt() );
+                break;
+
+            case OGLPlotProperty::PLOT_LABEL:
+                _plots[row]->SetLabel(value.toString().toStdString());
+                break;
+
+            case OGLPlotProperty::PLOT_TIMERANGE:
+                _plots[row]->SetTimerangeMs(value.toDouble());
+                break;
+
+            case OGLPlotProperty::PLOT_YMAX:
+                _plots[row]->SetMaxValueYAxes(value.toFloat());
+                break;
+
+            case OGLPlotProperty::PLOT_YMIN:
+                _plots[row]->SetMinValueYAxes(value.toFloat());
+                break;
+
+            case OGLPlotProperty::PLOT_MAJTICK_X:
+                _plots[row]->SetMajorTickValueXAxes(value.toFloat());
+                break;
+
+            case OGLPlotProperty::PLOT_MAJTICK_Y:
+               _plots[row]->SetMajorTickValueYAxes(value.toFloat());
+               break;
+        }
+        
+         return true;
     }
 
     return false;
@@ -60,6 +99,7 @@ bool PlotModel_C::setData(const QModelIndex &index, const QVariant &value, int r
 int PlotModel_C::rowCount(const QModelIndex & parent) const
 {
     return ROWS;
+    //std::cout << "row count " << _plots.size() << std::endl;
     //return _plots.size();
 }
 
@@ -75,10 +115,32 @@ PlotModel_C::data(const QModelIndex & index, int role) const
     int col = index.column();
    
     switch ( role ) {
-
     case Qt::DisplayRole:
-        return QString(_view_data[(COLS * row + col)]);
 
+        switch ( col ) 
+        {
+        case OGLPlotProperty::PLOT_ID:
+            return _plots[row]->GetID();
+
+        case OGLPlotProperty::PLOT_LABEL:
+            return QString::fromStdString(_plots[row]->GetLabel());
+
+        case OGLPlotProperty::PLOT_TIMERANGE:
+            return _plots[row]->GetTimerangeMs();
+
+        case OGLPlotProperty::PLOT_YMAX:
+            return _plots[row]->GetMaxValueYAxes();
+
+        case OGLPlotProperty::PLOT_YMIN:
+            return _plots[row]->GetMinValueYAxes();
+
+        case OGLPlotProperty::PLOT_MAJTICK_X:
+            return _plots[row]->GetMajorTickValueXAxes();
+
+        case OGLPlotProperty::PLOT_MAJTICK_Y:
+            return _plots[row]->GetMajorTickValueYAxes();
+        }
+        
         //case Qt::FontRole:
         //    if ( row == 0 && col == 0 ) { //change font only for cell(0,0)
         //        QFont boldFont;
@@ -95,9 +157,7 @@ void
 PlotModel_C::RecreateData() 
 {
     int number_of_plots = _plots.size();
-    _view_data.reserve(COLS * number_of_plots);
-    _view_data.resize(COLS * number_of_plots);
-
+    
     int c_id = 0;
     for ( int r_id = 1; r_id <= number_of_plots; ++r_id ) {
             setData(createIndex(r_id, c_id), _plots[r_id-1]->GetID());
@@ -178,11 +238,27 @@ bool PlotModel_C::FastInitializePlots(int number_of_plots,
     QVector3D bounding_box_color(1.0f, 1.0f, 1.0f);
     QVector3D text_color(1.0f, 1.0f, 1.0f);
 
-    unsigned int plot_idx = 0;
+    unsigned int c_id = 0;
+    unsigned int r_id = 1;
+
     for ( auto& plot : _plots ) {
-        plot->SetID(plot_idx);
-        plot->SetLabel("plot #" + std::to_string(plot_idx));
-        ++plot_idx;
+        // modifyable variables (from user):
+        setData(createIndex(r_id, c_id), r_id );
+        QString label = QString("plot #" + QString::fromStdString(std::to_string(r_id)) );
+        setData(createIndex(r_id, c_id + 1), QVariant(label));
+        setData(createIndex(r_id, c_id + 2), QVariant(time_range_ms ));
+        setData(createIndex(r_id, c_id + 3), QVariant(max_y));
+        setData(createIndex(r_id, c_id + 4), QVariant(min_y));
+        setData(createIndex(r_id, c_id + 5), QVariant(time_range_ms / 4));
+        setData(createIndex(r_id, c_id + 6), QVariant((max_y - min_y) / 4));
+        ++r_id;
+        //plot->SetID(plot_idx);
+        //plot->SetLabel("plot #" + std::to_string(plot_idx));
+        //++plot_idx;
+        // Set up axes
+        //plot->SetMajorTickValueXAxes(time_range_ms / 4);
+        //plot->SetMajorTickValueYAxes((max_y - min_y) / 4);
+        // Non modifyale
         // Setup colors
         plot->SetSeriesColor(series_color);
         plot->SetAxesColor(axes_color);
@@ -190,17 +266,18 @@ bool PlotModel_C::FastInitializePlots(int number_of_plots,
         plot->SetBoundingBoxColor(bounding_box_color);
         plot->SetLeadLineColor(lead_line_color);
         plot->SetSurfaceGridColor(surface_grid_color);
-        // Set up axes
-        plot->SetMajorTickValueXAxes(time_range_ms / 4);
-        plot->SetMajorTickValueYAxes((max_y - min_y) / 4);
+
         // Set chart type
         plot->SetChartType(DrawingStyle_TP::LINE_SERIES);
         // Initialize
         plot->Initialize();
     }
 
-    // update view
-    RecreateData();
+        //emit a signal to make the view reread identified data
+    emit dataChanged(createIndex(0, 0), //  top left table index
+                     createIndex(number_of_plots, COLS), // bottom right table index
+                     { Qt::DisplayRole });
+    //RecreateData();
     return true;
 }
 
@@ -239,6 +316,7 @@ PlotModel_C::Data()
 // Inside PlotManager_C / PlotController_C 
 void PlotModel_C::AddPlot( const PlotDescription_TP& plot_info)
 {
+    int number_of_plots = _plots.size();
     // Create plot
     _plots.push_back(new OGLSweepChart_C<ModelDataType_TP>(plot_info._time_range_ms,
                                                            plot_info._buffer_size, 
@@ -264,6 +342,11 @@ void PlotModel_C::AddPlot( const PlotDescription_TP& plot_info)
     plot->SetChartType(plot_info._chart_type);
     // Initialize
     plot->Initialize();
+
+    //emit a signal to make the view reread identified data
+    emit dataChanged(createIndex(number_of_plots, 0), //  top left table index
+                     createIndex(number_of_plots + 1, COLS), // bottom right table index
+                     { Qt::DisplayRole });
 }
 
 bool 
