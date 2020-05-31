@@ -1,6 +1,7 @@
 #include "jones_plot_app.h"
 
 JonesPlotApplication_C::~JonesPlotApplication_C() {
+    delete _list_view_signals;
 }
 
 void JonesPlotApplication_C::resizeEvent(QResizeEvent* event)
@@ -44,12 +45,9 @@ JonesPlotApplication_C::JonesPlotApplication_C(QWidget *parent)
     // set plot model to open gl view
     ui._openGL_widget->SetModel(&_plot_model);
     ui._openGL_widget->show();
-    // set plot model to table view
+    // set plot model to table view of the plot settings page
     ui._plot_settings_table_view->setModel(&_plot_model);
     ui._plot_settings_table_view->show();
-
-    // Gain dial
-    connect(ui._dial_gain, SIGNAL(sliderMoved(int)), this, SLOT(OnGainChanged(int)) );
 
     // signal model 
     ui._signals_page_main_widget->SetModel(&_signal_model);
@@ -59,10 +57,19 @@ JonesPlotApplication_C::JonesPlotApplication_C(QWidget *parent)
     connect(ui._signals_page_main_widget, SIGNAL(NewSignal(TimeSignal_C<float>)), this, SLOT(OnNewSignal(TimeSignal_C<float>)));
     connect(ui._signals_page_main_widget, SIGNAL(NewSignal(TimeSignal_C<double>)), this, SLOT(OnNewSignal(TimeSignal_C<double>)));
 
-    connect(ui._btn_plotpage_select_signal, SIGNAL(clicked()), this, SLOT(OnBtnSelectSignal()) );
+    // Set the signal model to the list view dialog to select the signal to play
+    _list_view_signals = new ListViewDialog_C();
+    _list_view_signals->SetSignalModel(&_signal_model);
+    connect(_list_view_signals, SIGNAL(SignalSelected(unsigned int)), this, SLOT(OnNewSignalSelected()) );
+
+    // Signal button start/pause/stop/select button
+    connect(ui._btn_plotpage_select_signal, SIGNAL(clicked()), this, SLOT(OnBtnSelectSignal()));
     connect(ui._btn_plotpage_start, SIGNAL(clicked()), this, SLOT(OnBtnPlaySignal()));
+    connect(ui._btn_plotpage_pause, SIGNAL(clicked()), this, SLOT(OnBtnPauseSignal()));
+    connect(ui._btn_plotpage_stop, SIGNAL(clicked()), this, SLOT(OnBtnStopSignal()));
 
-
+    // Gain dial
+    connect(ui._dial_gain, SIGNAL(sliderMoved(int)), this, SLOT(OnGainChanged(int)));
 }
 
 void JonesPlotApplication_C::Setup() 
@@ -114,13 +121,17 @@ void JonesPlotApplication_C::OnButtonSignalsPage()
 
 void JonesPlotApplication_C::OnBtnSelectSignal()
 {
-    // open list with signals from which one can be selected for plotting
-    // or setup page so the user can assign which channels should be visualized from which plot
-
+    _list_view_signals->show();    
 }
 
 void JonesPlotApplication_C::OnBtnPlaySignal()
 {
+    if ( _signal_model.Data().empty() || _is_signal_playing.load() ) {
+        QMessageBox box;
+        box.setText("You have to load a signal or stop the old o before you can Play one");
+        return;
+    }
+
     ui._btn_plotpage_pause->setEnabled(true);
     ui._btn_plotpage_stop->setEnabled(true);
     ui._btn_plotpage_start->setEnabled(false);
@@ -128,16 +139,16 @@ void JonesPlotApplication_C::OnBtnPlaySignal()
     // Start a thread which adds the data to the plot(s)
     std::thread dataThread([&]() {
 
+        _is_signal_playing.store(true);
+
         // assign plot labels just for fun
         auto plot_0 = _plot_model.GetPlotPtr(0);
         //plot_0->SetLabel("plot 0");
         auto plot_1 = _plot_model.GetPlotPtr(1);
         //plot_1->SetLabel("plot 1");
 
-        // Get data of all channels
-        // for prototyping: just get the first signal which is loaded: 
-        // this should be selectable by the user through some list ! (list of signals)
-        TimeSignal_C<SignalModelDataType_TP>* signal = _signal_model.Data()[0];
+        // Load the signal which was selected by the user
+        TimeSignal_C<SignalModelDataType_TP>* signal = _signal_model.Data()[_current_signal_id];
 
         const auto& data = signal->constData();
         if ( data.empty() ) {
@@ -166,7 +177,7 @@ void JonesPlotApplication_C::OnBtnPlaySignal()
         bool signal_processed = false;
         auto time_series_end = plot0_data.end();
 
-        while ( !signal_processed ) {
+        while ( !signal_processed && !_is_stop_requested.load()) {
             if ( series_1_begin_it != time_series_end ) {
                 plot_0->AddDatapoint(*series_1_begin_it, *timestamps_1_begin_it);
                 plot_1->AddDatapoint(*series_2_begin_it, *timestamps_2_begin_it);
@@ -177,12 +188,16 @@ void JonesPlotApplication_C::OnBtnPlaySignal()
                 ++timestamps_2_begin_it;
             }
             else {
+                // Todo: clear plots?
                 signal_processed = true;
+                _is_signal_playing.store(false);
                 std::cout << "processing finished; thread returns" << std::endl;
             }
 
             std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>(frequency_ms)));
         }
+
+        _is_signal_playing.store(false);
     });
 
     dataThread.detach();
@@ -191,19 +206,25 @@ void JonesPlotApplication_C::OnBtnPlaySignal()
 
 void JonesPlotApplication_C::OnBtnPauseSignal()
 {
-    ui._btn_plotpage_pause->setEnabled(false);
-    ui._btn_plotpage_stop->setEnabled(true);
-    ui._btn_plotpage_start->setEnabled(true);
+    if( _is_signal_playing.load() ){
+        ui._btn_plotpage_pause->setEnabled(false);
+        ui._btn_plotpage_stop->setEnabled(true);
+        ui._btn_plotpage_start->setEnabled(true);
 
+        // ui._btn_plotpage_start->setCheckable(true);
+        _is_stop_requested.store(true);
+    }
 }
 
 void JonesPlotApplication_C::OnBtnStopSignal() 
 {
-    ui._btn_plotpage_pause->setEnabled(false);
-    ui._btn_plotpage_stop->setEnabled(false);
-    ui._btn_plotpage_start->setEnabled(true);
-    //lock mutex which stops thread via setting a bool which is checked periodically inside the thread
-
+    if ( _is_signal_playing.load() ) {
+        ui._btn_plotpage_pause->setEnabled(false);
+        ui._btn_plotpage_stop->setEnabled(false);
+        ui._btn_plotpage_start->setEnabled(true);
+        //lock mutex which stops thread via setting a bool which is checked periodically inside the thread
+        _is_stop_requested.store(true);
+    }
 }
 void JonesPlotApplication_C::OnGainChanged(int new_gain) 
 {
@@ -226,4 +247,10 @@ void JonesPlotApplication_C::OnNewSignal(TimeSignal_C<double> signal)
 {
     std::cout << "placeholder" << std::endl;
     //_signal_model.AddSignal(signal);
+}
+
+void 
+JonesPlotApplication_C::OnNewSignalSelected(unsigned int signal_id)
+{
+    _current_signal_id = signal_id;
 }

@@ -55,6 +55,10 @@ add_executable(${PROJECT_NAME} main.cpp
                         ${CMAKE_CURRENT_SOURCE_DIR}/includes/create_sig_from_file_widget.h
                         ${CMAKE_CURRENT_SOURCE_DIR}/includes/create_sig_from_file_widget.cpp
                         ${CMAKE_CURRENT_SOURCE_DIR}/includes/create_sig_from_file_widget.ui
+
+                        ${CMAKE_CURRENT_SOURCE_DIR}/includes/list_view_dialog.h
+                        ${CMAKE_CURRENT_SOURCE_DIR}/includes/list_view_dialog.cpp
+                        ${CMAKE_CURRENT_SOURCE_DIR}/includes/list_view_dialog.ui
                       )
 
 
