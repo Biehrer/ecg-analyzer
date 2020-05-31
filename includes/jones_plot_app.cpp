@@ -81,10 +81,8 @@ void JonesPlotApplication_C::Setup()
 
         // Create a time signal and fill it with data
         TimeSignal_C<float> signal;
-        signal.ReadG11Data("C://Development//projects//EcgAnalyzer//ecg-analyzer//resources//G11Data.dat");
-
-        //TimeSignal_C<float> signal;
-        //signal.LoadFromMITFileFormat("C:\\Development\\00ed2097-cd14-4f03-ab33-853da5be5550");
+        //signal.ReadG11Data("C://Development//projects//EcgAnalyzer//ecg-analyzer//resources//G11Data.dat");
+        signal.LoadFromMITFileFormat("C:\\Development\\00ed2097-cd14-4f03-ab33-853da5be5550");
 
         // assign plot labels just for fun
         auto plot_0 = _plot_model.GetPlotPtr(0);//ui._openGL_widget->GetPlotPtr(0);
