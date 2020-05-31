@@ -120,17 +120,11 @@ public:
     //! Writes PlotDescription_TP to _data as string -> implement to String method 
     //void AddPlot(PlotDescription_TP description);
     
-    // Recreaes the view data
-    void RecreateData();
-
     void SetGain(const float gain);
 
 private:
     //! the data this model manages
     std::vector<OGLSweepChart_C<ModelDataType_TP >*> _plots;
-
-    //! data for the view
-    QVector<QString> _view_data;
 
     std::atomic<float> _sig_gain;
 };

@@ -10,7 +10,6 @@ PlotModel_C::PlotModel_C( QObject* parent)
 }
 
 enum OGLPlotProperty {
-
     PLOT_ID,
     PLOT_LABEL,
     PLOT_TIMERANGE,
@@ -58,7 +57,7 @@ bool PlotModel_C::setData(const QModelIndex &index, const QVariant &value, int r
             return false;
         }
 
-        int row = index.row() -1;
+        int row = index.row() - 1;
 
         switch ( index.column() ) {
             case OGLPlotProperty::PLOT_ID:
@@ -98,9 +97,7 @@ bool PlotModel_C::setData(const QModelIndex &index, const QVariant &value, int r
 
 int PlotModel_C::rowCount(const QModelIndex & parent) const
 {
-    return ROWS;
-    //std::cout << "row count " << _plots.size() << std::endl;
-    //return _plots.size();
+    return _plots.size();
 }
 
 int PlotModel_C::columnCount(const QModelIndex & parent) const
@@ -153,29 +150,6 @@ PlotModel_C::data(const QModelIndex & index, int role) const
 }
 
 
-void 
-PlotModel_C::RecreateData() 
-{
-    int number_of_plots = _plots.size();
-    
-    int c_id = 0;
-    for ( int r_id = 1; r_id <= number_of_plots; ++r_id ) {
-            setData(createIndex(r_id, c_id), _plots[r_id-1]->GetID());
-            QString label = QString::fromStdString(_plots[r_id-1]->GetLabel());
-            setData(createIndex(r_id, c_id+1), QVariant(label));
-            setData(createIndex(r_id, c_id+2), QVariant(_plots[r_id-1]->GetTimerangeMs()));
-            setData(createIndex(r_id, c_id+3), QVariant(_plots[r_id-1]->GetMaxValueYAxes()));
-            setData(createIndex(r_id, c_id+4), QVariant(_plots[r_id-1]->GetMinValueYAxes()));
-            setData(createIndex(r_id, c_id+5), QVariant(_plots[r_id-1]->GetMajorTickValueXAxes()));
-            setData(createIndex(r_id, c_id+6), QVariant(_plots[r_id-1]->GetMajorTickValueYAxes()));
-    }
-
-    //emit a signal to make the view reread identified data
-    emit dataChanged(createIndex(0, 0), //  top left table index
-                     createIndex(number_of_plots, COLS), // bottom right table index
-                     {Qt::DisplayRole});
-}
-
 // can cause locks -  but this is called from the ui thread so we dont care
 void PlotModel_C::SetGain(const float gain) {
     //_sig_gain.store(gain);
@@ -188,7 +162,9 @@ void PlotModel_C::RemovePlot(unsigned int plot_id)
 {
     for ( auto plot_it = _plots.begin(); plot_it < _plots.end(); ++plot_it ) {
         if ( (*plot_it)->GetID() == plot_id ) {
+            // beginRemoveRows()
             plot_it = _plots.erase(plot_it);
+            // endRemoveRows()
         }
     }
 }
@@ -242,6 +218,9 @@ bool PlotModel_C::FastInitializePlots(int number_of_plots,
     unsigned int r_id = 1;
 
     for ( auto& plot : _plots ) {
+
+        //beginInsertRows(QModelIndex(), _plots.size(), _plots.size() + 1);
+        beginInsertRows(QModelIndex(), r_id - 1, r_id - 1 + 1);
         // modifyable variables (from user):
         setData(createIndex(r_id, c_id), r_id );
         QString label = QString("plot #" + QString::fromStdString(std::to_string(r_id)) );
@@ -251,6 +230,7 @@ bool PlotModel_C::FastInitializePlots(int number_of_plots,
         setData(createIndex(r_id, c_id + 4), QVariant(min_y));
         setData(createIndex(r_id, c_id + 5), QVariant(time_range_ms / 4));
         setData(createIndex(r_id, c_id + 6), QVariant((max_y - min_y) / 4));
+        endInsertRows();
         ++r_id;
         //plot->SetID(plot_idx);
         //plot->SetLabel("plot #" + std::to_string(plot_idx));
