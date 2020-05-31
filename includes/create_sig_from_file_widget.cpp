@@ -5,20 +5,36 @@ CreateSignalFromFileWidget_C::CreateSignalFromFileWidget_C(QWidget *parent) :
     ui(new Ui::CreateSignalFromFileWidget_C)
 {
     ui->setupUi(this);
+
     connect(ui->_btn_select_n_load, SIGNAL(clicked()), this, SLOT(OnBtnSelectNLoad()));
 }
 
-CreateSignalFromFileWidget_C::~CreateSignalFromFileWidget_C()
+CreateSignalFromFileWidget_C::~CreateSignalFromFileWidget_C() 
 {
     delete ui;
-
 }
 
+
 void 
-CreateSignalFromFileWidget_C::OnBtnSelectNLoad() {
+CreateSignalFromFileWidget_C::OnBtnSelectNLoad() 
+{
 
     auto filepath = QFileDialog::getOpenFileName(this,
         tr("Open Signal"), "c/", tr("Signal Files (*.dat *.hea)"));
+
+    QDir file(filepath);
+    auto test  = file.canonicalPath();
+    auto cur  = file.currentPath();
+   auto ok =  file.filePath(filepath);
+   auto dir = file.dirName();
+
+   auto w = file.path();
+   auto z = file.absolutePath();
+
+    //if ( !QDir(filepath).exists() /*|| !QDir(filepath).isReadable()*/ ) {
+    //    //QMessageBoxPrivate("Directory does not exist");
+    //    return;
+    //}
 
     SignalFileType_TP file_type;
     if ( ui->_radio_g11->isChecked() ) {
@@ -33,36 +49,50 @@ CreateSignalFromFileWidget_C::OnBtnSelectNLoad() {
     if ( ui->_radio_double->isChecked() ) {
         signal_datatype = SignalDataType_TP::DOUBLE_TYPE;
         auto signal =  CreateSignal<double>(filepath, file_type);
-    }
-    else if ( ui->_radio_float->isChecked() ) {
+        emit NewSignalCreated(signal);
+    } else if ( ui->_radio_float->isChecked() ) {
         signal_datatype = SignalDataType_TP::FLOAT_TYPE;
         auto signal = CreateSignal<float>(filepath, file_type);
-
-    }
-    else if ( ui->_radio_int->isChecked() ) {
+        emit NewSignalCreated(signal);
+    } else if ( ui->_radio_int->isChecked() ) {
         signal_datatype = SignalDataType_TP::INT_TYPE;
         auto signal = CreateSignal<int>(filepath, file_type);
+        emit NewSignalCreated(signal);
     }
 
-    // Store the signals?
-
+    // default
+    signal_datatype = SignalDataType_TP::FLOAT_TYPE;
+    auto signal = CreateSignal<float>(filepath, file_type);
+    emit NewSignalCreated(signal);
 }
-
-
 
 template<typename DataType_TP>
 TimeSignal_C<DataType_TP>
-CreateSignalFromFileWidget_C::CreateSignal(const QString& filepath, 
+CreateSignalFromFileWidget_C::CreateSignal(QString& filepath, 
     SignalFileType_TP file_type)
 {
     TimeSignal_C<DataType_TP> signal;
 
+    std::string path = filepath.toStdString();
+
     if ( file_type == SignalFileType_TP::PHYSIONET ) {
-        signal.ReadG11Data(filepath.toStdString());
+        for ( auto& letter : path ) {
+            if ( letter == '/' ) {
+                letter = '\\';
+            }
+        }
+        signal.LoadFromMITFileFormat(path);
 
     } else if ( file_type == SignalFileType_TP::G11 ) {
-        signal.LoadFromMITFileFormat(filepath.toStdString());
+        // Not tested yet
+        for ( auto& letter : path ) {
+            if ( letter == '/' ) {
+                letter = '//';
+            }
+        }        
+        signal.ReadG11Data(path);
     }
-    // TODO MOVE CTOR
+
+    // TODO MOVE CTOR for TimeSignal_C
        return signal;
 }

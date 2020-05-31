@@ -2,9 +2,7 @@
 
 // Project includes
 #include "ui_JonesPlot.h"
-//#include "../includes/signal_proc_lib/time_signal.h"
-
-#include "load_signal_dialog.h"
+#include "signal_model.h"
 
 // Qt includes
 #include <QtWidgets/QMainWindow>
@@ -35,6 +33,8 @@ private:
 
     PlotModel_C _plot_model;
 
+    SignalModel_C _signal_model;
+
 public slots:
 
     void OnButtonSettingsPage();
@@ -43,5 +43,16 @@ public slots:
 
     void OnButtonSignalsPage();
 
+    void OnBtnSelectSignal();
+
+    void OnBtnPlaySignal();
+    //void OnBtnPauseSignal();
+    //void OnBtnStopSignal();
+
     void OnGainChanged(int new_gain);
+
+    void OnNewSignal(TimeSignal_C<int>);
+    void OnNewSignal(TimeSignal_C<float>);
+    void OnNewSignal(TimeSignal_C<double>);
+
 };

@@ -7,7 +7,7 @@
 
 #include <QWidget>
 #include <qfiledialog.h>
-
+#include <qgroupbox.h>
 enum SignalFileType_TP {
     G11,
     PHYSIONET
@@ -31,15 +31,22 @@ public:
     explicit CreateSignalFromFileWidget_C(QWidget *parent = 0);
     ~CreateSignalFromFileWidget_C();
 
-public:
-
 public slots:
     void OnBtnSelectNLoad();
 
+signals:
+    void NewSignalCreated(TimeSignal_C<float> signal);
+    void NewSignalCreated(TimeSignal_C<double> signal);
+    void NewSignalCreated(TimeSignal_C<int> signal);
+
+private:
+    template< typename DataType_TP>
+    TimeSignal_C<DataType_TP> CreateSignal(QString & filepath, SignalFileType_TP FileDataType_TP);
+
+
 private:
     Ui::CreateSignalFromFileWidget_C *ui;
-    template< typename DataType_TP>
-    TimeSignal_C<DataType_TP> CreateSignal(const QString & filepath, SignalFileType_TP FileDataType_TP);
+
 };
 
 #endif // CREATE_SIG_FROM_FILE_WIDGET_H
