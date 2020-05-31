@@ -14,11 +14,42 @@
 #include <fstream>
 #include<iterator>
 #include <streambuf>
-#include <cstddef>         // std::size_t
-
+#include <cstddef>
 
 template<typename DataFormat_TP>
 struct ECGChannelInfo_TP {
+
+
+    ECGChannelInfo_TP() 
+    {
+    }
+    
+    ECGChannelInfo_TP(const ECGChannelInfo_TP& other) {
+        _data = other._data;
+        _timestamps = other._timestamps;
+        _units = other._units;
+        _id = other._id;
+        _label = other._label;
+        _sample_rate_hz = other._sample_rate_hz;
+        _high_hz = other._high_hz;
+        _low_hz = other._low_hz;
+        _range_mV = other._range_mV;
+        _scale = other._scale;
+    }
+
+    //ECGChannelInfo_TP(ECGChannelInfo_TP&& other) {
+    //    _data = other._data;
+    //    _timestamps = other._timestamps;
+    //    _units = other._units;
+    //    _id = other._id;
+    //    _label = other._label;
+    //    _sample_rate_hz = other._sample_rate_hz;
+    //    _high_hz = other._high_hz;
+    //    _low_hz = other._low_hz;
+    //    _range_mV = other._range_mV;
+    //    _scale = other._scale;
+    //}
+
 
 public:
     void SetData(const std::vector<DataFormat_TP>& data) {
@@ -63,6 +94,12 @@ class TimeSignal_C {
 public:
     //TimeSignal_C() = default;
     
+    TimeSignal_C(const TimeSignal_C<DataType_TP>& signal);
+
+    TimeSignal_C(/*const */TimeSignal_C<DataType_TP>&& signal);
+
+    TimeSignal_C();
+
 public:
     //! load physionet database file
     //!
@@ -72,10 +109,42 @@ public:
     // For the custom dataset I use
     void ReadG11Data(const std::string& filename);
 
-    std::vector<std::string> GetChannelLabels();
-
     const std::vector<ECGChannelInfo_TP<DataType_TP>>& constData() const {
         return _data;
+    }
+
+    std::vector<std::string> GetChannelLabels();
+
+    std::string GetLabel() {
+        return _label;
+    }
+
+    unsigned int GetChannelCount() { 
+        return _data.size(); 
+    }
+
+    double GetTimerangeMs() { 
+        if ( !_data.empty() ) { 
+            return (_data[0]._timestamps.size() * ( 1 / _data[0]._sample_rate_hz) ) * 1000.0 ;
+        } else {
+            return 0.0;
+        }
+    }
+
+    unsigned int GetID() { return _id; }
+
+    std::string GetDatatype() {
+
+        //if ( DataType_TP == float ) {
+        //    return "float";
+        //} else if ( DataType_TP == double ) {
+        //    return "double";
+        //} else if ( DataType_TP == int ) {
+        //    return "int";
+        //} 
+
+        return "NA";
+        
     }
 
     // Private helper functions
@@ -86,9 +155,15 @@ private:
 
 private:
     std::vector<ECGChannelInfo_TP<DataType_TP>> _data;
+
+    std::string _label = "";
+
+    unsigned int _id = 0;
+
 };
 
 template<typename DataType_TP>
+inline
 std::vector<std::string>
 TimeSignal_C<DataType_TP>::GetChannelLabels()
 {
@@ -100,6 +175,31 @@ TimeSignal_C<DataType_TP>::GetChannelLabels()
 }
 
 template<typename DataType_TP>
+inline 
+TimeSignal_C<DataType_TP>::TimeSignal_C(const TimeSignal_C<DataType_TP>& signal)
+{
+    _data = signal._data;
+    _id = signal._id;
+    _label = signal._label;
+}
+
+template<typename DataType_TP>
+inline 
+TimeSignal_C<DataType_TP>::TimeSignal_C(TimeSignal_C<DataType_TP>&& signal)
+{
+    _data = signal._data;
+    //signal._data = nullptr;
+    _id = signal._id;
+    _label = signal._label;
+}
+
+template<typename DataType_TP>
+inline 
+TimeSignal_C<DataType_TP>::TimeSignal_C()
+{
+}
+
+template<typename DataType_TP>
 void 
 TimeSignal_C<DataType_TP>::LoadFromMITFileFormat(const std::string filename)
 {
@@ -108,12 +208,21 @@ TimeSignal_C<DataType_TP>::LoadFromMITFileFormat(const std::string filename)
     auto last_bslash_pos = filename.find_last_of('/\\');
     auto database_path = filename.substr(0, last_bslash_pos);
 
+    if ( last_bslash_pos == std::string::npos ) {
+        std::cout << "found no slash! filename probably wrong!" << std::endl;
+        return;
+    }
+
     char database[128];
     strcpy_s(database, database_path.size() + 1, database_path.c_str() );
     reader.SetWFDBPath(database);
 
     // read
     auto record_name = filename.substr(last_bslash_pos + 1);
+    // remove the data suffix .dat or .hea (each 4 chars) if there is a dot inside the record name
+    if( record_name.find('.') != std::string::npos ){
+        record_name = record_name.substr(0, record_name.size() - 4);
+    }
     char record[128];
     strcpy_s(record, record_name.size() + 1, record_name.c_str());
     auto mit_data = reader.Read(record);
