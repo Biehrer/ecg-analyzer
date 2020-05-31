@@ -43,7 +43,6 @@ private:
     template< typename DataType_TP>
     TimeSignal_C<DataType_TP> CreateSignal(QString & filepath, SignalFileType_TP FileDataType_TP);
 
-
 private:
     Ui::CreateSignalFromFileWidget_C *ui;
 

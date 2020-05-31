@@ -14,22 +14,12 @@ CreateSignalFromFileWidget_C::~CreateSignalFromFileWidget_C()
     delete ui;
 }
 
-
 void 
 CreateSignalFromFileWidget_C::OnBtnSelectNLoad() 
 {
 
     auto filepath = QFileDialog::getOpenFileName(this,
-        tr("Open Signal"), "c/", tr("Signal Files (*.dat *.hea)"));
-
-    QDir file(filepath);
-    auto test  = file.canonicalPath();
-    auto cur  = file.currentPath();
-   auto ok =  file.filePath(filepath);
-   auto dir = file.dirName();
-
-   auto w = file.path();
-   auto z = file.absolutePath();
+        tr("Open Signal"), "C:/", tr("Signal Files (*.dat *.hea)"));
 
     //if ( !QDir(filepath).exists() /*|| !QDir(filepath).isReadable()*/ ) {
     //    //QMessageBoxPrivate("Directory does not exist");

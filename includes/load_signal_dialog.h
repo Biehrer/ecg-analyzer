@@ -52,7 +52,6 @@ private:
     Ui::LoadSignalDialog_C *ui;
 
     CreateSignalFromFileWidget_C* _signal_creator;
-
 };
 
 #endif // LOAD_SIGNAL_DIALOG_H
