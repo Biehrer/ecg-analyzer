@@ -38,10 +38,14 @@ void
 SignalModel_C::AddSignal(const TimeSignal_C<SignalModelDataType_TP>& signal) 
 {    
     // TODO copy constructor 
+    beginInsertRows(QModelIndex(), _signals.size(), _signals.size() + 1);
+
     _signals.push_back(new TimeSignal_C<SignalModelDataType_TP>(signal));
     emit dataChanged(createIndex(0, 0), //  top left table index
                         createIndex(_signals.size(), SIGNAL_COLS), // bottom right table index
                         { Qt::DisplayRole });
+
+    endInsertRows();
 }
 
 int SignalModel_C::rowCount(const QModelIndex & parent) const
@@ -58,7 +62,7 @@ SignalModel_C::data(const QModelIndex & index, int role) const
 {
     int row = index.row();
     int col = index.column();
-
+  
     switch ( role ) 
     {
     case Qt::DisplayRole:
@@ -96,5 +100,27 @@ const std::vector<TimeSignal_C<SignalModelDataType_TP>*>&
 SignalModel_C::constData() const
 {
     return _signals;
+}
+
+void SignalModel_C::RemoveSignal(unsigned int id)
+{
+    if ( id > _signals.size() ) {
+        return;
+    }
+
+    //beginRemoveRows(QModelIndex(), _signals.size(), _signals.size() - 1);
+    _signals.erase(_signals.begin() + id);
+    //endRemoveRows();
+}
+
+void SignalModel_C::RemoveSignal(const std::string& label) 
+{
+    for ( auto signal_it = _signals.begin(); signal_it != _signals.end(); ++signal_it ) {
+        if ( label == (*signal_it)->GetLabel() ) {
+            beginRemoveRows(QModelIndex(), _signals.size(), _signals.size() - 1);
+            _signals.erase(signal_it);
+            endRemoveRows();
+        }
+    }
 }
 

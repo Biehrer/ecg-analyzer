@@ -35,9 +35,9 @@ public slots:
     void OnBtnSelectNLoad();
 
 signals:
-    void NewSignalCreated(TimeSignal_C<float> signal);
-    void NewSignalCreated(TimeSignal_C<double> signal);
-    void NewSignalCreated(TimeSignal_C<int> signal);
+    void NewSignalCreated(const TimeSignal_C<float> signal);
+    void NewSignalCreated(const TimeSignal_C<double> signal);
+    void NewSignalCreated(const TimeSignal_C<int> signal);
 
 private:
     template< typename DataType_TP>

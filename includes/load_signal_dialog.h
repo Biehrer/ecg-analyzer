@@ -26,7 +26,7 @@ public:
     ~LoadSignalDialog_C();
 
 public:
-    void SetModel(SignalModel_C * model);
+    void SetTreeViewModel(SignalModel_C * model);
 
 public slots:
     void OnBtnLoadFromDisk();
@@ -39,19 +39,26 @@ public slots:
 
     void OnNewSignalCreated(TimeSignal_C<float> signal);
 
-    void OnNewSignalCreated(TimeSignal_C<double> signal);
+    void OnNewSignalCreated(const TimeSignal_C<double> signal);
 
-    void OnNewSignalCreated(TimeSignal_C<int> signal);
+    void OnNewSignalCreated(const TimeSignal_C<int> signal);
 
 signals:
-    void NewSignal(TimeSignal_C<int> signal);
-    void NewSignal(TimeSignal_C<float> signal);
-    void NewSignal(TimeSignal_C<double> signal);
+    void NewSignal(const TimeSignal_C<int> signal);
+    void NewSignal(const TimeSignal_C<float> signal);
+    void NewSignal(const TimeSignal_C<double> signal);
+
+    void RemoveSignalRequested(unsigned int);
+
+private:
+    void PreProcessSignalHeader(TimeSignal_C<float>& signal);
 
 private:
     Ui::LoadSignalDialog_C *ui;
 
-    CreateSignalFromFileWidget_C* _signal_creator;
+    CreateSignalFromFileWidget_C* _signal_from_file_factory;
+
+    std::atomic<unsigned int> _current_signal_id = 0;
 };
 
 #endif // LOAD_SIGNAL_DIALOG_H

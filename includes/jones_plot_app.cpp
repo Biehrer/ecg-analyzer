@@ -43,14 +43,14 @@ JonesPlotApplication_C::JonesPlotApplication_C(QWidget *parent)
     connect(ui._btn_load_signal, SIGNAL(clicked()), this, SLOT(OnButtonSignalsPage()));
 
     // set plot model to open gl view
-    ui._openGL_widget->SetModel(&_plot_model);
+    ui._openGL_widget->SetTreeViewModel(&_plot_model);
     ui._openGL_widget->show();
     // set plot model to table view of the plot settings page
     ui._plot_settings_table_view->setModel(&_plot_model);
     ui._plot_settings_table_view->show();
 
     // signal model 
-    ui._signals_page_main_widget->SetModel(&_signal_model);
+    ui._signals_page_main_widget->SetTreeViewModel(&_signal_model);
 
     // connect from here to the widget which creates the signals
     connect(ui._signals_page_main_widget, SIGNAL(NewSignal(TimeSignal_C<int>)), this, SLOT(OnNewSignal(TimeSignal_C<int>)) );
@@ -70,6 +70,10 @@ JonesPlotApplication_C::JonesPlotApplication_C(QWidget *parent)
 
     // Gain dial
     connect(ui._dial_gain, SIGNAL(sliderMoved(int)), this, SLOT(OnGainChanged(int)));
+
+    connect(ui._signals_page_main_widget, SIGNAL(RemoveSignalRequested(unsigned int)),
+        this, SLOT(OnRemoveSignal(unsigned int)));
+
 }
 
 void JonesPlotApplication_C::Setup() 
@@ -128,9 +132,10 @@ void JonesPlotApplication_C::OnBtnPlaySignal()
 {
     if ( _signal_model.Data().empty() || _is_signal_playing.load() ) {
         QMessageBox box;
-        box.setText("You have to load a signal or stop the old o before you can Play one");
+        box.setText("You have to load a signal or stop the old one before you can Play one");
         return;
     }
+    _is_stop_requested.store(false);
 
     ui._btn_plotpage_pause->setEnabled(true);
     ui._btn_plotpage_stop->setEnabled(true);
@@ -201,7 +206,6 @@ void JonesPlotApplication_C::OnBtnPlaySignal()
     });
 
     dataThread.detach();
-
 }
 
 void JonesPlotApplication_C::OnBtnPauseSignal()
@@ -229,28 +233,36 @@ void JonesPlotApplication_C::OnBtnStopSignal()
 void JonesPlotApplication_C::OnGainChanged(int new_gain) 
 {
     float scaled_gain = new_gain / ( ui._dial_gain->maximum() / 10 ) ;
-    ui._btn_plot_page_gain_view->setText(QString::fromStdString(std::to_string(scaled_gain)));
+    ui._btn_plot_page_gain_view->setText(QString::number(scaled_gain));
     _plot_model.SetGain(scaled_gain);
 }
 
 void JonesPlotApplication_C::OnNewSignal(TimeSignal_C<int> signal)
 {
-    std::cout << "placeholder" << std::endl;
+    std::cout << "placeholder. Not supported currently" << std::endl;
     //_signal_model.AddSignal(signal);
+    // solution 1: three vectors inside the model 
+    // (one for doubles, one for floats, one for ints) and iterate through all to draw the plots and support different datatypes
+    // 
 }
 
 void JonesPlotApplication_C::OnNewSignal(TimeSignal_C<float> signal)
 {
     _signal_model.AddSignal(signal);
 }
+
+void JonesPlotApplication_C::OnRemoveSignal(unsigned int id) 
+{
+    _signal_model.RemoveSignal(id);
+}
 void JonesPlotApplication_C::OnNewSignal(TimeSignal_C<double> signal)
 {
-    std::cout << "placeholder" << std::endl;
+    std::cout << "placeholder. Not supported currently" << std::endl;
     //_signal_model.AddSignal(signal);
 }
 
 void 
-JonesPlotApplication_C::OnNewSignalSelected(unsigned int signal_id)
+JonesPlotApplication_C::OnNewSignalSelected(unsigned int signal_id) 
 {
     _current_signal_id = signal_id;
 }

@@ -38,7 +38,7 @@ QOpenGLPlotRendererWidget::QOpenGLPlotRendererWidget(QWidget* parent)
 
     _framecounter = 0;
 
-    // inside SetModel(..) 
+    // inside SetTreeViewModel(..) 
     _paint_update_timer = new QTimer();
     connect(_paint_update_timer, SIGNAL(timeout()), this, SLOT(update()));
     _paint_update_timer->setInterval(30);
@@ -79,7 +79,7 @@ QOpenGLPlotRendererWidget::IsOpenGLInitialized() const
 
 
 void 
-QOpenGLPlotRendererWidget::SetModel(PlotModel_C* model) {
+QOpenGLPlotRendererWidget::SetTreeViewModel(PlotModel_C* model) {
     _model = model;
 }
 

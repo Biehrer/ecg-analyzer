@@ -53,6 +53,7 @@ public slots:
 
     void OnNewSignal(TimeSignal_C<int>);
     void OnNewSignal(TimeSignal_C<float>);
+    void OnRemoveSignal(unsigned int id);
     void OnNewSignal(TimeSignal_C<double>);
 
 private:

@@ -63,7 +63,7 @@ public:
 
     bool IsOpenGLInitialized() const;
     
-    void SetModel(PlotModel_C* model);
+    void SetTreeViewModel(PlotModel_C* model);
 
    // Protected functions
 protected:

@@ -56,6 +56,9 @@ public:
 
     const std::vector<TimeSignal_C<SignalModelDataType_TP>*>& constData() const;
 
+    void RemoveSignal(unsigned int id);
+
+    void RemoveSignal(const std::string& label);
     
 public slots:
     void AddSignal(const TimeSignal_C<SignalModelDataType_TP>& signal);

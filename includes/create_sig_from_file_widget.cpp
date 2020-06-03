@@ -5,8 +5,11 @@ CreateSignalFromFileWidget_C::CreateSignalFromFileWidget_C(QWidget *parent) :
     ui(new Ui::CreateSignalFromFileWidget_C)
 {
     ui->setupUi(this);
-
-    connect(ui->_btn_select_n_load, SIGNAL(clicked()), this, SLOT(OnBtnSelectNLoad()));
+    connect(ui->_btn_select_n_load, 
+            SIGNAL(clicked()),
+            this, 
+            SLOT(OnBtnSelectNLoad()), 
+            Qt::ConnectionType::UniqueConnection);
 }
 
 CreateSignalFromFileWidget_C::~CreateSignalFromFileWidget_C() 
@@ -20,11 +23,6 @@ CreateSignalFromFileWidget_C::OnBtnSelectNLoad()
 
     auto filepath = QFileDialog::getOpenFileName(this,
         tr("Open Signal"), "C:/", tr("Signal Files (*.dat *.hea)"));
-
-    //if ( !QDir(filepath).exists() /*|| !QDir(filepath).isReadable()*/ ) {
-    //    //QMessageBoxPrivate("Directory does not exist");
-    //    return;
-    //}
 
     SignalFileType_TP file_type;
     if ( ui->_radio_g11->isChecked() ) {
@@ -40,14 +38,17 @@ CreateSignalFromFileWidget_C::OnBtnSelectNLoad()
         signal_datatype = SignalDataType_TP::DOUBLE_TYPE;
         auto signal =  CreateSignal<double>(filepath, file_type);
         emit NewSignalCreated(signal);
+        return;
     } else if ( ui->_radio_float->isChecked() ) {
         signal_datatype = SignalDataType_TP::FLOAT_TYPE;
         auto signal = CreateSignal<float>(filepath, file_type);
         emit NewSignalCreated(signal);
+        return;
     } else if ( ui->_radio_int->isChecked() ) {
         signal_datatype = SignalDataType_TP::INT_TYPE;
         auto signal = CreateSignal<int>(filepath, file_type);
         emit NewSignalCreated(signal);
+        return;
     }
 
     // default
@@ -82,7 +83,6 @@ CreateSignalFromFileWidget_C::CreateSignal(QString& filepath,
         }        
         signal.ReadG11Data(path);
     }
-
     // TODO MOVE CTOR for TimeSignal_C
-       return signal;
+    return signal;
 }

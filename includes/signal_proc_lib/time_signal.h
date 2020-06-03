@@ -119,6 +119,9 @@ public:
         return _label;
     }
 
+    void SetLabel(const std::string& label);
+    void SetID(unsigned int id);
+
     unsigned int GetChannelCount() { 
         return _data.size(); 
     }
@@ -172,6 +175,22 @@ TimeSignal_C<DataType_TP>::GetChannelLabels()
         labels.push_back(channel_data._label);
     }
     return labels;
+}
+
+template<typename DataType_TP>
+inline 
+void 
+TimeSignal_C<DataType_TP>::SetLabel(const std::string & label)
+{
+    _label = label;
+}
+
+template<typename DataType_TP>
+inline 
+void 
+TimeSignal_C<DataType_TP>::SetID(unsigned int id)
+{
+    _id = id;
 }
 
 template<typename DataType_TP>
