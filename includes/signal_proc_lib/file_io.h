@@ -11,6 +11,7 @@
 #include <map>
 #include <tuple>
 #include <array>
+
 class FileIO_C {
 
 public:
@@ -220,12 +221,13 @@ int64_t FileIO_C::CountLines()
         return 0;
     }
 
-    std::istream::iostate it_state_before_counting = _filestream.rdstate();
+    /*std::istream::iostate*/auto it_state_before_counting = _filestream.rdstate();
     // is.clear();
-    std::istream::streampos it_pos_before_counting = _filestream.tellg();
+    
+    /*std::istream::streampos*/auto it_pos_before_counting = _filestream.tellg();
     _filestream.unsetf(std::ios_base::skipws);
     
-    auto count = std::count(std::istreambuf_iterator<Type_IT>(_filestream),
+    auto number_of_lines = std::count(std::istreambuf_iterator<Type_IT>(_filestream),
                              std::istreambuf_iterator<Type_IT>(), '\n');
 
     // Reset state and pos of filestream
@@ -234,7 +236,7 @@ int64_t FileIO_C::CountLines()
     //_filestream.eofbit = false;
     _filestream.seekg(it_pos_before_counting);
     _filestream.setstate(it_state_before_counting);
-    return count;
+    return number_of_lines;
 }
 
 inline
