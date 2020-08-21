@@ -21,9 +21,7 @@ add_library( visualization
                             "ogl_base_chart.h"
                             "ogl_base_chart.cpp"
                             "ogl_sweep_chart.h" 
-                            #"ogl_sweep_chart.cpp"
                             "ogl_sweep_chart_buffer.h"
-                            #"ogl_sweep_chart_buffer.cpp"
                             "ogl_chart_geometry_c.h"
                             "ogl_chart_geometry_c.cpp"
                             "chart_shapes_c.h"
@@ -34,6 +32,8 @@ add_library( visualization
                             "ShapeData.h"
                             "plot_model.h"
                             "plot_model.cpp"
+                            "plot_notation.h"
+                            "line_notation.h"
            )
 
  # link libs

@@ -67,7 +67,7 @@ target_include_directories(signalanalyzer PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/inc
 
 if(USE_VISUALIZATION)
     # link to the visualization lib
-    target_link_libraries(${PROJECT_NAME} PUBLIC visualization)
+    target_link_libraries(signalanalyzer PUBLIC visualization)
 
     # define the variable USE_VISUALIZATION_CPP inside the cpp programm
     # syntax: CPP_NAME =&{CMAKE_NAME}
@@ -79,7 +79,7 @@ endif()
 
 
  # link to signal_proc_lib and Qt5
-target_link_libraries(${PROJECT_NAME} PUBLIC
+target_link_libraries(signalanalyzer PUBLIC
                                       signal_proc_lib
                                       Qt5::Widgets
                                       Qt5::Gui
