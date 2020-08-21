@@ -83,6 +83,6 @@ CreateSignalFromFileWidget_C::CreateSignal(QString& filepath,
         }        
         signal.ReadG11Data(path);
     }
-    // TODO MOVE CTOR for TimeSignal_C
+    // TODO MOVE-CTOR for TimeSignal_C
     return signal;
 }
