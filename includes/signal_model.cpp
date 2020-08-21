@@ -29,7 +29,8 @@ SignalModel_C::headerData(int section, Qt::Orientation orientation, int role) co
     return QVariant();
 }
 
-Qt::ItemFlags SignalModel_C::flags(const QModelIndex &index) const
+Qt::ItemFlags 
+SignalModel_C::flags(const QModelIndex &index) const
 {
     return Qt::ItemIsEditable | QAbstractTableModel::flags(index);
 }
@@ -48,12 +49,14 @@ SignalModel_C::AddSignal(const TimeSignal_C<SignalModelDataType_TP>& signal)
     endInsertRows();
 }
 
-int SignalModel_C::rowCount(const QModelIndex & parent) const
+int 
+SignalModel_C::rowCount(const QModelIndex & parent) const
 {
     return _signals.size();
 }
 
-int SignalModel_C::columnCount(const QModelIndex & parent) const {
+int 
+SignalModel_C::columnCount(const QModelIndex & parent) const {
     return SIGNAL_COLS;
 }
 
@@ -90,19 +93,22 @@ SignalModel_C::data(const QModelIndex & index, int role) const
 }
 
 
-const std::vector<TimeSignal_C<SignalModelDataType_TP>*>&
+const 
+std::vector<TimeSignal_C<SignalModelDataType_TP>*>&
 SignalModel_C::Data()
 {
     return _signals;
 }
 
-const std::vector<TimeSignal_C<SignalModelDataType_TP>*>&
+const 
+std::vector<TimeSignal_C<SignalModelDataType_TP>*>&
 SignalModel_C::constData() const
 {
     return _signals;
 }
 
-void SignalModel_C::RemoveSignal(unsigned int id)
+void 
+SignalModel_C::RemoveSignal(unsigned int id)
 {
     if ( id > _signals.size() ) {
         return;
@@ -113,7 +119,8 @@ void SignalModel_C::RemoveSignal(unsigned int id)
     //endRemoveRows();
 }
 
-void SignalModel_C::RemoveSignal(const std::string& label) 
+void 
+SignalModel_C::RemoveSignal(const std::string& label) 
 {
     for ( auto signal_it = _signals.begin(); signal_it != _signals.end(); ++signal_it ) {
         if ( label == (*signal_it)->GetLabel() ) {
