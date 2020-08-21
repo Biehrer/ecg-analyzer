@@ -4,6 +4,8 @@
 #include "circular_buffer.h"
 #include "chart_types.h"
 
+#include "line_notation.h"
+
 // STL includes
 #include <iostream>
 #include <string>
@@ -114,8 +116,15 @@ private:
     //! number of positions (3d points) inside the chart
     int _point_count = 0;
 
+    unsigned int _number_of_line_positions = 0;
+
+    unsigned int _num_bytes_vert_lines = 0;
     //! Vertex buffer object which contains the data series added by AddData..(..)
     QOpenGLBuffer _chart_vbo;
+
+    QOpenGLBuffer _vertical_lines_vbo;
+
+    std::vector<int> _vertical_lines_vertices;
 
     //! Time range used for the OGLChart_C
     double _time_range_ms = 0;
@@ -145,7 +154,8 @@ OGLSweepChartBuffer_C<DataType_TP>::OGLSweepChartBuffer_C(int buffer_size,
     _buffer_size(buffer_size),
     _time_range_ms(time_range_ms),
     _no_line_vertices(buffer_size),
-    _chart_vbo(QOpenGLBuffer::VertexBuffer)
+    _chart_vbo(QOpenGLBuffer::VertexBuffer), 
+    _vertical_lines_vbo(QOpenGLBuffer::VertexBuffer)
 {
     _no_line_vertices.fill(NAN, buffer_size);
 }
@@ -154,6 +164,7 @@ OGLSweepChartBuffer_C<DataType_TP>::OGLSweepChartBuffer_C(int buffer_size,
 template<typename DataType_TP>
 OGLSweepChartBuffer_C<DataType_TP>::~OGLSweepChartBuffer_C() {
     _chart_vbo.destroy();
+    _vertical_lines_vbo.destroy();
 }
 
 template<typename DataType_TP>
@@ -185,6 +196,17 @@ OGLSweepChartBuffer_C<DataType_TP>::Draw()
     f->glDrawArrays(_primitive_type, 0, _point_count);
     f->glDisableVertexAttribArray(0);
     _chart_vbo.release();
+
+    _vertical_lines_vbo.bind();
+    //Draw inside the current context
+    f->glEnableVertexAttribArray(0);
+    f->glEnableVertexAttribArray(1);
+    //each point (GL_POINT) consists of 3 components (x, y, z)
+    f->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+    //to get the abs number of points-> divide through count of each Point
+    f->glDrawArrays(GL_LINES, 0, _number_of_line_positions);
+    f->glDisableVertexAttribArray(0);
+    _vertical_lines_vbo.release();
 }
 
 
@@ -279,8 +301,43 @@ OGLSweepChartBuffer_C<DataType_TP>::AllocateSeriesVbo()
     _chart_vbo.setUsagePattern(QOpenGLBuffer::DynamicDraw);
     f->glDisableVertexAttribArray(0);
     _chart_vbo.release();
+
+    int max_num_lines = 1000;
+    int buffer_size = 3 * 2 * max_num_lines;
+    _num_bytes_vert_lines = buffer_size * sizeof(float);
+    _vertical_lines_vbo.create();
+    _vertical_lines_vbo.bind();
+    f->glEnableVertexAttribArray(0);
+    f->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+    _vertical_lines_vbo.allocate(nullptr, _num_bytes_vert_lines);
+    _vertical_lines_vbo.setUsagePattern(QOpenGLBuffer::DynamicDraw);
+    f->glDisableVertexAttribArray(0);
+    _vertical_lines_vbo.release();
+
+    // setup the buffer: The most vertices are fixed and only the x value of the vertices needs to be adapted when new data was added.
+    // The only value that changes when adding new data, is the x value
+    // The y values are fixed because its a vertical line, which is always drawn through the whole chart.
+    // The z values are fixed anyway
+    _vertical_lines_vertices.reserve(buffer_size);
+    _vertical_lines_vertices.resize(buffer_size);
+
+    for( int idx = 0; idx < _vertical_lines_vertices.size(); idx += 6 ){
+        // point from:
+        //// x coord (_vertical_lines_vertices[0]) is variable
+        //// y coord
+        //_vertical_lines_vertices[idx + 1] = _plot_area.GetLeftBottom()._y;
+        //// z coord
+        //_vertical_lines_vertices[idx + 2] = _plot_area.GetZPosition();
+        //// point to:
+        //// x coord (_vertical_lines_vertices[0]) is variable
+        //// y coord
+        //_vertical_lines_vertices[ idx + 4] = _plot_area.GetLeftTop()._y;
+        //// z coord
+        //_vertical_lines_vertices[idx + 5] = _plot_area.GetZPosition();
+    }
 }
 
+// AddVerticalLine(ChartDataType_TP x_coord_S)
 template<typename DataType_TP>
 inline
 int
@@ -339,7 +396,7 @@ OGLSweepChartBuffer_C<DataType_TP>::WriteToVbo(const QVector<DataType_TP>& data)
     else {
         // buffer is full or not all new data can fit into it; 
         // reset buffer index and start overwriting data at the beginning
-        // Calculate how much bytes can fit into the buffer until the end is reached
+        // Calculate how much bytes can fit into the buffer until the end is reached:
         int number_of_free_bytes_until_end = _vbo_buffer_size - _vbo_current_series_idx;
         int bytes_to_write_at_beginning = number_of_new_data_bytes - number_of_free_bytes_until_end;
         int bytes_to_write_until_end = number_of_new_data_bytes - bytes_to_write_at_beginning;
@@ -395,15 +452,16 @@ OGLSweepChartBuffer_C<DataType_TP>::RemoveOutdatedDataInsideVBO()
 
         if ( bytes_to_remove > 0 ) {
             _chart_vbo.write(_remove_series_idx * 3 * sizeof(float), _no_line_vertices.constData(), bytes_to_remove);
+            //_line_engine.RemoveUntil(_remove_series_idx * 3 * sizeof(float), bytes_to_remove);
             _remove_series_idx = start_time_idx;
 
-        }
-        else {
-            // recalculate index when the current write_index wrapped and 
-           // the remove-index is still removing data at the end of the buffer
-           // ==> in this case, the remove index is bigger than the write index,
-           // and the calcuation to calculate how much bytes should be removed will return a negative value
-           // This problem is solved by writing two times to the buffer (NAN-values):
+        } else {
+            // recalculate the index when the current write_index wrapped (this means its near zero of the time axis) and 
+           // the remove-index is still removing data at the end of the buffer(this means its at the end of the time axis):
+           // ==> in this else-case, the remove index is bigger than the write index,
+           // and the calcuation of how much bytes should be removed, like its done above, will return a negative value.
+           // Of course we can't write negative amounts of bytes. 
+            // This problem is solved by writing two times to the buffer (NAN-values):
            // 1. time: data is removed until the end of the buffer is reached (write_end_index (=vbo_buffersize) )
            // 2. time: data is removed from the beginning up to the first timestamp of the latest timerange
             int remove_series_idx_byte = _remove_series_idx * 3 * sizeof(float);
