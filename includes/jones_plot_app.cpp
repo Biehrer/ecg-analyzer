@@ -130,6 +130,12 @@ void JonesPlotApplication_C::OnBtnSelectSignal()
 
 void JonesPlotApplication_C::OnBtnPlaySignal()
 {
+
+    // Testing
+    PanTopkinsQRSDetection<SignalModelDataType_TP> detector;
+    detector.Initialize();
+        
+
     if ( _signal_model.Data().empty() || _is_signal_playing.load() ) {
         QMessageBox box;
         box.setText("You have to load a signal or stop the old one before you can Play one");
@@ -155,7 +161,7 @@ void JonesPlotApplication_C::OnBtnPlaySignal()
         // Load the signal which was selected by the user
         TimeSignal_C<SignalModelDataType_TP>* signal = _signal_model.Data()[_current_signal_id];
 
-        const auto& data = signal->constData();
+         auto& data = signal->constData();
         if ( data.empty() ) {
             throw std::runtime_error("Signal is empty!!");
         }
@@ -182,10 +188,71 @@ void JonesPlotApplication_C::OnBtnPlaySignal()
         bool signal_processed = false;
         auto time_series_end = plot0_data.end();
 
-        while ( !signal_processed && !_is_stop_requested.load()) {
+        // Opportunity 1:
+        // plot_0->EnableQRSDetection(QRSDetector::PanTokpins);
+        // then inside OGLSweepChart::AddDataPoint(..); i can add the datapoint to the qrs detector
+        // To prevent to use an if statement, to check if we should use a qrs detector or not, inside AddDataPoint(..),
+        // I could write another function AddDataPointWithDetector(..) which assumes that there is the detection going on...
+        // ->To be even more convenient, it would be great if there is one AddDatapoint(..) method, 
+        // which then internally calls the method which uses qrs detector or the one which does not.
+
+        // Opportunity 2: (Idea: Make Qrs detector independent from the plot -> should be like this!)
+        // Then connect the Qrs detector(there is a base class QRS detector(FiducialManager -> see below)) to the plot via EnableQRSDetection()
+        //( The base class has methods like GetLatestFiducialMarks();, which can be called from inside the plot class?
+        // But all algorithm specific stuff (e.g the adaptive thresholds of pan topkins) will be inside the specialised QRS-detector class)
+        //
+        // =>This idea is better, because the QRS detector has nothing to do with visualizing the QRS-complexes inside the plot
+        // The plot needs a VerticalLineManager or FiducialMarkManager(), which visualizes all these fiducial marks
+        // but it should not use the QRS detector for visualizing the Fiducial marks.. 
+        // The Fiducial Manager of course needs OpenGL to render the lines inside the Charts drawing surface...
+
+        // e.g
+        // // create fiducial manager
+        // QRSDetektorPanTopkinsFiducialManager p_t_detector;
+        // plot_0->ConnectFiducialManager(detector);
+        // 
+
+        while ( !signal_processed && 
+                !_is_stop_requested.load() ) 
+        {
             if ( series_1_begin_it != time_series_end ) {
+                 // TODO Managemant of plots and assigment of the specific channels to the plots. 
+                // Also the plots should be customable by the user
+                // The should be able to add(push new plot with custom start-paramters to model), delete(delete with ID
+                // => Shift all plots after the pot which is deleted in the vector from which the plot is drawn by OpenGL by one position??)
+                // and shift(change IDS of two (neighboring) plots (Change position inside the vector from which thes are drawn to change the drawing-position! There should be a switch method?)?)
+                // For the beginning(easier to programm) make it just possible to shift the plot by one position to the top or bottom. 
+
+
+                // Idea: Start with a user interface drawing for channel-to-plot-assignment AND/OR 
+                // new-plot-creation to get a better Idea of this?
                 plot_0->AddDatapoint(*series_1_begin_it, *timestamps_1_begin_it);
                 plot_1->AddDatapoint(*series_2_begin_it, *timestamps_2_begin_it);
+
+                // Example fiducial marks (just with one plot here) :
+                // Use qrs detector as class member?: 
+                // This AddDataPoint() Method of the _qrs_detector keeps two options open: 
+                // I can use a input buffer inside the _qrs_detector, so that 
+                // AddDatapoint() only produces a valid output when the input buffer is filled (And a empty vector all the other times) AND 
+                // a QRS complex was found of course in the last N samples.
+                // => This means only each 150th call produces a valid ouput (when sample_freq=1kHz & MA-window-length = 150ms). This is shit
+                // Better would be a signal-slot mechanism so the qrs detector tells us here, when a QRS complex was detected. 
+                // This signal is emited in the AddDatapoint Function and catched inside jones_plot_app. T
+
+                // OR I could really check for a QRS complex after each sample.
+                // It would not cost many resources because When there is no Peak
+                // (can be checked throghu a simple comparison of the last sample against the newest sample and the sample before the last sample),
+                // then I could return immediately an empty vector...This would mean i need to filter each sample for itself. Does this make sense? NOP
+                // I really think I MUST Use windows of 150 ms width and a signal slot mechanism?
+
+                // // // EXAMPLE CODE: 
+                //fiducial_locations = _qrs_detector.AddDatapoint(*series_1_begin_it, *timestamps_1_begin_it);
+                //// 
+                //if ( !fiducial_locations.empty() ) {
+                //    for (auto& fiducial_mark : fiducial_locations ){
+                //        plot0->AddFiducialMark(timestamp, FiducialMark::VerticalLine);
+                //    }
+                //}
 
                 ++series_1_begin_it;
                 ++timestamps_1_begin_it;

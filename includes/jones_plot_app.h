@@ -4,6 +4,7 @@
 #include "ui_JonesPlot.h"
 #include "signal_model.h"
 #include "list_view_dialog.h"
+#include "../includes/signal_proc_lib/pan_topkins_qrs_detector.h"
 
 // Qt includes
 #include <QtWidgets/QMainWindow>
@@ -66,9 +67,9 @@ private:
     ListViewDialog_C* _list_view_signals;
 
     // The ID of the signal inside the _signal_model which will be plotted when the Start button is clicked
+    // 
     unsigned int _current_signal_id = 0;
 
    std::atomic<bool> _is_signal_playing = false;
    std::atomic<bool> _is_stop_requested = false;
-
 };
