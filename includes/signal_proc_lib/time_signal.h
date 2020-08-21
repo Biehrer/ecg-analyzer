@@ -147,7 +147,6 @@ public:
         //} 
 
         return "NA";
-        
     }
 
     // Private helper functions
@@ -224,35 +223,36 @@ TimeSignal_C<DataType_TP>::LoadFromMITFileFormat(const std::string filename)
 {
     MITFileIO_C<DataType_TP> reader;
     // Prepare wfdb path variable
+    // Extraxt the path to the directory in which the record is located
     auto last_bslash_pos = filename.find_last_of('/\\');
-    auto database_path = filename.substr(0, last_bslash_pos);
+    auto record_dir_path = filename.substr(0, last_bslash_pos);
 
     if ( last_bslash_pos == std::string::npos ) {
-        std::cout << "found no slash! filename probably wrong!" << std::endl;
+        std::cout << "found no slash! filename probably wrong!. Try to place the record in a subfolder" << std::endl;
         return;
     }
+    // Set the path of the directory in which the record is located (this is required by the wfdb lib)
+    char database_path_char[128];
+    strcpy_s(database_path_char, record_dir_path.size() + 1, record_dir_path.c_str() );
+    reader.SetWFDBPath(database_path_char);
 
-    char database[128];
-    strcpy_s(database, database_path.size() + 1, database_path.c_str() );
-    reader.SetWFDBPath(database);
-
-    // read
+    // Now extract just the name of the record without the directory path (I should do all this stuff inside the reader itself probably?)
     auto record_name = filename.substr(last_bslash_pos + 1);
     // remove the data suffix .dat or .hea (each 4 chars) if there is a dot inside the record name
     if( record_name.find('.') != std::string::npos ){
         record_name = record_name.substr(0, record_name.size() - 4);
     }
-    char record[128];
-    strcpy_s(record, record_name.size() + 1, record_name.c_str());
-    auto mit_data = reader.Read(record);
+    char record_name_char[128];
+    strcpy_s(record_name_char, record_name.size() + 1, record_name.c_str());
+    auto mit_data = reader.Read(record_name_char);
 
-    // Translate to ECGChannelInfo_TP
+    // Translate the data structure of the wfcb lib to the ECGChannelInfo_TP datastructure
     std::vector<ECGChannelInfo_TP<DataType_TP>> ecg_data;
     ecg_data.reserve(mit_data.size());
     ecg_data.resize(mit_data.size());
+    
     unsigned int channel_idx = 0;
     for ( const auto& mit_channel : mit_data ) {
-
         ecg_data[channel_idx]._sample_rate_hz = mit_channel._sample_frequency_hz;
         ecg_data[channel_idx]._data = mit_channel._data;
         ecg_data[channel_idx]._label = mit_channel._description;

@@ -28,8 +28,8 @@ struct PlotColors_TP {
     QVector3D _axes = QVector3D(1.0f, 1.0f, 1.0f);
     QVector3D _lead_line = QVector3D(1.0f, 0.01f, 0.0f);
     QVector3D _surface_grid = QVector3D(static_cast<float>(235.0f / 255.0f),
-        static_cast<float>(225.0f / 255.0f),
-        static_cast<float>(27.0f / 255.0f));
+                                        static_cast<float>(225.0f / 255.0f),
+                                        static_cast<float>(27.0f / 255.0f));
     QVector3D _text = QVector3D(1.0f, 1.0f, 1.0f);
     QVector3D _bounding_box = QVector3D(1.0f, 1.0f, 1.0f);
 };
