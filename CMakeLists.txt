@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.14.5)
 
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # build customization: 
 # set USE_VISUALIZATION_LIB TRUE if the visualization project should be built; set FALSE otherwise
 
@@ -38,6 +40,9 @@ if(USE_VISUALIZATION)
 endif()
 
 add_subdirectory(includes/signal_proc_lib)
+
+# add test directory -> do this only when a flag is set in Cmake
+add_subdirectory(includes/tests)
 
 add_executable(${PROJECT_NAME} main.cpp 
                       # ${CMAKE_CURRENT_SOURCE_DIR}/includes/time_series_player.h
