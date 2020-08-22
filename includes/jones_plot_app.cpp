@@ -131,11 +131,6 @@ void JonesPlotApplication_C::OnBtnSelectSignal()
 void JonesPlotApplication_C::OnBtnPlaySignal()
 {
 
-    // Testing
-    PanTopkinsQRSDetection<SignalModelDataType_TP> detector;
-    detector.Initialize();
-        
-
     if ( _signal_model.Data().empty() || _is_signal_playing.load() ) {
         QMessageBox box;
         box.setText("You have to load a signal or stop the old one before you can Play one");
@@ -212,6 +207,11 @@ void JonesPlotApplication_C::OnBtnPlaySignal()
         // plot_0->ConnectFiducialManager(detector);
         // 
 
+        // Testing
+        PanTopkinsQRSDetection<double> detector;
+        detector.Initialize(1000.0, 2);
+
+
         while ( !signal_processed && 
                 !_is_stop_requested.load() ) 
         {
@@ -223,10 +223,11 @@ void JonesPlotApplication_C::OnBtnPlaySignal()
                 // and shift(change IDS of two (neighboring) plots (Change position inside the vector from which thes are drawn to change the drawing-position! There should be a switch method?)?)
                 // For the beginning(easier to programm) make it just possible to shift the plot by one position to the top or bottom. 
 
-
                 // Idea: Start with a user interface drawing for channel-to-plot-assignment AND/OR 
                 // new-plot-creation to get a better Idea of this?
                 plot_0->AddDatapoint(*series_1_begin_it, *timestamps_1_begin_it);
+                detector.AppendPoint(*series_1_begin_it, *timestamps_1_begin_it);
+
                 plot_1->AddDatapoint(*series_2_begin_it, *timestamps_2_begin_it);
 
                 // Example fiducial marks (just with one plot here) :
