@@ -13,14 +13,16 @@ https://github.com/Biehrer/ecg-analyzer
 
 required dependencies:
 - Qt5 (Core/Widgets/GUI module)
-- Freetype II
-- WFDB C-Library (& Curl)
+- Freetype II for OGL glyph rendering
+- WFDB C-Library (& Curl) for loading of MIT-BIH-Database records
+- KFR library for DSP (Filtering)
+- CPPUnit for unit testing
 
 ### How 2 build:
 
 - clone the repository: "git clone (*link_2_git_repo)"
 - build the project using CMAKE 
-- CMake asks for paths to Qt5Core/Qt5Widgets/Qt5Gui and Freetype (EXPLICIT! READ DOWN BELOW)
+- CMake asks for paths to Qt5Core/Qt5Widgets/Qt5Gui, Freetype (EXPLICIT! READ DOWN BELOW), KFR and CPPUnit(when tests are enabled)
 To install Freetype correctly, download and build the library and go to the CMakeLists.txt file of this project.
 Inside the CMakeLists.txt file, adapt the environment variable of the freetype path to the directory Freetype was installed on you machine.
 - Press configure
@@ -34,4 +36,4 @@ Some steps are necessary because of the projects early stage:
 - Go to includes/CMakeList.txt and change the filepath in the following line to the location where your Freetype 2 build directy is located:
 set(ENV{FREETYPE_DIR} "C:/Development/libs/freetype-build/")
 
-See main.cpp for example usage of the visualization module
+See main.cpp for entry point of the program
