@@ -173,13 +173,15 @@ bool PlotModel_C::FastInitializePlots(int number_of_plots,
                                       int view_width, 
                                       int view_height,
                                       int time_range_ms,
-                                      float max_y, 
-                                      float min_y)
+                                      double max_y, 
+                                      double min_y)
 {
     DEBUG("initialize plots");
 
     // Chart properties
-    RingBufferSize_TP chart_buffer_size = RingBufferSize_TP::Size65536;
+    //RingBufferSize_TP chart_buffer_size = RingBufferSize_TP::Size65536;
+    RingBufferSize_TP chart_buffer_size = RingBufferSize_TP::Size1048576;
+
 
     int offset_x = static_cast<double>(view_width) * 0.05;
     int offset_y = static_cast<double>(view_height) * 0.15;
@@ -220,7 +222,7 @@ bool PlotModel_C::FastInitializePlots(int number_of_plots,
     for ( auto& plot : _plots ) {
 
         //beginInsertRows(QModelIndex(), _plots.size(), _plots.size() + 1);
-        beginInsertRows(QModelIndex(), r_id - 1, r_id - 1 + 1);
+        beginInsertRows(QModelIndex(), r_id - 1, r_id);
         // modifyable variables (from user):
         setData(createIndex(r_id, c_id), r_id );
         QString label = QString("plot #" + QString::fromStdString(std::to_string(r_id)) );

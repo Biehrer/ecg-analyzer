@@ -56,8 +56,11 @@ OGLBaseChart_C::OGLBaseChart_C(const OGLChartGeometry_C& geometry,
 
 void OGLBaseChart_C::InitializeAxesDescription(const QVector<float>& horizontal_grid_vertices,
                                                const QVector<float>& vertical_grid_vertices,
-                                               float scale, int time_range_ms, float max_y_val,
-                                               float maj_tick_x, float maj_tick_y)
+                                               float scale, 
+                                               int time_range_ms, 
+                                               double max_y_val,
+                                               float maj_tick_x, 
+                                               float maj_tick_y)
 {
     // /2 -> to get the number of half the vertices (Point FROM, not point TO, because they are always equal )
     // /3 -> to get number of text fields 
@@ -85,7 +88,7 @@ void OGLBaseChart_C::InitializeAxesDescription(const QVector<float>& horizontal_
         // Start with the first
         int pos_x = _bounding_box.GetLeftBottom()._x + offset_x_S;
         int pos_y = horizontal_grid_vertices.at(vec_offset_idx) + offset_y_S;
-        std::string text = std::to_string(static_cast<int>(current_y_description)) + " mV";
+        std::string text = std::to_string(static_cast<double>(current_y_description)) + " mV";
 
         plot_desc_y_it->SetText(text, pos_x, pos_y, scale);
 
@@ -191,13 +194,13 @@ void OGLBaseChart_C::DrawSurfaceGrid(QOpenGLShaderProgram& shader)
 
 
 std::pair<QVector<float>, QVector<float>>
-OGLBaseChart_C::CreateSurfaceGrid(int x_major_tick_dist_ms, int y_major_tick_dist_unit, 
+OGLBaseChart_C::CreateSurfaceGrid(int x_major_tick_dist_ms, float y_major_tick_dist_unit, 
                                   int time_range_ms, float max_y, float min_y)
 {
     auto surface_grid_vertices =
         ChartShapes_C<float>::CreateSurfaceGridVertices(_plot_area,
                                                         time_range_ms,
-                                                        max_y,
+                                                        max_y, 
                                                         min_y,
                                                         x_major_tick_dist_ms,
                                                         y_major_tick_dist_unit);

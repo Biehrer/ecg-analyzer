@@ -165,10 +165,10 @@ private:
     int _number_of_bytes_lead_line;
 	
     //! The maximum value of the y axis 
-    int _max_y_axis_value;
+    /*int*/DataType_TP _max_y_axis_value;
 
     //! The minimum value of the y axis 
-    int _min_y_axis_value;
+    /*int*/DataType_TP _min_y_axis_value;
 
     //! Timerange of the x axis in milliseconds 
     //! (_max_x_axis_val_ms - _min_x_axis_val_ms)

@@ -89,8 +89,8 @@ public:
         int view_width,
         int view_height,
         int time_range_ms,
-        float  max_y,
-        float  min_y);
+        double max_y,
+        double min_y);
 
     OGLSweepChart_C<ModelDataType_TP>* GetPlotPtr(unsigned int plot_idx);
 

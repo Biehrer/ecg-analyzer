@@ -77,7 +77,7 @@ class OGLBaseChart_C {
                                        const QVector<float>& vertical_grid_vertices,
                                        float scale, 
                                        int time_range_ms, 
-                                       float max_y_val,
+                                       double max_y_val,
                                        float maj_tick_x, 
                                        float maj_tick_y);
 
@@ -96,7 +96,7 @@ class OGLBaseChart_C {
 
         //! Creates a vbo used to draw the grid of the chart
         std::pair<QVector<float>, QVector<float>> CreateSurfaceGrid(int x_dist_unit, 
-                                                                    int y_dist_unit,
+                                                                    float y_dist_unit,
                                                                     int time_range_ms, 
                                                                     float max_y,
                                                                     float min_y);

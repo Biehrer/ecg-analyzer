@@ -83,8 +83,8 @@ void JonesPlotApplication_C::Setup()
                                                     ui._openGL_widget->width(), 
                                                     ui._openGL_widget->height(),
                                                     1000.0, 
-                                                    10,
-                                                   -10);
+                                                    /*10*//*0.0005*/1,
+                                                   /*-10*/-1);
 
     if ( !success ) {
         throw std::runtime_error("plot initialization failed! Abort");
@@ -151,7 +151,15 @@ void JonesPlotApplication_C::OnBtnPlaySignal()
         auto plot_0 = _plot_model.GetPlotPtr(0);
         //plot_0->SetLabel("plot 0");
         auto plot_1 = _plot_model.GetPlotPtr(1);
+         // Change appearance of plots for testing:
+
+        // Adapt so we can see the filtered signal in plot 1
+        // MIT-BIH sig: (after MA)=0.0001720.000172
+        //plot_1->SetMinValueYAxes(0);
+        //plot_1->SetMaxValueYAxes(0.0005);
         //plot_1->SetLabel("plot 1");
+        plot_1->SetTimerangeMs(10000);
+        plot_0->SetTimerangeMs(10000);
 
         // Load the signal which was selected by the user
         TimeSignal_C<SignalModelDataType_TP>* signal = _signal_model.Data()[_current_signal_id];
@@ -226,9 +234,10 @@ void JonesPlotApplication_C::OnBtnPlaySignal()
                 // Idea: Start with a user interface drawing for channel-to-plot-assignment AND/OR 
                 // new-plot-creation to get a better Idea of this?
                 plot_0->AddDatapoint(*series_1_begin_it, *timestamps_1_begin_it);
-                detector.AppendPoint(*series_1_begin_it, *timestamps_1_begin_it);
-
-                plot_1->AddDatapoint(*series_2_begin_it, *timestamps_2_begin_it);
+                
+                double filtered_sig = detector.AppendPoint(*series_1_begin_it, *timestamps_1_begin_it);
+                // The timestamps do not match because the filtered signal is delayed ofc..
+                plot_1->AddDatapoint(/**series_2_begin_it*/filtered_sig, *timestamps_2_begin_it);
 
                 // Example fiducial marks (just with one plot here) :
                 // Use qrs detector as class member?: 
