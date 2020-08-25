@@ -52,7 +52,7 @@ JonesPlotApplication_C::JonesPlotApplication_C(QWidget *parent)
     // signal model 
     ui._signals_page_main_widget->SetTreeViewModel(&_signal_model);
 
-    // connect from here to the widget which creates the signals
+    // connect from here to the widget which creates the signals => Put these in function for beautyfication?
     connect(ui._signals_page_main_widget, SIGNAL(NewSignal(TimeSignal_C<int>)), this, SLOT(OnNewSignal(TimeSignal_C<int>)) );
     connect(ui._signals_page_main_widget, SIGNAL(NewSignal(TimeSignal_C<float>)), this, SLOT(OnNewSignal(TimeSignal_C<float>)));
     connect(ui._signals_page_main_widget, SIGNAL(NewSignal(TimeSignal_C<double>)), this, SLOT(OnNewSignal(TimeSignal_C<double>)));
@@ -79,12 +79,25 @@ JonesPlotApplication_C::JonesPlotApplication_C(QWidget *parent)
 void JonesPlotApplication_C::Setup() 
 {
     int number_of_plots = 2;
+    
+    // Just for the two plots some custom settings for the y ranges
+    std::vector<std::pair<ModelDataType_TP, ModelDataType_TP>> y_ranges;
+    y_ranges.resize(number_of_plots);
+    // first plot
+    y_ranges[0].first = -10;   // min y value = -10 mv
+    y_ranges[0].second = 10;     // max y value = 10 mV
+    // second plot
+    y_ranges[1].first = 0; // min val
+    y_ranges[1].second = 0.0009; // max val
+
+
     bool success = _plot_model.FastInitializePlots(number_of_plots, 
                                                     ui._openGL_widget->width(), 
                                                     ui._openGL_widget->height(),
-                                                    1000.0, 
-                                                    /*10*//*0.0005*/1,
-                                                   /*-10*/-1);
+                                                    10000.0, 
+                                                   // /*10*//*0.0005*/0.0009,
+                                                   // *-10*/
+                                                    y_ranges );
 
     if ( !success ) {
         throw std::runtime_error("plot initialization failed! Abort");
@@ -155,11 +168,15 @@ void JonesPlotApplication_C::OnBtnPlaySignal()
 
         // Adapt so we can see the filtered signal in plot 1
         // MIT-BIH sig: (after MA)=0.0001720.000172
+        // !!
+        // DONT EXECUTE THESE FUNCTIONS!: THEY ARE NOT DONE => Instead do this in JonesPLotApp::Setup()
+        //!
         //plot_1->SetMinValueYAxes(0);
         //plot_1->SetMaxValueYAxes(0.0005);
         //plot_1->SetLabel("plot 1");
-        plot_1->SetTimerangeMs(10000);
-        plot_0->SetTimerangeMs(10000);
+        // DONT EXECUTE THESE FUNCTIONS!: THEY ARE NOT DONE 
+        //plot_1->SetTimerangeMs(10000);
+        //plot_0->SetTimerangeMs(10000);
 
         // Load the signal which was selected by the user
         TimeSignal_C<SignalModelDataType_TP>* signal = _signal_model.Data()[_current_signal_id];
@@ -178,17 +195,16 @@ void JonesPlotApplication_C::OnBtnPlaySignal()
         const auto& plot1_data = data[plot1_id]._data;
         const auto& plot1_timestamps = data[plot1_id]._timestamps;
 
-        // iterator to the data for plot 0
+        // iterator to the channel-data for plot 0
         auto series_1_begin_it = plot0_data.begin();
         auto timestamps_1_begin_it = plot0_timestamps.begin();
-        // iterator to the data for plot 1
+        // iterator to the channel-data for plot 1
         auto series_2_begin_it = plot1_data.begin();
         auto timestamps_2_begin_it = plot1_timestamps.begin();
 
         // Hide all this pointer stuff in convenience methods so we can use:
-        double frequency_hz = data[plot0_id]._sample_rate_hz;
-        double frequency_ms = (1.0 / frequency_hz) * 1000.0;
-        bool signal_processed = false;
+        double sample_rate_hz = data[plot0_id]._sample_rate_hz;
+        double sample_dist_ms = (1.0 / sample_rate_hz) * 1000.0;
         auto time_series_end = plot0_data.end();
 
         // Opportunity 1:
@@ -216,9 +232,11 @@ void JonesPlotApplication_C::OnBtnPlaySignal()
         // 
 
         // Testing
-        PanTopkinsQRSDetection<double> detector;
-        detector.Initialize(1000.0, 2);
+        PanTopkinsQRSDetection<double> detector(sample_rate_hz, 2);
+        auto filt_delay_samples =  detector.GetFilterDelay();
+        auto filt_delay_sec = filt_delay_samples / sample_rate_hz;
 
+        bool signal_processed = false;
 
         while ( !signal_processed && 
                 !_is_stop_requested.load() ) 
@@ -237,7 +255,7 @@ void JonesPlotApplication_C::OnBtnPlaySignal()
                 
                 double filtered_sig = detector.AppendPoint(*series_1_begin_it, *timestamps_1_begin_it);
                 // The timestamps do not match because the filtered signal is delayed ofc..
-                plot_1->AddDatapoint(/**series_2_begin_it*/filtered_sig, *timestamps_2_begin_it);
+                plot_1->AddDatapoint(/**series_2_begin_it*/filtered_sig, *(timestamps_1_begin_it)-filt_delay_sec);
 
                 // Example fiducial marks (just with one plot here) :
                 // Use qrs detector as class member?: 
@@ -273,10 +291,13 @@ void JonesPlotApplication_C::OnBtnPlaySignal()
                 // Todo: clear plots?
                 signal_processed = true;
                 _is_signal_playing.store(false);
+                //ui._btn_plotpage_start->setEnabled(true); => Does not work from ui thread.
+                // right now, when the signal stops, you cant start another signal,
+                // because the start button is deactivated after we start the thread
                 std::cout << "processing finished; thread returns" << std::endl;
             }
 
-            std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>(frequency_ms)));
+            std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>(sample_dist_ms)));
         }
 
         _is_signal_playing.store(false);
@@ -295,6 +316,7 @@ void JonesPlotApplication_C::OnBtnPauseSignal()
         // ui._btn_plotpage_start->setCheckable(true);
         _is_stop_requested.store(true);
     }
+
 }
 
 void JonesPlotApplication_C::OnBtnStopSignal() 
@@ -306,6 +328,9 @@ void JonesPlotApplication_C::OnBtnStopSignal()
         //lock mutex which stops thread via setting a bool which is checked periodically inside the thread
         _is_stop_requested.store(true);
     }
+    // a dirty fix
+    ui._btn_plotpage_start->setEnabled(true);
+    _is_signal_playing = false;
 }
 void JonesPlotApplication_C::OnGainChanged(int new_gain) 
 {

@@ -277,9 +277,9 @@ private:
  {
      // Don't add the value if its not inside the range, 
      // because its not visible eitherway -> better solution would be: Add it to the series but don't draw it!
-     //if ( value > _max_y_axis_value || value < _min_y_axis_value ) {
-     //    return;
-     //}
+     if ( value > _max_y_axis_value || value < _min_y_axis_value ) {
+         return;
+     }
      // Attention: the bounding box is not templated and uses a using definition for the datatype !!
 
      // - (minus) because then the positive y axis is directing at the top of the screen

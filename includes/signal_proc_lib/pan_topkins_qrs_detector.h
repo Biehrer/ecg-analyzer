@@ -1,5 +1,8 @@
 #pragma once
 
+// Projects includes
+#include "rt_state_filters.h"
+
 // KFR includes
 #include "kfr/base.hpp"
 #include "kfr/dsp.hpp"
@@ -12,7 +15,7 @@ class PanTopkinsQRSDetection {
 
     // Constructor / Destrcutor/...
 public:
-    PanTopkinsQRSDetection();
+    PanTopkinsQRSDetection(double sample_freq_hz, unsigned int training_hase_duration_sec);
     ~PanTopkinsQRSDetection();
 
     // Public functions
@@ -22,12 +25,11 @@ public:
  /*   void AppendPoint(const DataType_TP data);*/
 
     // alt2:
-    void AppendPoint(const DataType_TP data, double timestamp/*, Timestamp_TP timestamp*/);
+    /*void*/DataType_TP AppendPoint(const DataType_TP data, double timestamp/*, Timestamp_TP timestamp*/);
     const std::vector<DataType_TP> GetCurrenRPeaks();
     //const std::vector<DataType_TP> GetCurrenRPeakTimestamps();
 
-    void ResetState();
-
+    int GetFilterDelay();
     // Alternative:
    // const std::vector<DataType_TP> DetectRPeaks(const std::vector<DataType_TP>& ecg_signal, bool use_learning_phase);
 //private:
@@ -45,7 +47,7 @@ public:
 
 //private:
 public:
-    void Initialize(float sample_freq_hz, unsigned int training_phase_duration_sec);
+    void Reset(float sample_freq_hz, unsigned int training_phase_duration_sec);
 
     // Example usage:
     // option 1: AS STATIC CLASS -> not good because of Parameters which has to be transmitted each call...
@@ -178,20 +180,47 @@ private:
 
     //! Bandpass filter
     kfr::filter_fir<kfr::fbase, double>* _bandpass_filter;
+
+    std::vector<DataType_TP> _test_data;
+    unsigned int _ctr = 0;
+
+    kfr::univector<DataType_TP> _input_buff;
+
+    MovingAverageStateFilter<DataType_TP> _ma_filter;
+
+    DerivationStateFilter<DataType_TP> _diff_filter;
 };
 
 
 template<typename DataType_TP>
-PanTopkinsQRSDetection<DataType_TP>::PanTopkinsQRSDetection() 
+PanTopkinsQRSDetection<DataType_TP>::PanTopkinsQRSDetection(double sample_freq_hz, unsigned int training_phase_duration_sec) 
 {
+    _sample_freq_hz = sample_freq_hz;
+    _training_phase_duration_s = training_phase_duration_sec;
+    // Create Buffers for Filtering (purpose is to keep a signal history)
+    _window_length_samples = (static_cast<double>(_window_length_ms) / 1000.0) * _sample_freq_hz;
+    _buffer_current.reserve(_window_length_samples);
+    _buffer_current.resize(_window_length_samples);
+
+    _number_of_training_samples = training_phase_duration_sec * _sample_freq_hz;
+    _training_buffer.reserve(_number_of_training_samples);
+
+    // Create the bandpass filter
     kfr::univector<kfr::fbase, 63> taps63;
     kfr::expression_pointer<kfr::fbase> window = kfr::to_pointer(kfr::window_kaiser(taps63.size(), 3.0)); // 3.0=Filter gain
     // Fill taps127 with the band pass FIR filter coefficients using kaiser window and cutoff=0.2 and 0.4 Hz
     kfr::fir_bandpass(taps63, _high_cutoff_freq_hz, _low_cutoff_freq_hz, window, true);
     _bandpass_filter = new kfr::filter_fir<kfr::fbase, double>(taps63);
-
+    // Calculate filter delay
     // times 2, because the lowpass and highpass filtering each introduce a delay, which is half the filter order.
     _filter_delay_samples = (_filter_order / 2) * 2;
+
+    // Allocate buffers
+    _test_data.resize(sample_freq_hz * training_phase_duration_sec);
+    _input_buff.resize(1);
+    // Configure MA-Filter 
+    _ma_filter.SetParams(_window_length_samples);
+    _filter_delay_samples += _ma_filter.GetFilterDelay();
 }
 
 template<typename DataType_TP>
@@ -211,15 +240,39 @@ PanTopkinsQRSDetection<DataType_TP>::~PanTopkinsQRSDetection()
 //}
 
 template<typename DataType_TP>
-void
+//void
+DataType_TP
 PanTopkinsQRSDetection<DataType_TP>::AppendPoint(const DataType_TP sample, double timestamp)
 {
+    // For testing only: TODO: Function should return void again and not the filtered signal sample by sample!
+    _input_buff[0] = sample;
+    // Use bandpass as state filter: filter each sample by sample
+    _bandpass_filter->apply(_input_buff);
+    // derivation state filter
+    _diff_filter.Apply(_input_buff[0]);
+    // square derivated sig
+    _input_buff[0] = _input_buff[0] * _input_buff[0];
+    // moving average state filter 
+    _ma_filter.Apply(_input_buff[0]);
+
+    return _input_buff[0];
+
+    //TODO: Should we separte filtering and Pan Topkins algo?-> the algo theoretically looks in wndows of filtered signal after QRS complexes
+    
+    // Normal stuff:
     if ( /*_buffer.size*/_buffer_head_idx < _window_length_samples ) {
         // fill buffer, because there is still room left
         // Option1: Use the ring buffer -> better, but its ok to do this later
         // Option2: Just fill the buffer here:
         _buffer_current[_buffer_head_idx] = sample;
         ++_buffer_head_idx;
+        // DOES WORK: SAMPLE 1 by 1
+        // TEST: Filter sample by sample and store it. QRS detection/Peak detection should be done in windows, but can be ignored for now
+        _input_buff[0] = sample;
+        // Filter the sample directly => Does not work without a buffer -> maybe univec of size 1 ?
+        _bandpass_filter->apply(_input_buff);
+        //_test_data[_ctr] = sample; // Store, so we can compare it if it makes a difference if we filter one by one or do windows
+        //++_ctr;
     } else {
         // Buffer filled - now it would be possible to do the detection with the collected window AND:
         // Tell the user with a bool return value, that he can check the state
@@ -237,23 +290,23 @@ PanTopkinsQRSDetection<DataType_TP>::AppendPoint(const DataType_TP sample, doubl
         // Now the univector does not own the data but only references it
         //kfr::univector<double, 0> ptrToStdVec(&_buffer_current, _window_length_samples);
         //_bandpass_filter->apply(ptrToStdVec);
-        // Alternative:
-        _bandpass_filter->apply(_buffer_current);
         
+        // Alternative: FILTER IN WINDOWS
+        //_bandpass_filter->apply(_buffer_current);
+
         // Create derivation in place
-        DerivationFilter( _buffer_current );
+       // DerivationFilter( _buffer_current );
 
-        // Squaring
-        std::for_each(_buffer_current.begin(), _buffer_current.end(),
-            [&](auto& sample)
-        {
-            sample = sample * sample;
-        });
-        
-        // MA integration
-       _buffer_current = MovingWindowAveraging(_buffer_current);
-
-
+       // // Squaring
+       // std::for_each(_buffer_current.begin(), _buffer_current.end(),
+       //     [&](auto& sample)
+       // {
+       //     sample = sample * sample;
+       // });
+       // 
+       // // MA integration
+       //_buffer_current = MovingWindowAveraging(_buffer_current);
+     
         // Training phase 1 (if not already done) => Wrap this into a function
         if ( !_thresholds_initialized ) {
             if( _training_data_idx < _number_of_training_samples-_window_length_samples){
@@ -280,6 +333,13 @@ template<typename DataType_TP>
 inline const std::vector<DataType_TP> PanTopkinsQRSDetection<DataType_TP>::GetCurrenRPeaks()
 {
     return std::vector<DataType_TP>();
+}
+
+template<typename DataType_TP>
+inline 
+int 
+PanTopkinsQRSDetection<DataType_TP>::GetFilterDelay(){
+    return _filter_delay_samples;
 }
 
 // \param training_data needs to be fully filtered (the MA-integrated) signal
@@ -314,7 +374,7 @@ PanTopkinsQRSDetection<DataType_TP>::InitializeThresholds(const std::vector<Data
 
 template<typename DataType_TP>
 inline 
-void PanTopkinsQRSDetection<DataType_TP>::Initialize(float sample_freq_hz, unsigned int training_phase_duration_sec)
+void PanTopkinsQRSDetection<DataType_TP>::Reset(float sample_freq_hz, unsigned int training_phase_duration_sec)
 {
 
     _sample_freq_hz = sample_freq_hz;

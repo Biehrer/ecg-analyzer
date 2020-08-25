@@ -43,10 +43,12 @@ add_library(signal_proc_lib
                             file_io.h
                             mit_file_io.h
                             time_signal.h
+                            rt_state_filters.h
                             pan_topkins_qrs_detector.h )
 
  # link libs
-target_link_libraries(signal_proc_lib Qt5::Widgets
+target_link_libraries(signal_proc_lib
+                                      Qt5::Widgets
                                       Qt5::Gui
                                       Qt5::Core
                                       ${WFDB_LIBRARY_LOC}

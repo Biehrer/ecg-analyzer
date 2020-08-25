@@ -89,8 +89,7 @@ public:
         int view_width,
         int view_height,
         int time_range_ms,
-        double max_y,
-        double min_y);
+        const std::vector<std::pair<ModelDataType_TP, ModelDataType_TP>>& y_ranges);
 
     OGLSweepChart_C<ModelDataType_TP>* GetPlotPtr(unsigned int plot_idx);
 

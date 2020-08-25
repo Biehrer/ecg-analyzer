@@ -57,7 +57,13 @@ bool PlotModel_C::setData(const QModelIndex &index, const QVariant &value, int r
             return false;
         }
 
-        int row = index.row() - 1;
+        int row = index.row()-1;
+
+        if ( row < 0 ) {
+            row = 0;
+            std::cout << "some fix was needed" << std::endl;
+            //throw std::runtime_error("Something wrong with the index");
+        }
 
         switch ( index.column() ) {
             case OGLPlotProperty::PLOT_ID:
@@ -173,8 +179,7 @@ bool PlotModel_C::FastInitializePlots(int number_of_plots,
                                       int view_width, 
                                       int view_height,
                                       int time_range_ms,
-                                      double max_y, 
-                                      double min_y)
+                                      const std::vector<std::pair<ModelDataType_TP, ModelDataType_TP>>& y_ranges)
 {
     DEBUG("initialize plots");
 
@@ -182,6 +187,9 @@ bool PlotModel_C::FastInitializePlots(int number_of_plots,
     //RingBufferSize_TP chart_buffer_size = RingBufferSize_TP::Size65536;
     RingBufferSize_TP chart_buffer_size = RingBufferSize_TP::Size1048576;
 
+    if ( y_ranges.size() != number_of_plots ) {
+        throw std::invalid_argument("Y-Ranges vector is not correct");
+    }
 
     int offset_x = static_cast<double>(view_width) * 0.05;
     int offset_y = static_cast<double>(view_height) * 0.15;
@@ -201,8 +209,8 @@ bool PlotModel_C::FastInitializePlots(int number_of_plots,
         OGLChartGeometry_C geometry(chart_pos_x, chart_pos_y, chart_width, chart_height);
        _plots.push_back(new OGLSweepChart_C<ModelDataType_TP >(time_range_ms,
                                                     chart_buffer_size,
-                                                    max_y,
-                                                    min_y,
+                                                    /*max_y*/y_ranges[chart_idx].second,
+                                                    /*min_y*/y_ranges[chart_idx].first,
                                                     geometry,
                                                     *this));
     }
@@ -228,10 +236,11 @@ bool PlotModel_C::FastInitializePlots(int number_of_plots,
         QString label = QString("plot #" + QString::fromStdString(std::to_string(r_id)) );
         setData(createIndex(r_id, c_id + 1), QVariant(label));
         setData(createIndex(r_id, c_id + 2), QVariant(time_range_ms ));
-        setData(createIndex(r_id, c_id + 3), QVariant(max_y));
-        setData(createIndex(r_id, c_id + 4), QVariant(min_y));
+        setData(createIndex(r_id, c_id + 3), QVariant(/*max_y*/static_cast<double>(y_ranges[r_id-1].second)));
+        setData(createIndex(r_id, c_id + 4), QVariant(/*min_y*/static_cast<double>(y_ranges[r_id-1].first)));
+        // Divide with 4 to create 4 horizontal and 4 vertical lines 
         setData(createIndex(r_id, c_id + 5), QVariant(time_range_ms / 4));
-        setData(createIndex(r_id, c_id + 6), QVariant((max_y - min_y) / 4));
+        setData(createIndex(r_id, c_id + 6), QVariant((static_cast<double>(y_ranges[r_id-1].second - y_ranges[r_id-1].first)) / 4));
         endInsertRows();
         ++r_id;
         //plot->SetID(plot_idx);

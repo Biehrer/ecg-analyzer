@@ -85,7 +85,7 @@ endif()
 
  # link to signal_proc_lib and Qt5
 target_link_libraries(signalanalyzer PUBLIC
-                                      signal_proc_lib
+                                      signal_proc_lib # Is this necessary? Because I add the lib also with add_subdirectory(signal_proc_lib)
                                       Qt5::Widgets
                                       Qt5::Gui
                                       Qt5::Core

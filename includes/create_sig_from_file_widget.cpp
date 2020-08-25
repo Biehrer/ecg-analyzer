@@ -22,7 +22,9 @@ CreateSignalFromFileWidget_C::OnBtnSelectNLoad()
 {
 
     auto filepath = QFileDialog::getOpenFileName(this,
-        tr("Open Signal"), "C:/", tr("Signal Files (*.dat *.hea)"));
+        tr("Open Signal"),
+        /*"C:/"*/ "C:/Development/projects/EcgAnalyzer/ecg-analyzer/resources",
+        tr("Signal Files (*.dat *.hea)"));
 
     SignalFileType_TP file_type;
     if ( ui->_radio_g11->isChecked() ) {
