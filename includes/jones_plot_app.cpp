@@ -252,8 +252,9 @@ void JonesPlotApplication_C::OnBtnPlaySignal()
                 // Idea: Start with a user interface drawing for channel-to-plot-assignment AND/OR 
                 // new-plot-creation to get a better Idea of this?
                 plot_0->AddDatapoint(*series_1_begin_it, *timestamps_1_begin_it);
-                
+                // Timestamps are in seconds!
                 double filtered_sig = detector.AppendPoint(*series_1_begin_it, *timestamps_1_begin_it);
+                //std::cout << "tstamp = " << *timestamps_1_begin_it << std::endl;
                 // The timestamps do not match because the filtered signal is delayed ofc..
                 plot_1->AddDatapoint(/**series_2_begin_it*/filtered_sig, *(timestamps_1_begin_it)-filt_delay_sec);
 
@@ -328,7 +329,8 @@ void JonesPlotApplication_C::OnBtnStopSignal()
         //lock mutex which stops thread via setting a bool which is checked periodically inside the thread
         _is_stop_requested.store(true);
     }
-    // a dirty fix
+    // a dirty fix, so it is possible to press the start button again, after the signal was processed completely
+    // (and its not frozen forever)
     ui._btn_plotpage_start->setEnabled(true);
     _is_signal_playing = false;
 }
