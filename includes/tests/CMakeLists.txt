@@ -40,15 +40,19 @@ add_executable(signal_proc_lib_test
 
  # link libs
 target_link_libraries(signal_proc_lib_test
+                                      #  PUBLIC
 				                          Qt5::Widgets
                                           Qt5::Gui
                                           Qt5::Core
-                                          ${SIG_PROC_LIB_LIBRARY_LOC}
-                                          ${CPP_UNIT_LIB} )
+                                          ${CPP_UNIT_LIB} 
+                                     #     INTERFACE                                
+                                            ${SIG_PROC_LIB_LIBRARY_LOC}
+
+                                          )
 
 # inlclude signal proc lib
 if(SIG_PROC_LIB_FOUND )
-target_include_directories(signal_proc_lib_test PUBLIC ${SIG_PROC_LIB_INCLUDE_DIR})
+target_include_directories(signal_proc_lib_test PUBLIC ${SIG_PROC_LIB_INCLUDE_DIR}) #interface-> The test project does no?
 endif()
 
 # inlcude cppunit sources
