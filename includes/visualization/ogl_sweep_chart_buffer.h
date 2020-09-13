@@ -33,7 +33,7 @@ public:
 
     OGLSweepChartBuffer_C(int buffer_size, 
                           double time_range_ms, 
-                          RingBuffer_TC<ChartPoint_TP<Position3D_TC<DataType_TP>>>& input_buffer);
+                          RingBufferOptimized_TC<ChartPoint_TP<Position3D_TC<DataType_TP>>>& input_buffer);
 
     ~OGLSweepChartBuffer_C();
 
@@ -138,7 +138,7 @@ private:
 
     DataType_TP _last_plotted_x_value_S = 0;
 
-    RingBuffer_TC<ChartPoint_TP<Position3D_TC<DataType_TP>>>& _input_buffer;
+    RingBufferOptimized_TC<ChartPoint_TP<Position3D_TC<DataType_TP>>>& _input_buffer;
 
     GLenum _primitive_type = GL_LINE_STRIP;
 };
@@ -146,8 +146,8 @@ private:
 
 template<typename DataType_TP>
 OGLSweepChartBuffer_C<DataType_TP>::OGLSweepChartBuffer_C(int buffer_size,
-    double time_range_ms,
-    RingBuffer_TC<ChartPoint_TP<Position3D_TC<DataType_TP>>>& input_buffer)
+                        double time_range_ms,
+                        RingBufferOptimized_TC<ChartPoint_TP<Position3D_TC<DataType_TP>>>& input_buffer)
     :
     _vbo_buffer_size(buffer_size * 3 * sizeof(float)),
     _input_buffer(input_buffer),

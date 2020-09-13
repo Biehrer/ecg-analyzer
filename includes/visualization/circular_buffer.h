@@ -1,5 +1,9 @@
 #pragma once
 
+//TODO:
+// This file does not belong inside the visualization library. 
+// This belongs in an utility library/Project, which is included by visualization and sig_proc_llib to use the RingBuffer 
+//
 // Project includes
 #include "chart_Types.h"
 
@@ -23,7 +27,9 @@ enum RingBufferSize_TP {
 
 // a really stupid function
 inline
-int TranslateRingBufferSize(RingBufferSize_TP size) {
+int 
+TranslateRingBufferSize(RingBufferSize_TP size) 
+{
     switch ( size ) 
     {
     case Size2: return 2; case Size4: return 4; 
@@ -38,19 +44,19 @@ int TranslateRingBufferSize(RingBufferSize_TP size) {
     case Size524288: return 524288; case Size1048576: return 1048576;
     case Size2097152: return 2097152;
     }
-
     return SizeINVALID;
 }
 
 //! Circular buffer class used as input bufer for OGLSweepChart_C
 //! because masking with modulo is prevented and the & operator is used, 
 //! you must use a buffer size which is a power of 2
+
 template<typename T>
-class RingBuffer_TC
+class RingBufferOptimized_TC
 {
     // Construction / Destruction / Copying..
 public:
-    RingBuffer_TC(RingBufferSize_TP size)
+    RingBufferOptimized_TC(RingBufferSize_TP size)
         :
         _data_series_buffer(TranslateRingBufferSize(size)),
         _number_of_elements(0)
@@ -60,9 +66,9 @@ public:
         _data_series_buffer.resize(_max_size);
     }
 
-    ~RingBuffer_TC() 
-    {
-    }
+    //~RingBufferOptimized_TC() 
+    //{
+    //}
 
     // Public access functions
 public:
@@ -112,6 +118,7 @@ public:
             _head_idx = (_head_idx + 1) & (_max_size - 1);
             --_number_of_elements;
         }
+
         return latest_data;
     }
 
@@ -160,6 +167,7 @@ public:
     const std::vector<T>& constData() const {
         return _data_series_buffer;
     }
+
     // Private attributes
 private:
     //! The input buffer
@@ -174,7 +182,7 @@ private:
     int _tail_idx = 0;
 
     //! Size of the buffer (maximum number of elements)
-    int _max_size;
+    int _max_size = 0;
 
     //! current amount of elements inside the buffer
     std::atomic<unsigned int> _number_of_elements;
@@ -184,12 +192,167 @@ private:
 };
 
 
+//! The not optimized version of the RingBufferOptimized_TC (With the modulo operation)
+//! This buffer can support all buffer sizes and is not limited to buffer sizes which are a power of two.
+//!
+//! Circular buffer class used as input bufer for OGLSweepChart_C
+//! because masking with modulo is prevented and the & operator is used, 
+//! you must use a buffer size which is a power of 2
+template<typename T>
+class RingBuffer_TC
+{
+    // Construction / Destruction / Copying..
+public:
+    RingBuffer_TC(size_t size)
+        :
+        _data_series_buffer(size),
+        _number_of_elements(0)
+    {
+        _max_size = size-1;
+        _data_series_buffer.reserve(size);
+        _data_series_buffer.resize(size);
+    }
 
+    ~RingBuffer_TC()
+    {
+    }
+
+    // Public access functions
+public:
+    //! Insert a new element inside the buffer
+    //! If the buffer is full, continue writing at the beginning
+    void InsertAtTail(const T& element)
+    {
+        std::unique_lock<std::mutex> lck(_lock);
+        _data_series_buffer[_tail_idx] = element;
+        _tail_idx = (_tail_idx + 1) % _max_size;
+        lck.unlock();
+        ++_number_of_elements;
+    }
+
+    //! Returns and removes the last added data from the buffer
+    //!
+    //! \returns removes and returns a copy of the last item
+    const T Pop()
+    {
+        T item;
+        if ( !IsBufferEmpty() ) {
+            std::unique_lock<std::mutex> lck(_lock);
+            item = _data_series_buffer[_head_idx];
+            // TODO: INSTEAD OF doing _max_size-1 every time, just do -1 inside the constructor????
+            _head_idx = (_head_idx + 1) % _max_size/* - 1)*/;
+            --_number_of_elements;
+        }
+        else {
+            std::cout << "buffer empty, nothing to pop" << std::endl;
+        }
+        return item;
+    }
+
+
+    //! Returns and removes the latest data from the buffer
+    //!
+    //! \returns a vector with all data which was added until the buffer was read the last time
+    const std::vector<T> PopLatest() {
+        std::vector<T> latest_data;
+        // This while loop could be dangerous when an thread inserts data too fast 
+        // the number of objects which should be poped from the buffer should be known at the beginning 
+        //int current_size = Size();
+        //std::unique_lock<std::mutex> lck(_lock);
+        //for(int count = 0; count <= current_size; ++count ){
+        while ( !IsBufferEmpty() ) {
+            std::unique_lock<std::mutex> lck(_lock);
+            // Indexing vectors is faster than push_back and emplace
+            latest_data.emplace_back(_data_series_buffer[_head_idx]);
+            _head_idx = (_head_idx + 1) % _max_size;
+            --_number_of_elements;
+        }
+        return latest_data;
+    }
+
+    //! Returns the last item which was added to the buffer.
+    //! Returns the standard constructed item T, if no item is inside the buffer
+    //! Does not remove the item.
+    //!
+    //!\returns copy of the last item added to the buffer
+    T GetLatestItem()
+    {
+        std::unique_lock<std::mutex> lck(_lock);
+        if ( _tail_idx == 0 ) {
+            // case: there is only one element inside the buffer
+            if ( _number_of_elements != 0 ) {
+                return _data_series_buffer[_max_size];
+            }
+            else {
+                return {};
+            }
+        }
+        else {
+            return _data_series_buffer[(_tail_idx - 1) % _max_size];
+        }
+    }
+
+    bool IsBufferFull() {
+        std::unique_lock<std::mutex> lck(_lock);
+        return _head_idx == (_tail_idx + 1) % _max_size;
+    }
+
+    //! Returns true when there are no elements inside the buffer
+    bool IsBufferEmpty() {
+        std::unique_lock<std::mutex> lck(_lock);
+        return _head_idx == _tail_idx;
+    }
+
+    //! Returns the current number of elements inside the buffer
+    int Size() {
+        return _number_of_elements;
+    }
+
+    //! Returns the maximum possible elements 
+    int MaxSize() {
+        std::unique_lock<std::mutex> lck(_lock);
+        return _max_size+1;
+    }
+
+    int GetTailIdx() {
+        std::unique_lock<std::mutex> lck(_lock);
+        return _tail_idx;
+    }
+
+    const std::vector<T>& constData() const {
+        return _data_series_buffer;
+    }
+    // Private attributes
+private:
+    //! The input buffer
+    std::vector<T> _data_series_buffer;
+
+    //! Current write position inside the buffer
+    //! Is incremented each time new data was added via AddData(...)
+    //! Is resetted ( set to zero ) when the data is written into the charts vertex buffer object _chart_vbo
+    int _head_idx = 0;
+
+    //! The idx from which the buffer was read the last time
+    int _tail_idx = 0;
+
+    //! Size of the buffer (maximum number of elements)
+    unsigned int _max_size = 0;
+
+    //! current amount of elements inside the buffer
+    std::atomic<unsigned int> _number_of_elements;
+
+    //! Protects shared access to the container
+    std::mutex _lock;
+};
+
+
+//! InputBuffer_TC class
+//!
 //! Flush buffer class used as input bufer for OGLSweepChart_C
 //! After data is read with ReadLatestData(),
 //! new data inside InsertAtHead(..) is written at the beginning of the buffer
 //!
-//! A rush buffer:
+//! A flush buffer:
 //! Once read, data is removed from the buffer!
 template<typename ElementType_TP>
 class InputBuffer_TC

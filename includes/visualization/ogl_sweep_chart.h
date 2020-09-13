@@ -175,7 +175,7 @@ private:
     double _time_range_ms;
 
     //! Input buffer used to store user data
-    RingBuffer_TC<ChartPoint_TP<Position3D_TC<DataType_TP>>> _input_buffer;
+    RingBufferOptimized_TC<ChartPoint_TP<Position3D_TC<DataType_TP>>> _input_buffer;
 
     //! Buffer for visualization - the user does not know this one
     OGLSweepChartBuffer_C<DataType_TP> _ogl_data_series;
