@@ -4,7 +4,7 @@ C++ libs for visualization and algorithmic analyzation of ecg signals.
 
 customable, hardware accelerated realtime visualization of ecg signals in sweep charts on the gpu via OpenGL in C++
 
-Supports reading of Phsyionet ECG-Database files via WFDB
+Supports reading of Phsyionet MIT-BIH-Database records files via the wfdb library and supports real-time QRS-Detection with the simple Pan-Topkins algorithm, implemented like described in the original paper
 
 ![bb](https://user-images.githubusercontent.com/44288843/82672250-67b55b00-9c40-11ea-8014-09ff70e12b38.png)
 
