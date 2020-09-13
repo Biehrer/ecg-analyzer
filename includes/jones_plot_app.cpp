@@ -242,39 +242,16 @@ void JonesPlotApplication_C::OnBtnPlaySignal()
                 !_is_stop_requested.load() ) 
         {
             if ( series_1_begin_it != time_series_end ) {
-                 // TODO Managemant of plots and assigment of the specific channels to the plots. 
-                // Also the plots should be customable by the user
-                // The should be able to add(push new plot with custom start-paramters to model), delete(delete with ID
-                // => Shift all plots after the pot which is deleted in the vector from which the plot is drawn by OpenGL by one position??)
-                // and shift(change IDS of two (neighboring) plots (Change position inside the vector from which thes are drawn to change the drawing-position! There should be a switch method?)?)
-                // For the beginning(easier to programm) make it just possible to shift the plot by one position to the top or bottom. 
 
-                // Idea: Start with a user interface drawing for channel-to-plot-assignment AND/OR 
-                // new-plot-creation to get a better Idea of this?
                 plot_0->AddDatapoint(*series_1_begin_it, *timestamps_1_begin_it);
-                // Timestamps are in seconds!
+                // Timestamp are in seconds
+                // TODO: CATCH FOUND QRS PEAKS WITH SIGNAL SLOT MECHANISM. INSIDE THE CALLBACK FUNCTION, ADD THEM TO THE FIDUCIAL MARK MANAGER
                 double filtered_sig = detector.AppendPoint(*series_1_begin_it, *timestamps_1_begin_it);
-                //std::cout << "tstamp = " << *timestamps_1_begin_it << std::endl;
+
                 // The timestamps do not match because the filtered signal is delayed ofc..
                 plot_1->AddDatapoint(/**series_2_begin_it*/filtered_sig, *(timestamps_1_begin_it)-filt_delay_sec);
 
-                // Example fiducial marks (just with one plot here) :
-                // Use qrs detector as class member?: 
-                // This AddDataPoint() Method of the _qrs_detector keeps two options open: 
-                // I can use a input buffer inside the _qrs_detector, so that 
-                // AddDatapoint() only produces a valid output when the input buffer is filled (And a empty vector all the other times) AND 
-                // a QRS complex was found of course in the last N samples.
-                // => This means only each 150th call produces a valid ouput (when sample_freq=1kHz & MA-window-length = 150ms). This is shit
-                // Better would be a signal-slot mechanism so the qrs detector tells us here, when a QRS complex was detected. 
-                // This signal is emited in the AddDatapoint Function and catched inside jones_plot_app. T
-
-                // OR I could really check for a QRS complex after each sample.
-                // It would not cost many resources because When there is no Peak
-                // (can be checked throghu a simple comparison of the last sample against the newest sample and the sample before the last sample),
-                // then I could return immediately an empty vector...This would mean i need to filter each sample for itself. Does this make sense? NOP
-                // I really think I MUST Use windows of 150 ms width and a signal slot mechanism?
-
-                // // // EXAMPLE CODE: 
+                // EXAMPLE CODE ( Do it not like this) : 
                 //fiducial_locations = _qrs_detector.AddDatapoint(*series_1_begin_it, *timestamps_1_begin_it);
                 //// 
                 //if ( !fiducial_locations.empty() ) {
@@ -282,7 +259,6 @@ void JonesPlotApplication_C::OnBtnPlaySignal()
                 //        plot0->AddFiducialMark(timestamp, FiducialMark::VerticalLine);
                 //    }
                 //}
-
                 ++series_1_begin_it;
                 ++timestamps_1_begin_it;
                 ++series_2_begin_it;
