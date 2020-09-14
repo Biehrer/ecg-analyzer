@@ -25,7 +25,7 @@ QOpenGLPlotRendererWidget::QOpenGLPlotRendererWidget(QWidget* parent)
     // Attention: DO NOT USE OPENGL COMMANDS INSIDE THE CONSTRUCTOR
 	_nearZ = 1.0;
 	_farZ = 100.0;
-
+    // TODO: Why are these on the Heap? -> initialize them in initializer list on the stack
     _projection_mat = new QMatrix4x4();
     _model_mat = new QMatrix4x4();
     _view_mat = new QMatrix4x4();
@@ -38,31 +38,9 @@ QOpenGLPlotRendererWidget::QOpenGLPlotRendererWidget(QWidget* parent)
 
     _framecounter = 0;
 
-    // inside SetTreeViewModel(..) 
     _paint_update_timer = new QTimer();
     connect(_paint_update_timer, SIGNAL(timeout()), this, SLOT(update()));
     _paint_update_timer->setInterval(30);
-}
-
-void QOpenGLPlotRendererWidget::OnDataUpdateThreadFunction()
-{
-    Timestamp_TP timestamp;
-    ChartDataType_TP pi = 3.1415026589;
-    ChartDataType_TP value_rad = 0;
-    ChartDataType_TP data_value = 0;
-    int pointcount = 0;
-    while(true)
-    {
-        timestamp.Now();
-        value_rad = pointcount * (2.0 * pi) / 360.0;
-        data_value = 5.0 * std::sin(value_rad);
-        for ( auto& plot : _model->constData() ) {
-            plot->AddDatapoint(data_value, timestamp);
-        }
-        ++pointcount;
-        //DEBUG("Thread added point (# " << pointcount << "): " << data_value);
-        std::this_thread::sleep_for(std::chrono::microseconds(100));
-	}
 }
 
 const QMatrix4x4 QOpenGLPlotRendererWidget::GetModelViewProjection() const
@@ -108,8 +86,6 @@ void QOpenGLPlotRendererWidget::resizeGL(int width, int height)
 
     _projection_mat->setToIdentity();
     _view_mat->setToIdentity();
-    //_projection_mat->ortho(QRect(0, 0, this->width(),this->height()));
-	//f->glViewport(0, 0, this->width(), this->height());
 
     _projection_mat->ortho(QRect(0, 0, width,height));
     f->glViewport(0, 0, width, height);
@@ -144,9 +120,7 @@ void QOpenGLPlotRendererWidget::paintGL()
     _light_shader.setUniformValue("u_object_color", QVector3D(1.0f, 1.0f, 1.0f));
     _light_shader.setUniformValue("u_light_color", QVector3D(1.0f, 1.0f, 1.0f));
 
-    //for ( const auto& plot : _plots ) {
-    //    plot->Draw(_light_shader, _text_shader);
-    //}
+
     for ( const auto& plot : _model->constData() ) {
         plot->Draw(_light_shader, _text_shader);
     }

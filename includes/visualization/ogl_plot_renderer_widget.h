@@ -55,9 +55,6 @@ public:
 
     // Public access functions
 public:    
-    // Unused function
-    void OnDataUpdateThreadFunction();
-
     //! Returns the model view projection transform matrix
     const QMatrix4x4 GetModelViewProjection() const;
 
@@ -133,6 +130,7 @@ private:
     //! OpenGL shader for light sources
     QOpenGLShaderProgram _light_source_shader;
 
+    //! Shader for font rendering
     QOpenGLShaderProgram _text_shader;
 
     Quad _light_source;
@@ -149,6 +147,7 @@ private:
     //! Issues the opengl render call at around 30 - 60 Hz
     QTimer* _paint_update_timer;
 
+    //! True, when opengl was initialized successfull
     bool _ogl_initialized = false;
 
     // Data model from which data is rendered
