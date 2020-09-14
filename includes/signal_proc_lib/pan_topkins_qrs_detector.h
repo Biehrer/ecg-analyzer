@@ -9,6 +9,7 @@
 #include "kfr/io.hpp"
 // STL includes
 #include <iostream>
+#include <functional>
 
 template<typename DataType_TP>
 class PanTopkinsQRSDetection {
@@ -28,12 +29,15 @@ public:
 
     int GetFilterDelay();
 
-    // Initializes the thresholds - learning phase 1
-    void InitializeThresholds(const std::vector<DataType_TP>& training_data);
+    void Reset(float sample_freq_hz, unsigned int training_phase_duration_sec);
+
+    void Connect(std::function<void(double)> callback);
 
     // Private functions
 public:
-    void Reset(float sample_freq_hz, unsigned int training_phase_duration_sec);
+
+    // Initializes the thresholds - learning phase 1
+    void InitializeThresholds(const std::vector<DataType_TP>& training_data);
 
     // Private variables
 private:
@@ -101,13 +105,18 @@ private:
     kfr::filter_fir<kfr::fbase, double>* _bandpass_filter;
 
     double _t_wave_counter = 0;
+    
     double _refractory_period_counter = 0;
+    
     double _last_peak_timestamp = 0.0;
+    
     double _time_since_last_peak_sec = 0.0;
+
     // Counts number of detected qrs complexes
     unsigned int _qrs_counter = 0;
 
     DataType_TP _peak_amplitude = 0;
+    double _peak_timestamp = 0;
 
     kfr::univector<DataType_TP> _input_buff;
 
@@ -116,6 +125,8 @@ private:
     DerivationStateFilter<DataType_TP> _diff_filter;
 
     PeakDetectorFilter<DataType_TP> _peak_filter;
+
+    std::function<void(double)> _callback;
 };
 
 
@@ -159,7 +170,7 @@ PanTopkinsQRSDetection<DataType_TP>::~PanTopkinsQRSDetection()
 
 template<typename DataType_TP>
 //void
-DataType_TP // TODO: Pass samle by refernce
+DataType_TP // TODO: Pass sample by refernce
 PanTopkinsQRSDetection<DataType_TP>::AppendPoint(const DataType_TP sample, double timestamp)
 {
     // For testing only: TODO: Function should return void again and not the filtered signal sample by sample! ( Or it should return a bool(true), if its a peak
@@ -196,18 +207,18 @@ PanTopkinsQRSDetection<DataType_TP>::AppendPoint(const DataType_TP sample, doubl
     bool is_qrs = false;
     // bool is_t_wave = false;
 
-    // Performance tips: Do check right here, if we are still in refractory period. If this is the case, 
+    // Performance tips:  check right here, if we are still in refractory period. If this is the case, 
     // we do not need to do all stuff below
     if ( is_peak ) {
 
         _time_since_last_peak_sec = timestamp - _last_peak_timestamp; 
-        _refractory_period_counter -= time_since_last_peak_sec;
-        _t_wave_counter -= time_since_last_peak_sec;
+        _refractory_period_counter -= _time_since_last_peak_sec;
+        _t_wave_counter -= _time_since_last_peak_sec;
         _last_peak_timestamp = timestamp;
 
         // Now use criterias (T-period, inhibitation time,..) to remove false positive peaks and only return valid peak locations
         
-        // Get amplitude of the peak ( THIS IS NOT THE CURRENT SAMPLE VALUE, but the value before !-> this is how real time peak detection works)
+        // Get amplitude of the peak (THIS IS NOT THE CURRENT SAMPLE VALUE, but the value before !-> this is how real time peak detection works)
         if ( _peak_amplitude > _signal_threshold ) {
             // Found a potential QRS peak
 
@@ -220,6 +231,9 @@ PanTopkinsQRSDetection<DataType_TP>::AppendPoint(const DataType_TP sample, doubl
             } // It's not a t-wave, check for qrs:
             else if ( _refractory_period_counter <= 0 ) {
                 is_qrs = true;
+                // Call callback to notify listener of detected qrs location
+                _callback(_peak_timestamp);
+
                 // candidate_qrs_peaks(locs(peak_idx)) = ecg_filtered(locs(peak_idx)); %+delay_sum); 
                  // This is the timestamp from the last value added!
                 // update signal level
@@ -282,6 +296,7 @@ PanTopkinsQRSDetection<DataType_TP>::AppendPoint(const DataType_TP sample, doubl
     // TODO The timestamp of the detected peak is  actually _timestamp_last_sample ( does not exist yet ) and not the timestamp of the current sample
     // => calculate _timestamp_last_sample with the sample frequency: _timestamp_last_sample = timestamp_current - _sample_dist_sec
     _peak_amplitude = _input_buff[0];
+    _peak_timestamp = timestamp;
     return _input_buff[0];
 }
 
@@ -303,6 +318,14 @@ void PanTopkinsQRSDetection<DataType_TP>::Reset(float sample_freq_hz, unsigned i
     _number_of_training_samples = training_phase_duration_sec * _sample_freq_hz;
     _training_buffer.reserve(_number_of_training_samples);
     _training_buffer.resize(_number_of_training_samples);
+}
+
+template<typename DataType_TP>
+inline 
+void 
+PanTopkinsQRSDetection<DataType_TP>::Connect(std::function<void(double)> callback)
+{
+    _callback = callback;
 }
 
 

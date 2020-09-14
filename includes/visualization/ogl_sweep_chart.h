@@ -96,6 +96,8 @@ public:
     //template<DrawingStyle_TP type = DrawingStyle_TP::LINE_SERIES >
     void Draw( QOpenGLShaderProgram& shader, QOpenGLShaderProgram& text_shader);
 
+    void AddNewFiducialMark(/*const*/ /*Timestamp_TP*/double/*&*/ timestamp);
+
     //! Returns the y-screen coordinates of a given plot y-value
     DataType_TP GetScreenCoordsFromYChartValue(DataType_TP y_value);
 
@@ -277,7 +279,7 @@ private:
  {
      // Don't add the value if its not inside the range, 
      // because its not visible eitherway -> better solution would be: Add it to the series but don't draw it!
-     if ( value > _max_y_axis_value || value < _min_y_axis_value ) {
+     if ( value * _gain.load() > _max_y_axis_value || value * _gain.load() < _min_y_axis_value ) {
          return;
      }
      // Attention: the bounding box is not templated and uses a using definition for the datatype !!
@@ -300,6 +302,7 @@ private:
              y_val_scaled_S,
              1.0f),
              x_ms));
+
  }
 
  //! Uses the bounding box
@@ -422,6 +425,16 @@ OGLSweepChart_C<DataType_TP>::SetLeadLineColor(const QVector3D& color)
      DrawLeadLine(shader);
      DrawSurfaceGrid(shader);
      DrawXYAxes(shader, text_shader);
+ }
+
+ template<typename DataType_TP>
+ inline 
+ void 
+ OGLSweepChart_C<DataType_TP>::AddNewFiducialMark(/*const*/ /*Timestamp_TP*/double/*&*/ timestamp)
+ {
+     std::cout << "Added new fiducial mark" << std::endl;
+     _ogl_data_series.AddFiducialMarker(timestamp);
+     
  }
 
  template<typename DataType_TP>

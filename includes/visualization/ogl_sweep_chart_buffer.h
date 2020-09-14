@@ -3,7 +3,6 @@
 // Project includes
 #include "circular_buffer.h"
 #include "chart_types.h"
-
 #include "line_notation.h"
 
 // STL includes
@@ -65,6 +64,8 @@ public:
 
     //! currently supported: GL_LINE_STRIP and GL_POINTS
     void SetPrimitiveType(DrawingStyle_TP primitive_type);
+
+    void AddFiducialMarker(const double timestamp);
 
 private:
     //! Updates the chart buffer with the newest data from the input_buffer
@@ -285,6 +286,16 @@ OGLSweepChartBuffer_C<DataType_TP>::SetPrimitiveType(DrawingStyle_TP primitive_t
     }
 }
 
+template<typename DataType_TP>
+inline
+void 
+OGLSweepChartBuffer_C<DataType_TP>::AddFiducialMarker(const double timestamp)
+{
+   // Call WriteLineToVBO() inside this function
+
+    // RemoveOutdatedLines -> do this inside OnChartUpdate()
+}
+
 
 template<typename DataType_TP>
 void
@@ -318,10 +329,10 @@ OGLSweepChartBuffer_C<DataType_TP>::AllocateSeriesVbo()
     // The only value that changes when adding new data, is the x value
     // The y values are fixed because its a vertical line, which is always drawn through the whole chart.
     // The z values are fixed anyway
-    _vertical_lines_vertices.reserve(buffer_size);
     _vertical_lines_vertices.resize(buffer_size);
 
     for( int idx = 0; idx < _vertical_lines_vertices.size(); idx += 6 ){
+        // PRoblem: I dont know anything about the plot area inside here..solution-> pass it as argument in constructor (Not good)
         // point from:
         //// x coord (_vertical_lines_vertices[0]) is variable
         //// y coord

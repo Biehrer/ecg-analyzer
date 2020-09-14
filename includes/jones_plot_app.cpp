@@ -174,7 +174,6 @@ void JonesPlotApplication_C::OnBtnPlaySignal()
         //plot_1->SetMinValueYAxes(0);
         //plot_1->SetMaxValueYAxes(0.0005);
         //plot_1->SetLabel("plot 1");
-        // DONT EXECUTE THESE FUNCTIONS!: THEY ARE NOT DONE 
         //plot_1->SetTimerangeMs(10000);
         //plot_0->SetTimerangeMs(10000);
 
@@ -233,6 +232,14 @@ void JonesPlotApplication_C::OnBtnPlaySignal()
 
         // Testing
         PanTopkinsQRSDetection<double> detector(sample_rate_hz, 2);
+        // In Qt:
+        //connect(detector, PanTopkinsQRSDetection::NewQRSComplexDetected, plot_0, OGLSweepChart_C::AddNewFiducialMark);
+        
+        // Callback :
+        std::function<void(double)> f = std::bind(&OGLSweepChart_C<ModelDataType_TP>::AddNewFiducialMark, plot_0, std::placeholders::_1);
+        detector.Connect(f);
+        
+
         auto filt_delay_samples =  detector.GetFilterDelay();
         auto filt_delay_sec = filt_delay_samples / sample_rate_hz;
 
@@ -249,7 +256,7 @@ void JonesPlotApplication_C::OnBtnPlaySignal()
                 double filtered_sig = detector.AppendPoint(*series_1_begin_it, *timestamps_1_begin_it);
 
                 // The timestamps do not match because the filtered signal is delayed ofc..
-                plot_1->AddDatapoint(/**series_2_begin_it*/filtered_sig, *(timestamps_1_begin_it)-filt_delay_sec);
+                plot_1->AddDatapoint(/**series_2_begin_it*/ filtered_sig, *(timestamps_1_begin_it)-filt_delay_sec);
 
                 // EXAMPLE CODE ( Do it not like this) : 
                 //fiducial_locations = _qrs_detector.AddDatapoint(*series_1_begin_it, *timestamps_1_begin_it);
