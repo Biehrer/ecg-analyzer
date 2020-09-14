@@ -20,6 +20,7 @@
 #include <qopenglshaderprogram.h>
 
 enum class DrawingStyle_TP {
+    LINES,
     LINE_SERIES,
     POINT_SERIES
 };
@@ -198,16 +199,16 @@ OGLSweepChartBuffer_C<DataType_TP>::Draw()
     f->glDisableVertexAttribArray(0);
     _chart_vbo.release();
 
-    _vertical_lines_vbo.bind();
-    //Draw inside the current context
-    f->glEnableVertexAttribArray(0);
-    f->glEnableVertexAttribArray(1);
-    //each point (GL_POINT) consists of 3 components (x, y, z)
-    f->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
-    //to get the abs number of points-> divide through count of each Point
-    f->glDrawArrays(GL_LINES, 0, _number_of_line_positions);
-    f->glDisableVertexAttribArray(0);
-    _vertical_lines_vbo.release();
+    //_vertical_lines_vbo.bind();
+    ////Draw inside the current context
+    //f->glEnableVertexAttribArray(0);
+    //f->glEnableVertexAttribArray(1);
+    ////each point (GL_POINT) consists of 3 components (x, y, z)
+    //f->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+    ////to get the abs number of points-> divide through count of each Point
+    //f->glDrawArrays(GL_LINES, 0, _number_of_line_positions);
+    //f->glDisableVertexAttribArray(0);
+    //_vertical_lines_vbo.release();
 }
 
 
@@ -243,6 +244,8 @@ OGLSweepChartBuffer_C<DataType_TP>::OnChartUpdate()
         for ( const auto& element : latest_data ) {
             //Check if its neccessary to end the line strip,
             //due to a wrap of the series from the right to the left screen border
+
+            // TOdo: Can this be problematic when using the sweep chart buffer for the fiducial marks?
             if ( element._value._x < _last_plotted_x_value_S ) {
                 additional_point_vertices.append(NAN);
                 additional_point_vertices.append(NAN);
@@ -276,6 +279,10 @@ OGLSweepChartBuffer_C<DataType_TP>::SetPrimitiveType(DrawingStyle_TP primitive_t
 {
     switch ( primitive_type ) {
 
+    case DrawingStyle_TP::LINES:
+          _primitive_type = GL_LINES; // GL_LINE OR GL_LINES?
+           break;
+
     case DrawingStyle_TP::LINE_SERIES:
         _primitive_type = GL_LINE_STRIP;
         break;
@@ -292,8 +299,9 @@ void
 OGLSweepChartBuffer_C<DataType_TP>::AddFiducialMarker(const double timestamp)
 {
    // Call WriteLineToVBO() inside this function
-
     // RemoveOutdatedLines -> do this inside OnChartUpdate()
+    // Push the fiducial marker on a buffer, and then draw from this buffer inside OnChartUpdate? Or just write directly into the vbo in this function?
+    
 }
 
 
@@ -313,6 +321,7 @@ OGLSweepChartBuffer_C<DataType_TP>::AllocateSeriesVbo()
     f->glDisableVertexAttribArray(0);
     _chart_vbo.release();
 
+    // Instead of implementing a second buffer here, Can't I use this class(as it exists y et) as line buffer?Should absolutely work
     int max_num_lines = 1000;
     int buffer_size = 3 * 2 * max_num_lines;
     _num_bytes_vert_lines = buffer_size * sizeof(float);
@@ -325,8 +334,8 @@ OGLSweepChartBuffer_C<DataType_TP>::AllocateSeriesVbo()
     f->glDisableVertexAttribArray(0);
     _vertical_lines_vbo.release();
 
-    // setup the buffer: The most vertices are fixed and only the x value of the vertices needs to be adapted when new data was added.
-    // The only value that changes when adding new data, is the x value
+    // setup the buffer: The most vertices are fixed and only the x value of the vertices needs to be adapted,
+    // when new data was added. The only value that changes when adding new data, is the x value.
     // The y values are fixed because its a vertical line, which is always drawn through the whole chart.
     // The z values are fixed anyway
     _vertical_lines_vertices.resize(buffer_size);

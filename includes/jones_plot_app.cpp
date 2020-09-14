@@ -12,7 +12,6 @@ void JonesPlotApplication_C::resizeEvent(QResizeEvent* event)
     ui._central_widget->resize(width, height);
 }
 
-
 JonesPlotApplication_C::JonesPlotApplication_C(QWidget *parent)
     : QMainWindow(parent)
 {
@@ -95,8 +94,6 @@ void JonesPlotApplication_C::Setup()
                                                     ui._openGL_widget->width(), 
                                                     ui._openGL_widget->height(),
                                                     10000.0, 
-                                                   // /*10*//*0.0005*/0.0009,
-                                                   // *-10*/
                                                     y_ranges );
 
     if ( !success ) {
@@ -111,7 +108,7 @@ void JonesPlotApplication_C::Setup()
     // PlotDescription_TP plot0_info;
     // plot0_info._geometry = OGLChartGeometry(pos_x, pos_y, width, height)
     // ...
-    // plot_widget.AddPlot(plot0_info);
+    // ui._plot_widget.AddPlot(plot0_info);
 }
 
 
@@ -165,7 +162,6 @@ void JonesPlotApplication_C::OnBtnPlaySignal()
         //plot_0->SetLabel("plot 0");
         auto plot_1 = _plot_model.GetPlotPtr(1);
          // Change appearance of plots for testing:
-
         // Adapt so we can see the filtered signal in plot 1
         // MIT-BIH sig: (after MA)=0.0001720.000172
         // !!
@@ -206,43 +202,23 @@ void JonesPlotApplication_C::OnBtnPlaySignal()
         double sample_dist_ms = (1.0 / sample_rate_hz) * 1000.0;
         auto time_series_end = plot0_data.end();
 
-        // Opportunity 1:
-        // plot_0->EnableQRSDetection(QRSDetector::PanTokpins);
-        // then inside OGLSweepChart::AddDataPoint(..); i can add the datapoint to the qrs detector
-        // To prevent to use an if statement, to check if we should use a qrs detector or not, inside AddDataPoint(..),
-        // I could write another function AddDataPointWithDetector(..) which assumes that there is the detection going on...
-        // ->To be even more convenient, it would be great if there is one AddDatapoint(..) method, 
-        // which then internally calls the method which uses qrs detector or the one which does not.
-
-        // Opportunity 2: (Idea: Make Qrs detector independent from the plot -> should be like this!)
-        // Then connect the Qrs detector(there is a base class QRS detector(FiducialManager -> see below)) to the plot via EnableQRSDetection()
-        //( The base class has methods like GetLatestFiducialMarks();, which can be called from inside the plot class?
-        // But all algorithm specific stuff (e.g the adaptive thresholds of pan topkins) will be inside the specialised QRS-detector class)
-        //
-        // =>This idea is better, because the QRS detector has nothing to do with visualizing the QRS-complexes inside the plot
-        // The plot needs a VerticalLineManager or FiducialMarkManager(), which visualizes all these fiducial marks
-        // but it should not use the QRS detector for visualizing the Fiducial marks.. 
-        // The Fiducial Manager of course needs OpenGL to render the lines inside the Charts drawing surface...
-
-        // e.g
-        // // create fiducial manager
         // QRSDetektorPanTopkinsFiducialManager p_t_detector;
         // plot_0->ConnectFiducialManager(detector);
-        // 
-
+        
         // Testing
         PanTopkinsQRSDetection<double> detector(sample_rate_hz, 2);
         // In Qt:
         //connect(detector, PanTopkinsQRSDetection::NewQRSComplexDetected, plot_0, OGLSweepChart_C::AddNewFiducialMark);
-        
         // Callback :
-        std::function<void(double)> f = std::bind(&OGLSweepChart_C<ModelDataType_TP>::AddNewFiducialMark, plot_0, std::placeholders::_1);
-        detector.Connect(f);
+        std::function<void(Timestamp_TP)> member_callback = std::bind(&OGLSweepChart_C<ModelDataType_TP>::AddNewFiducialMark, 
+                                                                plot_0, 
+                                                                std::placeholders::_1);
+        detector.Connect(member_callback);
         
-
-        auto filt_delay_samples =  detector.GetFilterDelay();
+        auto filt_delay_samples =  detector.GetFilterDelay(); //TODO: Also moving average delay!
         auto filt_delay_sec = filt_delay_samples / sample_rate_hz;
 
+        // True, when signal visualization is finished
         bool signal_processed = false;
 
         while ( !signal_processed && 
@@ -258,26 +234,15 @@ void JonesPlotApplication_C::OnBtnPlaySignal()
                 // The timestamps do not match because the filtered signal is delayed ofc..
                 plot_1->AddDatapoint(/**series_2_begin_it*/ filtered_sig, *(timestamps_1_begin_it)-filt_delay_sec);
 
-                // EXAMPLE CODE ( Do it not like this) : 
-                //fiducial_locations = _qrs_detector.AddDatapoint(*series_1_begin_it, *timestamps_1_begin_it);
-                //// 
-                //if ( !fiducial_locations.empty() ) {
-                //    for (auto& fiducial_mark : fiducial_locations ){
-                //        plot0->AddFiducialMark(timestamp, FiducialMark::VerticalLine);
-                //    }
-                //}
                 ++series_1_begin_it;
                 ++timestamps_1_begin_it;
                 ++series_2_begin_it;
                 ++timestamps_2_begin_it;
             }
             else {
-                // Todo: clear plots?
+                // Todo: clear plots
                 signal_processed = true;
                 _is_signal_playing.store(false);
-                //ui._btn_plotpage_start->setEnabled(true); => Does not work from ui thread.
-                // right now, when the signal stops, you cant start another signal,
-                // because the start button is deactivated after we start the thread
                 std::cout << "processing finished; thread returns" << std::endl;
             }
 
@@ -333,6 +298,12 @@ void JonesPlotApplication_C::OnNewSignal(TimeSignal_C<int> signal)
     // 
 }
 
+void JonesPlotApplication_C::OnNewSignal(TimeSignal_C<double> signal)
+{
+    std::cout << "placeholder. Not supported currently" << std::endl;
+    //_signal_model.AddSignal(signal);
+}
+
 void JonesPlotApplication_C::OnNewSignal(TimeSignal_C<float> signal)
 {
     _signal_model.AddSignal(signal);
@@ -341,11 +312,6 @@ void JonesPlotApplication_C::OnNewSignal(TimeSignal_C<float> signal)
 void JonesPlotApplication_C::OnRemoveSignal(unsigned int id) 
 {
     _signal_model.RemoveSignal(id);
-}
-void JonesPlotApplication_C::OnNewSignal(TimeSignal_C<double> signal)
-{
-    std::cout << "placeholder. Not supported currently" << std::endl;
-    //_signal_model.AddSignal(signal);
 }
 
 void 

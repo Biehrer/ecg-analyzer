@@ -96,7 +96,7 @@ public:
     //template<DrawingStyle_TP type = DrawingStyle_TP::LINE_SERIES >
     void Draw( QOpenGLShaderProgram& shader, QOpenGLShaderProgram& text_shader);
 
-    void AddNewFiducialMark(/*const*/ /*Timestamp_TP*/double/*&*/ timestamp);
+    void AddNewFiducialMark(/*const*/ Timestamp_TP/*double*//*&*/ timestamp);
 
     //! Returns the y-screen coordinates of a given plot y-value
     DataType_TP GetScreenCoordsFromYChartValue(DataType_TP y_value);
@@ -176,11 +176,17 @@ private:
     //! (_max_x_axis_val_ms - _min_x_axis_val_ms)
     double _time_range_ms;
 
-    //! Input buffer used to store user data
+    //! Input buffer used to store the time series data
     RingBufferOptimized_TC<ChartPoint_TP<Position3D_TC<DataType_TP>>> _input_buffer;
 
-    //! Buffer for visualization - the user does not know this one
+    //! Buffer used to store fiducial markers
+    RingBufferOptimized_TC<ChartPoint_TP<Position3D_TC<DataType_TP>>> _fiducial_buffer;
+
+    //! Buffer to visualize the data series
     OGLSweepChartBuffer_C<DataType_TP> _ogl_data_series;
+
+    //! Buffer to visualize fiducial markers
+    OGLSweepChartBuffer_C<DataType_TP> _ogl_fiducial_data_series;
 
     //! The y component of the last value plotted
     DataType_TP _last_plotted_y_value_S = 0;
@@ -229,7 +235,9 @@ private:
      _lead_line_vbo(QOpenGLBuffer::VertexBuffer),
      _time_range_ms(time_range_ms),
      _input_buffer(buffer_size),
-     _ogl_data_series(_input_buffer.MaxSize(), time_range_ms, _input_buffer)
+     _fiducial_buffer(RingBufferSize_TP::Size512), // Are 512 lines enough?
+     _ogl_data_series(_input_buffer.MaxSize(), time_range_ms, _input_buffer),
+     _ogl_fiducial_data_series(_fiducial_buffer.MaxSize() , time_range_ms, _fiducial_buffer)
  {
      _max_y_axis_value = max_y_value;
      _min_y_axis_value = min_y_value;
@@ -243,6 +251,10 @@ private:
 
      // Allocate a vertex buffer object to store data for visualization
      _ogl_data_series.AllocateSeriesVbo();
+
+     // Allocate vbo to store fiducial marks
+     _ogl_fiducial_data_series.AllocateSeriesVbo();
+     _ogl_fiducial_data_series.SetPrimitiveType(DrawingStyle_TP::LINES);
 
      // Allocate a vertex buffer object to store data for the lead line
      CreateLeadLineVbo();
@@ -430,11 +442,27 @@ OGLSweepChart_C<DataType_TP>::SetLeadLineColor(const QVector3D& color)
  template<typename DataType_TP>
  inline 
  void 
- OGLSweepChart_C<DataType_TP>::AddNewFiducialMark(/*const*/ /*Timestamp_TP*/double/*&*/ timestamp)
+ OGLSweepChart_C<DataType_TP>::AddNewFiducialMark(/*const*/ Timestamp_TP/*double*//*&*/ timestamp_sec)
  {
-     std::cout << "Added new fiducial mark" << std::endl;
-     _ogl_data_series.AddFiducialMarker(timestamp);
-     
+     auto x_ms = timestamp_sec.GetMilliseconds();
+     // use modulo to wrap the dataseries 
+     float x_pos_S = _plot_area.GetLeftBottom()._x +
+         ((x_ms % static_cast<int>(_time_range_ms)) / _time_range_ms) *
+         _plot_area.GetChartWidth();
+
+     //_ogl_fiducial_data_series.AddFiducialMarker(timestamp); 
+     // => Do all this stuff inside the fiducial marker manager?(the manager holds the _ogl_data_series_buffer)
+     // FROM
+     _fiducial_buffer.InsertAtTail(ChartPoint_TP<Position3D_TC<DataType_TP>>(Position3D_TC<DataType_TP>(x_pos_S,
+                                     _plot_area.GetLeftBottom()._y,
+                                     1.0f),
+                                     x_ms));
+
+     // TO
+     _fiducial_buffer.InsertAtTail(ChartPoint_TP<Position3D_TC<DataType_TP>>(Position3D_TC<DataType_TP>(x_pos_S,
+                                   _plot_area.GetLeftTop()._y,
+                                   1.0f),
+                                   x_ms));
  }
 
  template<typename DataType_TP>
@@ -513,4 +541,8 @@ OGLSweepChart_C<DataType_TP>::SetLeadLineColor(const QVector3D& color)
      shader.bind();
      shader.setUniformValue("u_object_color", _series_color);
      _ogl_data_series.Draw();
+
+     // Todo: Change _series color to: _fiducial_mark_color? ->Create fiducial manager which holds the color(and the _ogl_sweep_chart_buffer)
+     // shader.setUniformValue("u_object_color", _series_color);
+     _ogl_fiducial_data_series.Draw();
  }
