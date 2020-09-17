@@ -92,7 +92,6 @@ template<typename DataType_TP>
 class TimeSignal_C {
 
 public:
-    //TimeSignal_C() = default;
     
     TimeSignal_C(const TimeSignal_C<DataType_TP>& signal);
 

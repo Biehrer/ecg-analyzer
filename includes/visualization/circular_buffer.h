@@ -66,10 +66,6 @@ public:
         _data_series_buffer.resize(_max_size);
     }
 
-    //~RingBufferOptimized_TC() 
-    //{
-    //}
-
     // Public access functions
 public:
     //! Insert a new element inside the buffer

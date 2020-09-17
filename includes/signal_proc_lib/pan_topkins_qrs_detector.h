@@ -7,6 +7,7 @@
 #include "kfr/base.hpp"
 #include "kfr/dsp.hpp"
 #include "kfr/io.hpp"
+
 // STL includes
 #include <iostream>
 #include <functional>
@@ -158,7 +159,6 @@ PanTopkinsQRSDetection<DataType_TP>::PanTopkinsQRSDetection(double sample_freq_h
     _window_length_samples = (static_cast<double>(_window_length_ms) / 1000.0) * _sample_freq_hz;
 
     _number_of_training_samples = training_phase_duration_sec * _sample_freq_hz;
-    _training_buffer.reserve(_number_of_training_samples);
     _training_buffer.resize(_number_of_training_samples);
 
     _input_buff.resize(1);
@@ -214,9 +214,6 @@ PanTopkinsQRSDetection<DataType_TP>::AppendPoint(const DataType_TP sample, doubl
             _thresholds_initialized = true;
         }
         ++_training_data_idx;
-   /*     _peak_amplitude = _input_buff[0];
-        _peak_timestamp = timestamp;
-        return _input_buff[0];*/
     }
 
     // Thresholds are initialized; Now we can start QRS Detection 
@@ -242,25 +239,23 @@ PanTopkinsQRSDetection<DataType_TP>::AppendPoint(const DataType_TP sample, doubl
             // Found a potential QRS peak
 
             // first check if it could also be a t - wave
-            if ( _refractory_period_counter <= 0 &&
-                _t_wave_counter > 0 )
+            if ( _t_wave_counter > 0 && 
+                _refractory_period_counter <= 0 )
             {
                 //is_t_wave = true;
                 _t_wave_counter = 0;
             } // It's not a t-wave, check for qrs:
             else if ( _refractory_period_counter <= 0 ) {
                 is_qrs = true;
-                // Call callback to notify listener of detected qrs location
+                // Call callback to notify the listener the detected qrs location
                 _qrs_callback(_peak_timestamp-(_filter_delay_samples/_sample_freq_hz) );
 
-                // candidate_qrs_peaks(locs(peak_idx)) = ecg_filtered(locs(peak_idx)); %+delay_sum); 
-                 // This is the timestamp from the last value added!
                 // update signal level
                 _signal_level = 0.125 * _peak_amplitude + 0.875 * _signal_level;
                 ++_qrs_counter;
-                // Now start refactory period, because a QRS complex was detected
+                // Start refactory period, because a QRS complex was detected
                 _refractory_period_counter = _refractory_period_ms / 1000.0;
-                // start t - wave counter, because they appear right after QRS complexes
+                // Start t - wave counter, because they appear right after QRS complexes
                 _t_wave_counter = _t_wave_period_ms / 1000.0;
             }
 
@@ -328,7 +323,7 @@ PanTopkinsQRSDetection<DataType_TP>::GetFilterDelay() {
     return _filter_delay_samples;
 }
 
-// \param training_data needs to be fully filtered (the MA-integrated) signal
+// \param training_data needs to be the filtered (MA-integrated) signal
 template<typename DataType_TP>
 void
 PanTopkinsQRSDetection<DataType_TP>::InitializeThresholds(const std::vector<DataType_TP>& training_data)
@@ -344,9 +339,7 @@ PanTopkinsQRSDetection<DataType_TP>::InitializeThresholds(const std::vector<Data
         signal_sum += sample;
     }
     DataType_TP signal_mean = signal_sum / training_data.size();
-
     // 0.5 of the mean signal is considered to be the noise threhold
     _noise_threshold = signal_mean * 1 / 2;
-
 }
 

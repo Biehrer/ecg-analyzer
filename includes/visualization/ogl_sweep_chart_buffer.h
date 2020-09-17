@@ -113,6 +113,7 @@ private:
     unsigned int _number_of_line_positions = 0;
 
     unsigned int _num_bytes_vert_lines = 0;
+
     //! Vertex buffer object which contains the data series added by AddData..(..)
     QOpenGLBuffer _chart_vbo;
 
@@ -291,11 +292,11 @@ OGLSweepChartBuffer_C<DataType_TP>::FindIdxToTimestampInsideData(const Timestamp
     int current_idx = _vbo_current_series_idx / 3 / sizeof(float);
     //if( current_idx > _remove_series_idx ){
          //case 1
-    auto it = std::lower_bound(data.begin(), data.end(), timestamp, CmpTimestamps);
-    if ( it != data.end() ) {
-        std::size_t index = std::distance(data.begin(), it);
-        return index;
-    }
+    //auto it = std::lower_bound(data.begin(), data.end(), timestamp, CmpTimestamps);
+    //if ( it != data.end() ) {
+    //    std::size_t index = std::distance(data.begin(), it);
+    //    return index;
+    //}
 
     //} else {
     // Case 2
