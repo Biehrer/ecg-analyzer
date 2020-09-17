@@ -3,7 +3,7 @@
 // Project includes
 #include "circular_buffer.h"
 #include "chart_types.h"
-#include "line_notation.h"
+//#include "line_notation.h"
 
 // STL includes
 #include <iostream>
@@ -144,7 +144,7 @@ OGLSweepChartBuffer_C<DataType_TP>::OGLSweepChartBuffer_C(int buffer_size,
     _buffer_size(buffer_size),
     _time_range_ms(time_range_ms),
     _no_line_vertices(buffer_size),
-    _chart_vbo(QOpenGLBuffer::VertexBuffer), 
+    _chart_vbo(QOpenGLBuffer::VertexBuffer)
 {
     _no_line_vertices.fill(NAN, buffer_size);
 }

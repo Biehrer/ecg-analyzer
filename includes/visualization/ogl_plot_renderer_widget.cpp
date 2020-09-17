@@ -23,6 +23,7 @@ QOpenGLPlotRendererWidget::QOpenGLPlotRendererWidget(QWidget* parent)
       _prog()
 {
     // Attention: DO NOT USE OPENGL COMMANDS INSIDE THE CONSTRUCTOR
+    // => Instead use InizializeGl()
 	_nearZ = 1.0;
 	_farZ = 100.0;
     // TODO: Why are these on the Heap? -> initialize them in initializer list on the stack
@@ -70,7 +71,7 @@ void QOpenGLPlotRendererWidget::initializeGL()
 
     InitializeShaderProgramms();
 
-    CreateLightSource();
+    //CreateLightSource();
 
     _paint_update_timer->start();
     
@@ -91,8 +92,7 @@ void QOpenGLPlotRendererWidget::resizeGL(int width, int height)
     f->glViewport(0, 0, width, height);
 	this->update();
 
-    // Alternative: Trigger a signal which is activated, when the viewport is resized
-    // =>..Check whats better for performance
+    // Alternative: Trigger a signal, when the viewport is resized
     *_MVP = *(_projection_mat) * *(_view_mat) * *(_model_mat);
     // Send the new model view projection to the charts for correct text rendering 
     for ( auto& plot : _model->Data() ) {
@@ -246,7 +246,7 @@ bool QOpenGLPlotRendererWidget::InitializeShaderProgramms()
 
     // ToDo: 
     // Two in One shader for text shading (requires texture sampler 2D) and standard color shading
-
+    // "bind white texture trick"
     return success;
 }
 
@@ -285,8 +285,11 @@ bool QOpenGLPlotRendererWidget::CreateShader(QOpenGLShaderProgram& shader,
     std::cout << std::endl;
 
     shader.bind();
+    // The following loop does set the uniforms like this:
     //shader.bindAttributeLocation("position", 0);
     //shader.bindAttributeLocation("vertexColor", 1);
+    //...
+
     // Set the uniforms in the order they are positioned inside the vector
     int position_idx = 0;
     for ( const auto& uniform_str : uniforms ) {
