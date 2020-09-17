@@ -38,4 +38,4 @@ set(ENV{FREETYPE_DIR} "C:/Development/libs/freetype-build/")
 
 See main.cpp for entry point of the program
 
-Feel free to message me @jonas.biehrer@hotmail.de, if you would like to contribute to the project or sub-projects (e.g data visualization with OpenGL, implementation of algorithms)
+Feel free to message me, if you would like to contribute to the project or sub-projects (e.g data visualization with OpenGL, implementation of algorithms)
