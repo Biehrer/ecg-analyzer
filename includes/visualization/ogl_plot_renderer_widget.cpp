@@ -71,8 +71,6 @@ void QOpenGLPlotRendererWidget::initializeGL()
 
     InitializeShaderProgramms();
 
-    //CreateLightSource();
-
     _paint_update_timer->start();
     
     _ogl_initialized = true;
@@ -178,21 +176,6 @@ void QOpenGLPlotRendererWidget::InitializeGLParameters()
     f->glEnable(GL_POINT_SIZE);
     f->glEnable(GL_PROGRAM_POINT_SIZE);
 }
-
-//void QOpenGLPlotRendererWidget::CreateLightSource()
-//{
-//    float light_source_x_pos = 0.0f;
-//    float light_source_y_pos = 0.0f;
-//    float light_source_z_pos = -1.5f;
-//    float cube_size = this->width();
-//
-//    ShapeGenerator_C shape_gen;
-//    auto light_source_vertices = shape_gen.makeQuadAtPos_(light_source_x_pos, 
-//                                                          light_source_y_pos, 
-//                                                          light_source_z_pos, 
-//                                                          cube_size);
-//    _light_source.CreateVBO(light_source_vertices);
-//}
 
 bool QOpenGLPlotRendererWidget::InitializeShaderProgramms()
 {

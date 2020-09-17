@@ -5,7 +5,6 @@
 
 // visualization includes - this is not good -> put the buffer in utility project/lib ?
 #include "../visualization/circular_buffer.h"
-//#include "../../includes/visualization/circular_buffer.h"
 
 ///////////////////////////////////////////////////////
 //
@@ -80,11 +79,12 @@ private:
 
     // 'sliding window' buffer
     std::vector<DataType_TP> _input_buffer;
+
     //  this is the idx inside the input buffer, where a new value is inserted
     size_t _head_idx = 0;
+    
     // idx of the value to be removed inside the input buffer, when a new value is added
     size_t _tail_idx = 0;
-    
 };
 
 template<typename DataType_TP>

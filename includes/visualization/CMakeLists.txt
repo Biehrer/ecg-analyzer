@@ -12,7 +12,6 @@ find_package(Qt5Gui)
 # temporary hack to include freetype
 set(ENV{FREETYPE_DIR} "C:/Development/libs/freetype-build/")
 find_package(Freetype REQUIRED)
-#find_package(Freetype)
 message(STATUS "FREETYPE_INCLUDE_DIR_ft2build=${FREETYPE_INCLUDE_DIR_ft2build}")
 
 add_library( visualization 
@@ -28,8 +27,6 @@ add_library( visualization
                             "circular_buffer.h"
                             "text_renderer_2d.h"
                             "chart_types.h"
-                            #"ShapeGenerator.h" 
-                            #"ShapeData.h"
                             "plot_model.h"
                             "plot_model.cpp"
                             "plot_notation.h"

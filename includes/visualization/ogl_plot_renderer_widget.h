@@ -3,8 +3,6 @@
 // Project includes
 #include "ogl_sweep_chart.h"
 #include "text_renderer_2d.h"
-//#include "ShapeGenerator.h"
-//#include "ShapeData.h"
 #include "plot_model.h"
 
 // STL includes
@@ -84,9 +82,6 @@ private:
     //! Initializes OpenGL functions
     void InitializeGLParameters();
 
-    //! Creates a light cube
-    void CreateLightSource();
-
     //! Initializes all shader programs required for the OGLCharts
     bool InitializeShaderProgramms();
 
@@ -132,8 +127,6 @@ private:
     //! Shader for font rendering
     QOpenGLShaderProgram _text_shader;
 
-    //Quad _light_source;
-
     //! number of frames since the start of the programm
 	int _framecounter;
 
@@ -149,7 +142,6 @@ private:
     //! True, when opengl was initialized successfull
     bool _ogl_initialized = false;
 
-    // Data model from which data is rendered
-    PlotModel_C* _model;
-    
+    //! (render)data model
+    PlotModel_C* _model;  
 };

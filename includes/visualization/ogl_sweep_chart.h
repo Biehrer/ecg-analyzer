@@ -541,7 +541,7 @@ void
      shader.setUniformValue("u_object_color", _series_color);
      _ogl_data_series.Draw();
 
-     // Todo: Change _series color to: _fiducial_mark_color? ->Create fiducial manager which holds the color(and the _ogl_sweep_chart_buffer)
+     // Todo: Create fiducial manager which holds the color(and the _ogl_sweep_chart_buffer)?
       shader.setUniformValue("u_object_color", _fiducial_marks_color);
      _ogl_fiducial_data_series.Draw();
  }
