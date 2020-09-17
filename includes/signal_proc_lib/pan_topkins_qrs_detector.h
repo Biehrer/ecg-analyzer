@@ -52,10 +52,10 @@ private:
     // Calculated from the noise level
     double _noise_threshold = 0.0;
 
-    // Is updated each time, a valid QRS complex was found
+    // Is updated each time, a valid QRS complex was found. Higher thresdhold
     double _signal_level = 0.0;
 
-    // Is updated each time, when noise was found
+    // Is updated each time, when noise was found. Lower threshold
     double _noise_level = 0.0;
 
     // Pan Topkins Parameters for the algorithm
@@ -201,20 +201,22 @@ PanTopkinsQRSDetection<DataType_TP>::AppendPoint(const DataType_TP sample, doubl
     // moving average state filter 
     _ma_filter.Apply(_input_buff[0]);
 
-    // Training phase 1 (if not already done) => Wrap this into a function, outside of the Apply() function so we dont need to call if() each time?
+    // Training phase 1 (if not already done) => Wrap this into a function,
+    // outside of the Apply() function so we dont need to call if() each time?
     // => but for safe use of the class, we should always check if thresholds are initialized eitherway?
     if ( !_thresholds_initialized ) {
         if ( _training_data_idx < _number_of_training_samples ) {
             // Collect more data and then initialize the threshold when we got enough..
             _training_buffer[_training_data_idx] = _input_buff[0];
-            // because thresholds are not initialized yet, just return
-            //return _input_buff[0]; 
-        }
-        else {
+            // thresholds are not initialized yet
+        } else {
             InitializeThresholds(_training_buffer);
             _thresholds_initialized = true;
         }
         ++_training_data_idx;
+   /*     _peak_amplitude = _input_buff[0];
+        _peak_timestamp = timestamp;
+        return _input_buff[0];*/
     }
 
     // Thresholds are initialized; Now we can start QRS Detection 
@@ -249,7 +251,7 @@ PanTopkinsQRSDetection<DataType_TP>::AppendPoint(const DataType_TP sample, doubl
             else if ( _refractory_period_counter <= 0 ) {
                 is_qrs = true;
                 // Call callback to notify listener of detected qrs location
-                _qrs_callback(_peak_timestamp);
+                _qrs_callback(_peak_timestamp-(_filter_delay_samples/_sample_freq_hz) );
 
                 // candidate_qrs_peaks(locs(peak_idx)) = ecg_filtered(locs(peak_idx)); %+delay_sum); 
                  // This is the timestamp from the last value added!
@@ -276,19 +278,18 @@ PanTopkinsQRSDetection<DataType_TP>::AppendPoint(const DataType_TP sample, doubl
         _signal_threshold = _signal_level + 0.25 * (_signal_level - _noise_level);
         _noise_threshold = 0.5 * _signal_threshold;
 
-        // Todo: second set of thresholds for search back
+        // Todo: second set of thresholds for qrs search back
         //adapt_thresholds(peak_idx).Threshold21 = 0.0; % The equation is found on the paper
         //adapt_thresholds(peak_idx).Threshold22 = 0.5 * adapt_thresholds(peak_idx).Threshold22;
     }
 
-    // Just for prototyping: return the filtered signal
     // The current amplitude is the next peak which can be detected
-
     // TODO The timestamp of the detected peak is  actually _timestamp_last_sample ( does not exist yet )
     // and not the timestamp of the current sample
     // => calculate _timestamp_last_sample with the sample frequency: _timestamp_last_sample = timestamp_current - _sample_dist_sec
     _peak_amplitude = _input_buff[0];
     _peak_timestamp = timestamp;
+    // Just for prototyping: return the filtered signal
     return _input_buff[0];
 }
 
@@ -316,7 +317,7 @@ inline
 void 
 PanTopkinsQRSDetection<DataType_TP>::Connect(std::function<void(double)> qrs_callback)
 {
-    _qrs_callback = callback;
+    _qrs_callback = qrs_callback;
 }
 
 

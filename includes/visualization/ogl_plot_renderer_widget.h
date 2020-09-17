@@ -2,10 +2,9 @@
 
 // Project includes
 #include "ogl_sweep_chart.h"
-#include "ShapeData.h"
 #include "text_renderer_2d.h"
-#include "ShapeGenerator.h"
-
+//#include "ShapeGenerator.h"
+//#include "ShapeData.h"
 #include "plot_model.h"
 
 // STL includes
@@ -133,7 +132,7 @@ private:
     //! Shader for font rendering
     QOpenGLShaderProgram _text_shader;
 
-    Quad _light_source;
+    //Quad _light_source;
 
     //! number of frames since the start of the programm
 	int _framecounter;

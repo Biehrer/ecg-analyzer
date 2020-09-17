@@ -165,7 +165,7 @@ void JonesPlotApplication_C::OnBtnPlaySignal()
         // Adapt so we can see the filtered signal in plot 1
         // MIT-BIH sig: (after MA)=0.0001720.000172
         // !!
-        // DONT EXECUTE THESE FUNCTIONS!: THEY ARE NOT DONE => Instead do this in JonesPLotApp::Setup()
+        // DONT EXECUTE THESE FUNCTIONS!: THEY ARE NOT ´FINISHED => Instead do this in JonesPLotApp::Setup()
         //!
         //plot_1->SetMinValueYAxes(0);
         //plot_1->SetMaxValueYAxes(0.0005);
@@ -202,20 +202,15 @@ void JonesPlotApplication_C::OnBtnPlaySignal()
         double sample_dist_ms = (1.0 / sample_rate_hz) * 1000.0;
         auto time_series_end = plot0_data.end();
 
-        // QRSDetektorPanTopkinsFiducialManager p_t_detector;
-        // plot_0->ConnectFiducialManager(detector);
-        
         // Testing
         PanTopkinsQRSDetection<double> detector(sample_rate_hz, 2);
-        // In Qt:
-        //connect(detector, PanTopkinsQRSDetection::NewQRSComplexDetected, plot_0, OGLSweepChart_C::AddNewFiducialMark);
         // Callback :
         std::function<void(Timestamp_TP)> member_callback = std::bind(&OGLSweepChart_C<ModelDataType_TP>::AddNewFiducialMark, 
                                                                 plot_0, 
                                                                 std::placeholders::_1);
         detector.Connect(member_callback);
         
-        auto filt_delay_samples =  detector.GetFilterDelay(); //TODO: Also moving average delay!
+        auto filt_delay_samples =  detector.GetFilterDelay(); //TODO: Also respect the moving average delay?
         auto filt_delay_sec = filt_delay_samples / sample_rate_hz;
 
         // True, when signal visualization is finished

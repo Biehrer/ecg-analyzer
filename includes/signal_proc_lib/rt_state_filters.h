@@ -35,7 +35,6 @@ DerivationStateFilter<DataType_TP>::ResetState()
     _running = false;
 }
 
-// Needs at least two values to produce one valid output
 template<typename DataType_TP>
 inline 
 void 
@@ -60,9 +59,13 @@ public:
 
     // Public functions
 public:
-    /*void*/bool Apply(DataType_TP& sample);
+    void Apply(DataType_TP& sample);
+    
     void ResetState();
+
+    //! Set the length of the sliding-window 
     void SetParams(int window_length_samples);
+    
     int GetFilterDelay();
     // Private vars
 private:
@@ -103,7 +106,7 @@ MovingAverageStateFilter<DataType_TP>::MovingAverageStateFilter()
 // Returns true when a valid output was produces, false if not.
 template<typename DataType_TP>
 inline
-bool 
+void 
 MovingAverageStateFilter<DataType_TP>::Apply(DataType_TP & sample)
 {
     _current_sum += sample;
@@ -117,8 +120,7 @@ MovingAverageStateFilter<DataType_TP>::Apply(DataType_TP & sample)
     sample = _current_sum / static_cast<DataType_TP>(_interval_length);
 
     if (_num_samples <_interval_length) {
-        // Until not the complete window was collected, return false
-        return false;
+        // Until not the complete window was collected
     } else {
         // remove last sample from signal history 
         _current_sum -= _input_buffer[_tail_idx];
@@ -126,7 +128,6 @@ MovingAverageStateFilter<DataType_TP>::Apply(DataType_TP & sample)
         // after init phase is completed
         // -> but then we need to check when _head_idx is zero, because then _tail_idx will be minus one if this is the case
         _tail_idx = (_tail_idx + 1) % _interval_length;
-        return true;
     }
 }
 
