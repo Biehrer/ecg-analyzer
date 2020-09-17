@@ -63,6 +63,8 @@ class OGLBaseChart_C {
         //! Set the color of the surface grid
         void SetSurfaceGridColor(const QVector3D& color);
 
+        void SetFiducialMarkColor(const QVector3D& color);
+
         //! Sets the model view projection matrix used for text rendering (e.g. axes units)
         void SetModelViewProjection(QMatrix4x4 model_view_projection);
 
@@ -132,6 +134,8 @@ class OGLBaseChart_C {
         QVector3D _lead_line_color;
 
         QVector3D _series_color;
+
+        QVector3D _fiducial_marks_color;
 
         QVector3D _bounding_box_color;
 

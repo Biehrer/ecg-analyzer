@@ -439,9 +439,9 @@ OGLSweepChart_C<DataType_TP>::SetLeadLineColor(const QVector3D& color)
      DrawXYAxes(shader, text_shader);
  }
 
- template<typename DataType_TP>
- inline 
- void 
+template<typename DataType_TP>
+inline 
+void 
  OGLSweepChart_C<DataType_TP>::AddNewFiducialMark(/*const*/ Timestamp_TP/*double*//*&*/ timestamp_sec)
  {
      auto x_ms = timestamp_sec.GetMilliseconds();
@@ -450,7 +450,6 @@ OGLSweepChart_C<DataType_TP>::SetLeadLineColor(const QVector3D& color)
          ((x_ms % static_cast<int>(_time_range_ms)) / _time_range_ms) *
          _plot_area.GetChartWidth();
 
-     //_ogl_fiducial_data_series.AddFiducialMarker(timestamp); 
      // => Do all this stuff inside the fiducial marker manager?(the manager holds the _ogl_data_series_buffer)
      // FROM
      _fiducial_buffer.InsertAtTail(ChartPoint_TP<Position3D_TC<DataType_TP>>(Position3D_TC<DataType_TP>(x_pos_S,
@@ -543,6 +542,6 @@ OGLSweepChart_C<DataType_TP>::SetLeadLineColor(const QVector3D& color)
      _ogl_data_series.Draw();
 
      // Todo: Change _series color to: _fiducial_mark_color? ->Create fiducial manager which holds the color(and the _ogl_sweep_chart_buffer)
-     // shader.setUniformValue("u_object_color", _series_color);
+      shader.setUniformValue("u_object_color", _fiducial_marks_color);
      _ogl_fiducial_data_series.Draw();
  }

@@ -39,12 +39,6 @@ public:
 
     // Public access functions 
 public:
-    //! Bind the chart buffer
-    void Bind();
-
-    //! Releases the chart buffer
-    void Release();
-
     //! Draws the chart inside an active OpenGL context
     void Draw();
 
@@ -65,8 +59,6 @@ public:
 
     //! currently supported: GL_LINE_STRIP and GL_POINTS
     void SetPrimitiveType(DrawingStyle_TP primitive_type);
-
-    void AddFiducialMarker(const double timestamp);
 
 private:
     //! Updates the chart buffer with the newest data from the input_buffer
@@ -124,10 +116,6 @@ private:
     //! Vertex buffer object which contains the data series added by AddData..(..)
     QOpenGLBuffer _chart_vbo;
 
-    QOpenGLBuffer _vertical_lines_vbo;
-
-    std::vector<int> _vertical_lines_vertices;
-
     //! Time range used for the OGLChart_C
     double _time_range_ms = 0;
 
@@ -157,7 +145,6 @@ OGLSweepChartBuffer_C<DataType_TP>::OGLSweepChartBuffer_C(int buffer_size,
     _time_range_ms(time_range_ms),
     _no_line_vertices(buffer_size),
     _chart_vbo(QOpenGLBuffer::VertexBuffer), 
-    _vertical_lines_vbo(QOpenGLBuffer::VertexBuffer)
 {
     _no_line_vertices.fill(NAN, buffer_size);
 }
@@ -166,20 +153,8 @@ OGLSweepChartBuffer_C<DataType_TP>::OGLSweepChartBuffer_C(int buffer_size,
 template<typename DataType_TP>
 OGLSweepChartBuffer_C<DataType_TP>::~OGLSweepChartBuffer_C() {
     _chart_vbo.destroy();
-    _vertical_lines_vbo.destroy();
 }
 
-template<typename DataType_TP>
-void
-OGLSweepChartBuffer_C<DataType_TP>::Bind() {
-    _chart_vbo.bind();
-}
-
-template<typename DataType_TP>
-void
-OGLSweepChartBuffer_C<DataType_TP>::Release() {
-    _chart_vbo.release();
-}
 
 template<typename DataType_TP>
 void
@@ -192,23 +167,12 @@ OGLSweepChartBuffer_C<DataType_TP>::Draw()
     //Draw inside the current context
     f->glEnableVertexAttribArray(0);
     f->glEnableVertexAttribArray(1);
-    //each point (GL_POINT) consists of 3 components (x, y, z)
+    // each point (GL_POINT) consists of 3 components (x, y, z)
     f->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
-    //to get the abs number of points-> divide through count of each Point
     f->glDrawArrays(_primitive_type, 0, _point_count);
     f->glDisableVertexAttribArray(0);
     _chart_vbo.release();
 
-    //_vertical_lines_vbo.bind();
-    ////Draw inside the current context
-    //f->glEnableVertexAttribArray(0);
-    //f->glEnableVertexAttribArray(1);
-    ////each point (GL_POINT) consists of 3 components (x, y, z)
-    //f->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
-    ////to get the abs number of points-> divide through count of each Point
-    //f->glDrawArrays(GL_LINES, 0, _number_of_line_positions);
-    //f->glDisableVertexAttribArray(0);
-    //_vertical_lines_vbo.release();
 }
 
 
@@ -240,13 +204,18 @@ OGLSweepChartBuffer_C<DataType_TP>::OnChartUpdate()
     auto latest_data = _input_buffer.PopLatest();
 
     if ( !latest_data.empty() ) {
-        QVector<float> additional_point_vertices;
+        QVector<float> additional_point_vertices; // TODO: Preallocate for performance - do not use append, but use an idx to iterate and insert new values
         for ( const auto& element : latest_data ) {
             //Check if its neccessary to end the line strip,
             //due to a wrap of the series from the right to the left screen border
 
             // TOdo: Can this be problematic when using the sweep chart buffer for the fiducial marks?
-            if ( element._value._x < _last_plotted_x_value_S ) {
+            // YES it is, because then he tries to create a 'line', where one value is NAN(this is not valid ofc)
+            // But it is required when drawing the data series as LINE_STRIP
+            // Solution=> one more condition in if statement ( check if we draw an line strip)
+            if ( _primitive_type == GL_LINE_STRIP && 
+                element._value._x < _last_plotted_x_value_S )
+            {
                 additional_point_vertices.append(NAN);
                 additional_point_vertices.append(NAN);
                 additional_point_vertices.append(NAN);
@@ -280,8 +249,8 @@ OGLSweepChartBuffer_C<DataType_TP>::SetPrimitiveType(DrawingStyle_TP primitive_t
     switch ( primitive_type ) {
 
     case DrawingStyle_TP::LINES:
-          _primitive_type = GL_LINES; // GL_LINE OR GL_LINES?
-           break;
+        _primitive_type = GL_LINES; 
+        break;
 
     case DrawingStyle_TP::LINE_SERIES:
         _primitive_type = GL_LINE_STRIP;
@@ -291,17 +260,6 @@ OGLSweepChartBuffer_C<DataType_TP>::SetPrimitiveType(DrawingStyle_TP primitive_t
         _primitive_type = GL_POINTS;
         break;
     }
-}
-
-template<typename DataType_TP>
-inline
-void 
-OGLSweepChartBuffer_C<DataType_TP>::AddFiducialMarker(const double timestamp)
-{
-   // Call WriteLineToVBO() inside this function
-    // RemoveOutdatedLines -> do this inside OnChartUpdate()
-    // Push the fiducial marker on a buffer, and then draw from this buffer inside OnChartUpdate? Or just write directly into the vbo in this function?
-    
 }
 
 
@@ -321,40 +279,6 @@ OGLSweepChartBuffer_C<DataType_TP>::AllocateSeriesVbo()
     f->glDisableVertexAttribArray(0);
     _chart_vbo.release();
 
-    // Instead of implementing a second buffer here, Can't I use this class(as it exists y et) as line buffer?Should absolutely work
-    int max_num_lines = 1000;
-    int buffer_size = 3 * 2 * max_num_lines;
-    _num_bytes_vert_lines = buffer_size * sizeof(float);
-    _vertical_lines_vbo.create();
-    _vertical_lines_vbo.bind();
-    f->glEnableVertexAttribArray(0);
-    f->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
-    _vertical_lines_vbo.allocate(nullptr, _num_bytes_vert_lines);
-    _vertical_lines_vbo.setUsagePattern(QOpenGLBuffer::DynamicDraw);
-    f->glDisableVertexAttribArray(0);
-    _vertical_lines_vbo.release();
-
-    // setup the buffer: The most vertices are fixed and only the x value of the vertices needs to be adapted,
-    // when new data was added. The only value that changes when adding new data, is the x value.
-    // The y values are fixed because its a vertical line, which is always drawn through the whole chart.
-    // The z values are fixed anyway
-    _vertical_lines_vertices.resize(buffer_size);
-
-    for( int idx = 0; idx < _vertical_lines_vertices.size(); idx += 6 ){
-        // PRoblem: I dont know anything about the plot area inside here..solution-> pass it as argument in constructor (Not good)
-        // point from:
-        //// x coord (_vertical_lines_vertices[0]) is variable
-        //// y coord
-        //_vertical_lines_vertices[idx + 1] = _plot_area.GetLeftBottom()._y;
-        //// z coord
-        //_vertical_lines_vertices[idx + 2] = _plot_area.GetZPosition();
-        //// point to:
-        //// x coord (_vertical_lines_vertices[0]) is variable
-        //// y coord
-        //_vertical_lines_vertices[ idx + 4] = _plot_area.GetLeftTop()._y;
-        //// z coord
-        //_vertical_lines_vertices[idx + 5] = _plot_area.GetZPosition();
-    }
 }
 
 // AddVerticalLine(ChartDataType_TP x_coord_S)

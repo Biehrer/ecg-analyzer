@@ -143,6 +143,11 @@ void OGLBaseChart_C::SetSurfaceGridColor(const QVector3D& color)
     _surface_grid_color = color;
 }
 
+void OGLBaseChart_C::SetFiducialMarkColor(const QVector3D & color)
+{
+    _fiducial_marks_color = color;
+}
+
 
 void OGLBaseChart_C::SetModelViewProjection(QMatrix4x4 model_view_projection)
 {

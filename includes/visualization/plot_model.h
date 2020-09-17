@@ -32,6 +32,7 @@ struct PlotColors_TP {
                                         static_cast<float>(27.0f / 255.0f));
     QVector3D _text = QVector3D(1.0f, 1.0f, 1.0f);
     QVector3D _bounding_box = QVector3D(1.0f, 1.0f, 1.0f);
+    QVector3D _fiducial_mark_color = QVector3D(0.0f, 0.0f, 1.0f); // blue
 };
 
 //! All the info required to initialize a plot

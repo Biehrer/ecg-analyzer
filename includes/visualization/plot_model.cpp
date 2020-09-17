@@ -215,14 +215,15 @@ bool PlotModel_C::FastInitializePlots(int number_of_plots,
                                                     *this));
     }
 
-    QVector3D series_color(0.0f, 1.0f, 0.0f);
-    QVector3D axes_color(1.0f, 1.0f, 1.0f);
-    QVector3D lead_line_color(1.0f, 0.01f, 0.0f);
-    QVector3D surface_grid_color(static_cast<float>(235.0f / 255.0f),
+    QVector3D series_color(0.0f, 1.0f, 0.0f); // green
+    QVector3D axes_color(1.0f, 1.0f, 1.0f); //white
+    QVector3D lead_line_color(1.0f, 0.01f, 0.0f); // red
+    QVector3D surface_grid_color(static_cast<float>(235.0f / 255.0f),   //yellow-ish
         static_cast<float>(225.0f / 255.0f),
         static_cast<float>(27.0f / 255.0f));
-    QVector3D bounding_box_color(1.0f, 1.0f, 1.0f);
-    QVector3D text_color(1.0f, 1.0f, 1.0f);
+    QVector3D bounding_box_color(1.0f, 1.0f, 1.0f); // white
+    QVector3D text_color(1.0f, 1.0f, 1.0f); // white
+    QVector3D fiducial_mark_color(0.0f, 0.0f, 1.0f); // blue
 
     unsigned int c_id = 0;
     unsigned int r_id = 1;
@@ -238,7 +239,7 @@ bool PlotModel_C::FastInitializePlots(int number_of_plots,
         setData(createIndex(r_id, c_id + 2), QVariant(time_range_ms ));
         setData(createIndex(r_id, c_id + 3), QVariant(/*max_y*/static_cast<double>(y_ranges[r_id-1].second)));
         setData(createIndex(r_id, c_id + 4), QVariant(/*min_y*/static_cast<double>(y_ranges[r_id-1].first)));
-        // Divide with 4 to create 4 horizontal and 4 vertical lines 
+        // Divide through 4 to create 4 horizontal and 4 vertical lines 
         setData(createIndex(r_id, c_id + 5), QVariant(time_range_ms / 4));
         setData(createIndex(r_id, c_id + 6), QVariant((static_cast<double>(y_ranges[r_id-1].second - y_ranges[r_id-1].first)) / 4));
         endInsertRows();
@@ -257,6 +258,7 @@ bool PlotModel_C::FastInitializePlots(int number_of_plots,
         plot->SetBoundingBoxColor(bounding_box_color);
         plot->SetLeadLineColor(lead_line_color);
         plot->SetSurfaceGridColor(surface_grid_color);
+        plot->SetFiducialMarkColor(fiducial_mark_color);
 
         // Set chart type
         plot->SetChartType(DrawingStyle_TP::LINE_SERIES);
@@ -268,7 +270,6 @@ bool PlotModel_C::FastInitializePlots(int number_of_plots,
     emit dataChanged(createIndex(0, 0), //  top left table index
                      createIndex(number_of_plots, COLS), // bottom right table index
                      { Qt::DisplayRole });
-    //RecreateData();
     return true;
 }
 
@@ -304,7 +305,6 @@ PlotModel_C::Data()
 }
 
 
-// Inside PlotManager_C / PlotController_C 
 void PlotModel_C::AddPlot( const PlotDescription_TP& plot_info)
 {
     int number_of_plots = _plots.size();
