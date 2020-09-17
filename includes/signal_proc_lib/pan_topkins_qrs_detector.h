@@ -27,10 +27,13 @@ public:
     //! \param timestamp the timestamp of the current sample inside the datastream
     /*void*/DataType_TP AppendPoint(const DataType_TP data, double timestamp_sec);
 
+    //! Returns the delay due to the filtering in number of samples
     int GetFilterDelay();
 
+    //! Resets the filter state ( Removes all values in the delay_line)
     void Reset(float sample_freq_hz, unsigned int training_phase_duration_sec);
 
+    //! Stores the callback, which is called, when a qrs complex was detected
     void Connect(std::function<void(double)> callback);
 
     // Private functions
@@ -104,29 +107,43 @@ private:
     //! Bandpass filter
     kfr::filter_fir<kfr::fbase, double>* _bandpass_filter;
 
+    //! This value is initialized with _t_wave_period_ms, when a qrs complex was detected and decremented gradually, to detect
+    //! if a Peak appears right after another peak. If a peak occurs _t_wave_period_ms ms after another peak, 
+    //! but it is not in the refractory period, then it is most likely a T-Wave
     double _t_wave_counter = 0;
     
+    //! Initialized with _refractory_period_ms, when a qrs complex was detected, 
+    //! to tell if another peak, which appears right after another a QRS-complex, 
+    //! is in the refractory period(and therefore can't be a qrs complex)
     double _refractory_period_counter = 0;
     
+    //! Stores the timestamp of the last peak detected
     double _last_peak_timestamp = 0.0;
     
+    //! Time since the last peak was detected
     double _time_since_last_peak_sec = 0.0;
 
-    // Counts number of detected qrs complexes
+    //! The number of detected qrs complex, since Reset() was called, or this class was initialized
     unsigned int _qrs_counter = 0;
 
+    //! Amplitude value of the current peak
     DataType_TP _peak_amplitude = 0;
+    //! Timestamp of the current peak
     double _peak_timestamp = 0;
 
     kfr::univector<DataType_TP> _input_buff;
 
+    //! Moving average filter
     MovingAverageStateFilter<DataType_TP> _ma_filter;
 
+    //! Differentiation filter
     DerivationStateFilter<DataType_TP> _diff_filter;
 
+    //! Filter to detect peaks in the data-stream
     PeakDetectorFilter<DataType_TP> _peak_filter;
 
-    std::function<void(double)> _callback;
+    //! The function called, when a qrs complex is detected
+    std::function<void(double)> _qrs_callback;
 };
 
 
@@ -232,7 +249,7 @@ PanTopkinsQRSDetection<DataType_TP>::AppendPoint(const DataType_TP sample, doubl
             else if ( _refractory_period_counter <= 0 ) {
                 is_qrs = true;
                 // Call callback to notify listener of detected qrs location
-                _callback(_peak_timestamp);
+                _qrs_callback(_peak_timestamp);
 
                 // candidate_qrs_peaks(locs(peak_idx)) = ecg_filtered(locs(peak_idx)); %+delay_sum); 
                  // This is the timestamp from the last value added!
@@ -264,36 +281,11 @@ PanTopkinsQRSDetection<DataType_TP>::AppendPoint(const DataType_TP sample, doubl
         //adapt_thresholds(peak_idx).Threshold22 = 0.5 * adapt_thresholds(peak_idx).Threshold22;
     }
 
-    // Final return value:
-    // First possibility: boolean:
- /*   if ( is_qrs ) {
-        return true;
-    }
-    else {
-        return false;
-    }*/
-    // Cons:
-    //  -We have to return a value each time, even if nothing was found.-> waste of resources 
-    //  => better would be to return by reference or pointer? But what? The user needs something he can check
-    //  so i need to put a value inside some value eitherway. 
-    //  Therefore use no bool reference but use an int reference, in which a one is written, when a peak was detected as qrs complex
-
-    // Pros: 
-    //  - simple
-
-
-    // Second possiblity: return int ( zero or one, as described in first possibility (as ptr or reference))
-
-    // Third possibility: emit a signal in Qt style, to which any user of this class can connect to to receive information about new peaks
-    // => Seems like the best option
-
-    // Fourth possibility: Just use an callback which is called, when a peak was found ?
-    // -> inside the callback we can add the peak location to the fiducial_mark_manager
-
     // Just for prototyping: return the filtered signal
     // The current amplitude is the next peak which can be detected
 
-    // TODO The timestamp of the detected peak is  actually _timestamp_last_sample ( does not exist yet ) and not the timestamp of the current sample
+    // TODO The timestamp of the detected peak is  actually _timestamp_last_sample ( does not exist yet )
+    // and not the timestamp of the current sample
     // => calculate _timestamp_last_sample with the sample frequency: _timestamp_last_sample = timestamp_current - _sample_dist_sec
     _peak_amplitude = _input_buff[0];
     _peak_timestamp = timestamp;
@@ -306,26 +298,25 @@ void PanTopkinsQRSDetection<DataType_TP>::Reset(float sample_freq_hz, unsigned i
 {
     _t_wave_counter = 0;
     _refractory_period_counter = 0;
+    _qrs_counter = 0;
 
     _thresholds_initialized = false;
     _training_data_idx = 0;
 
     _sample_freq_hz = sample_freq_hz;
     _training_phase_duration_s = training_phase_duration_sec;
-    // Create Buffers for Filtering (purpose is to keep a signal history)
     _window_length_samples = (static_cast<double>(_window_length_ms) / 1000.0) * _sample_freq_hz;
-    
+    // Create Buffers to keep data for training phase 1 (Threshold initialization)
     _number_of_training_samples = training_phase_duration_sec * _sample_freq_hz;
-    _training_buffer.reserve(_number_of_training_samples);
     _training_buffer.resize(_number_of_training_samples);
 }
 
 template<typename DataType_TP>
 inline 
 void 
-PanTopkinsQRSDetection<DataType_TP>::Connect(std::function<void(double)> callback)
+PanTopkinsQRSDetection<DataType_TP>::Connect(std::function<void(double)> qrs_callback)
 {
-    _callback = callback;
+    _qrs_callback = callback;
 }
 
 
@@ -343,17 +334,9 @@ PanTopkinsQRSDetection<DataType_TP>::InitializeThresholds(const std::vector<Data
 {
     // Signal threshold
     // 0.25 of the max amplitude is signal thresh
-    // DataType_TP max_ampl_val = ;
     _signal_threshold = *std::max_element(training_data.begin(), training_data.end()) * 0.25;
-
-    // just for testing:
-    //std::vector<float> test({ 1,2,3,4 });
-    //std::vector<float> test; 
-    //test.push_back(1);
-    //test.push_back(2);
-    //test.push_back(4);
-
-    //float test_val = *std::max_element(test.begin(), test.end());
+        
+    // Noise threshold
     // Calculate signal mean
     DataType_TP signal_sum = 0;
     for ( const auto& sample : training_data ) {
@@ -361,7 +344,7 @@ PanTopkinsQRSDetection<DataType_TP>::InitializeThresholds(const std::vector<Data
     }
     DataType_TP signal_mean = signal_sum / training_data.size();
 
-    // 0.5 of the mean signal is considered to be noise
+    // 0.5 of the mean signal is considered to be the noise threhold
     _noise_threshold = signal_mean * 1 / 2;
 
 }
