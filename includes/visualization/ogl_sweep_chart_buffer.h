@@ -42,11 +42,16 @@ public:
     //! Draws the chart inside an active OpenGL context
     void Draw();
 
+    void SetTimeRange(double time_range_ms);
+
     //! Returns the x value last addded to the plot
     DataType_TP GetLastPlottedXValue();
 
     //! Returns the y value last addded to the plot
     DataType_TP GetLastPlottedYValue();
+    
+    //! Destroy the content of the buffer 
+    void Clear();
 
     //! Creates and allocates an empty OpenGL vertex buffer object used to store data for visualization
     void AllocateSeriesVbo();
@@ -59,6 +64,8 @@ public:
 
     //! currently supported: GL_LINE_STRIP and GL_POINTS
     void SetPrimitiveType(DrawingStyle_TP primitive_type);
+
+    DrawingStyle_TP GetDrawingStyle();
 
 private:
     //! Updates the chart buffer with the newest data from the input_buffer
@@ -96,23 +103,19 @@ private:
     // Private attributes
 private:
     //! write position for the vbo
-    int64_t _vbo_current_series_idx = 0;
+    int64_t _head_idx = 0;
 
     //! remove position for the vbo
-    int64_t _remove_series_idx = 0;
+    int64_t _tail_idx = 0;
 
     //! size of the input buffer (positions)
-    int64_t _buffer_size;
+    int64_t _input_buffer_size;
 
     //! size of the vbo (bytes)
-    int64_t _vbo_buffer_size;
+    int64_t _vbo_size;
 
     //! number of positions (3d points) inside the chart
     int _point_count = 0;
-
-    unsigned int _number_of_line_positions = 0;
-
-    unsigned int _num_bytes_vert_lines = 0;
 
     //! Vertex buffer object which contains the data series added by AddData..(..)
     QOpenGLBuffer _chart_vbo;
@@ -140,14 +143,14 @@ OGLSweepChartBuffer_C<DataType_TP>::OGLSweepChartBuffer_C(int buffer_size,
                         double time_range_ms,
                         RingBufferOptimized_TC<ChartPoint_TP<Position3D_TC<DataType_TP>>>& input_buffer)
     :
-    _vbo_buffer_size(buffer_size * 3 * sizeof(float)),
+    _vbo_size(buffer_size * 3 * sizeof(float)),
     _input_buffer(input_buffer),
-    _buffer_size(buffer_size),
+    _input_buffer_size(buffer_size),
     _time_range_ms(time_range_ms),
-    _no_line_vertices(buffer_size),
+    _no_line_vertices(buffer_size * 3),
     _chart_vbo(QOpenGLBuffer::VertexBuffer)
 {
-    _no_line_vertices.fill(NAN, buffer_size);
+    _no_line_vertices.fill(NAN, buffer_size * 3);
 }
 
 
@@ -176,6 +179,14 @@ OGLSweepChartBuffer_C<DataType_TP>::Draw()
 
 }
 
+template<typename DataType_TP>
+inline
+void 
+OGLSweepChartBuffer_C<DataType_TP>::SetTimeRange(double time_range_ms)
+{
+    _time_range_ms = time_range_ms;
+}
+
 
 template<typename DataType_TP>
 DataType_TP
@@ -190,6 +201,18 @@ DataType_TP
 OGLSweepChartBuffer_C<DataType_TP>::GetLastPlottedYValue()
 {
     return _last_plotted_y_value_S;
+}
+
+template<typename DataType_TP>
+inline 
+void OGLSweepChartBuffer_C<DataType_TP>::Clear()
+{
+     _last_plotted_y_value_S = 0;
+     _last_plotted_x_value_S = 0;
+     //_chart_vbo.write(0, _no_line_vertices.constData(), _input_buffer_size * 3 * sizeof(DataType_TP));
+     _tail_idx = 0;
+     _head_idx = 0;
+     _point_count = 0;
 }
 
 
@@ -263,6 +286,30 @@ OGLSweepChartBuffer_C<DataType_TP>::SetPrimitiveType(DrawingStyle_TP primitive_t
     }
 }
 
+template<typename DataType_TP>
+inline
+DrawingStyle_TP OGLSweepChartBuffer_C<DataType_TP>::GetDrawingStyle()
+{
+    DrawingStyle_TP drawing_style;
+
+    switch ( _primitive_type ) {
+
+    case GL_LINES:
+        drawing_style = DrawingStyle_TP::LINES;
+        break;
+
+    case GL_LINE_STRIP:
+        drawing_style = DrawingStyle_TP::LINE_SERIES;
+        break;
+
+    case GL_POINTS:
+        drawing_style = DrawingStyle_TP::POINT_SERIES;
+        break;
+    }
+
+    return drawing_style;
+}
+
 
 template<typename DataType_TP>
 void
@@ -275,7 +322,7 @@ OGLSweepChartBuffer_C<DataType_TP>::AllocateSeriesVbo()
     f->glEnableVertexAttribArray(0);
     // position coordinates: 3 -> (x, y, z)
     f->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
-    _chart_vbo.allocate(nullptr, _vbo_buffer_size);
+    _chart_vbo.allocate(nullptr, _vbo_size);
     _chart_vbo.setUsagePattern(QOpenGLBuffer::DynamicDraw);
     f->glDisableVertexAttribArray(0);
     _chart_vbo.release();
@@ -289,19 +336,11 @@ int
 OGLSweepChartBuffer_C<DataType_TP>::FindIdxToTimestampInsideData(const Timestamp_TP& timestamp,
     const std::vector<ChartPoint_TP<Position3D_TC<DataType_TP>>>& data)
 {
-    int current_idx = _vbo_current_series_idx / 3 / sizeof(float);
-    //if( current_idx > _remove_series_idx ){
-         //case 1
-    //auto it = std::lower_bound(data.begin(), data.end(), timestamp, CmpTimestamps);
-    //if ( it != data.end() ) {
-    //    std::size_t index = std::distance(data.begin(), it);
-    //    return index;
-    //}
+    int current_idx = _head_idx / 3 / sizeof(float);
 
-    //} else {
-    // Case 2
-   //if _remove_idx > head_idx the data to remove is most probably at the end of the buffer => check first the end
-    auto latest_raw_data_begin = data.begin() + _remove_series_idx;
+    // We can not scan the whole buffer, because binary search requires that the data is sorted.
+    // therefore, in the worst case scenario, two binary searches are necessary, to get the index of the timestamp
+    auto latest_raw_data_begin = data.begin() + _tail_idx;
     auto it_interesting_data_range_until_end
         = std::lower_bound(latest_raw_data_begin, data.end(), timestamp, CmpTimestamps);
 
@@ -317,8 +356,7 @@ OGLSweepChartBuffer_C<DataType_TP>::FindIdxToTimestampInsideData(const Timestamp
     if ( it_interesting_data_range_until_current != current_data_ptr ) {
         std::size_t index = std::distance(data.begin(), it_interesting_data_range_until_current);
         return index;
-    }
-    else {
+    } else {
         return -1;
     }
 
@@ -331,24 +369,24 @@ OGLSweepChartBuffer_C<DataType_TP>::WriteToVbo(const QVector<DataType_TP>& data)
 {
     int number_of_new_data_bytes = static_cast<int>(data.size()) * static_cast<int>(sizeof(float));
 
-    if ( _vbo_current_series_idx + number_of_new_data_bytes <= _vbo_buffer_size ) {
+    if ( _head_idx + number_of_new_data_bytes <= _vbo_size ) {
         //The data can completely fit into the vbo 
-        _chart_vbo.write(static_cast<int>(_vbo_current_series_idx), data.constData(), number_of_new_data_bytes);
+        _chart_vbo.write(static_cast<int>(_head_idx), data.constData(), number_of_new_data_bytes);
         // increment write offset in bytes
-        _vbo_current_series_idx += number_of_new_data_bytes;
+        _head_idx += number_of_new_data_bytes;
         IncrementPointCount(data.size() / 3);
     }
     else {
         // buffer is full or not all new data can fit into it; 
         // reset buffer index and start overwriting data at the beginning
         // Calculate how much bytes can fit into the buffer until the end is reached:
-        int number_of_free_bytes_until_end = _vbo_buffer_size - _vbo_current_series_idx;
+        int number_of_free_bytes_until_end = _vbo_size - _head_idx;
         int bytes_to_write_at_beginning = number_of_new_data_bytes - number_of_free_bytes_until_end;
         int bytes_to_write_until_end = number_of_new_data_bytes - bytes_to_write_at_beginning;
 
         if ( number_of_free_bytes_until_end > 0 ) {
             //Write data until the end of the buffer is reached
-            _chart_vbo.write(static_cast<int>(_vbo_current_series_idx),
+            _chart_vbo.write(static_cast<int>(_head_idx),
                 data.data(),
                 bytes_to_write_until_end);
             IncrementPointCount(number_of_free_bytes_until_end / sizeof(float) / 3);
@@ -356,15 +394,15 @@ OGLSweepChartBuffer_C<DataType_TP>::WriteToVbo(const QVector<DataType_TP>& data)
 
         _dataseries_wrapped_once = true;
         //Reset the index to continue writing the rest of the data at the beginning
-        _vbo_current_series_idx = 0;
+        _head_idx = 0;
         if ( bytes_to_write_at_beginning > 0 ) {
 
             int data_memory_offset = bytes_to_write_until_end / sizeof(float);
-            _chart_vbo.write(static_cast<int>(_vbo_current_series_idx),
+            _chart_vbo.write(static_cast<int>(_head_idx),
                 (data.constData() + data_memory_offset),
                 bytes_to_write_at_beginning);
 
-            _vbo_current_series_idx += bytes_to_write_at_beginning;
+            _head_idx += bytes_to_write_at_beginning;
         }
     }
 }
@@ -393,12 +431,12 @@ OGLSweepChartBuffer_C<DataType_TP>::RemoveOutdatedDataInsideVBO()
     int start_time_idx = FindIdxToTimestampInsideData(Timestamp_TP(start_time_ms), _input_buffer.constData()) - 1;
 
     if ( start_time_idx > -1 ) {
-        int bytes_to_remove = (start_time_idx + 1 - _remove_series_idx) * 3 * sizeof(float);
+        int bytes_to_remove = (start_time_idx + 1 - _tail_idx) * 3 * sizeof(float);
 
         if ( bytes_to_remove > 0 ) {
-            _chart_vbo.write(_remove_series_idx * 3 * sizeof(float), _no_line_vertices.constData(), bytes_to_remove);
-            //_line_engine.RemoveUntil(_remove_series_idx * 3 * sizeof(float), bytes_to_remove);
-            _remove_series_idx = start_time_idx;
+            _chart_vbo.write(_tail_idx * 3 * sizeof(float), _no_line_vertices.constData(), bytes_to_remove);
+            //_line_engine.RemoveUntil(_tail_idx * 3 * sizeof(float), bytes_to_remove);
+            _tail_idx = start_time_idx;
 
         } else {
             // recalculate the index when the current write_index wrapped (this means its near zero of the time axis) and 
@@ -409,12 +447,12 @@ OGLSweepChartBuffer_C<DataType_TP>::RemoveOutdatedDataInsideVBO()
             // This problem is solved by writing two times to the buffer (NAN-values):
            // 1. time: data is removed until the end of the buffer is reached (write_end_index (=vbo_buffersize) )
            // 2. time: data is removed from the beginning up to the first timestamp of the latest timerange
-            int remove_series_idx_byte = _remove_series_idx * 3 * sizeof(float);
-            int number_of_free_bytes_until_end = _vbo_buffer_size - remove_series_idx_byte;
-            _chart_vbo.write(_remove_series_idx * 3 * sizeof(float), _no_line_vertices.constData(), number_of_free_bytes_until_end);
+            int remove_series_idx_byte = _tail_idx * 3 * sizeof(float);
+            int number_of_free_bytes_until_end = _vbo_size - remove_series_idx_byte;
+            _chart_vbo.write(_tail_idx * 3 * sizeof(float), _no_line_vertices.constData(), number_of_free_bytes_until_end);
             int bytes_to_remove_at_beginning = (start_time_idx + 1) * 3 * sizeof(float);
             _chart_vbo.write(0, _no_line_vertices.constData(), bytes_to_remove_at_beginning);
-            _remove_series_idx = start_time_idx;
+            _tail_idx = start_time_idx;
         }
     }
 }
