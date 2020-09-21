@@ -64,12 +64,16 @@ void OGLBaseChart_C::InitializeAxesDescription(const QVector<float>& horizontal_
 {
     // /2 -> to get the number of half the vertices (Point FROM, not point TO, because they are always equal )
     // /3 -> to get number of text fields 
-    int num_of_horizontal_desc = horizontal_grid_vertices.size() / 2 / 3;
-    int num_of_vertical_desc = vertical_grid_vertices.size() / 2 / 3;
+    int num_of_horizontal_desc = horizontal_grid_vertices.size() / 2 / 3; // y axes textboxes
+    int num_of_vertical_desc = vertical_grid_vertices.size() / 2 / 3; // x axes textboxes
+    std::cout << "num horizontal desc:" << num_of_horizontal_desc << std::endl;
+    std::cout << "num vertical desc:" << num_of_vertical_desc << std::endl;
+
     int num_of_descriptions = num_of_horizontal_desc + num_of_vertical_desc;
 
-    _plot_axes.reserve(num_of_descriptions);
+    _plot_axes.clear();
     _plot_axes.resize(num_of_descriptions);
+    
     for ( auto& description : _plot_axes ) {
         description.Initialize(Font2D_TP::ARIAL);
     }
@@ -82,36 +86,43 @@ void OGLBaseChart_C::InitializeAxesDescription(const QVector<float>& horizontal_
     int vec_offset_idx = 1;
     auto current_y_description = max_y_val;
 
+    int num_of_y_textboxes = 0;
     for ( auto plot_desc_y_it = _plot_axes.begin(); plot_desc_y_it != plot_axes_horizontal_end; ++plot_desc_y_it ) {
        
         // for the first half: 
         // Start with the first
-        int pos_x = _bounding_box.GetLeftBottom()._x + offset_x_S;
-        int pos_y = horizontal_grid_vertices.at(vec_offset_idx) + offset_y_S;
+        /*int*/float pos_x = _bounding_box.GetLeftBottom()._x + offset_x_S;
+        /*int*/float pos_y = horizontal_grid_vertices.at(vec_offset_idx) + offset_y_S;
         std::string text = std::to_string(static_cast<double>(current_y_description)) + " mV";
 
         plot_desc_y_it->SetText(text, pos_x, pos_y, scale);
 
         current_y_description -= maj_tick_y;
         vec_offset_idx += 6;
+        ++num_of_y_textboxes;
     }
-
+    assert(num_of_y_textboxes == num_of_horizontal_desc);
     // vertical changing descriptions (x-axes)
     offset_x_S = 0;
     offset_y_S = 8;
     vec_offset_idx = 0;
     auto current_x_description = time_range_ms;
 
+    int num_of_x_textboxes = 0;
     for ( auto plot_desc_x_it = plot_axes_horizontal_end; plot_desc_x_it != _plot_axes.end(); ++plot_desc_x_it ) {
-        int pos_x = vertical_grid_vertices.at(vec_offset_idx) + offset_x_S;
-        int pos_y = _plot_area.GetLeftTop()._y + offset_y_S;
+        float /*int*/ pos_x = vertical_grid_vertices.at(vec_offset_idx) + offset_x_S;
+        float /*int*/ pos_y = _plot_area.GetLeftTop()._y + offset_y_S;
         std::string text = std::to_string(static_cast<int>(current_x_description)) + " ms";
 
         plot_desc_x_it->SetText(text, pos_x, pos_y, scale);
 
         current_x_description -= maj_tick_x;
         vec_offset_idx += 6;
+        ++num_of_x_textboxes;
     }
+
+    assert(num_of_x_textboxes == num_of_vertical_desc);
+    assert(_plot_axes.size() == num_of_x_textboxes + num_of_y_textboxes);
 }
 
 void OGLBaseChart_C::SetAxesColor(const QVector3D& color)
@@ -152,6 +163,16 @@ void OGLBaseChart_C::SetFiducialMarkColor(const QVector3D & color)
 void OGLBaseChart_C::SetModelViewProjection(QMatrix4x4 model_view_projection)
 {
     _chart_mvp = model_view_projection;
+}
+
+OGLChartGeometry_C OGLBaseChart_C::GetBoundingBox()
+{
+    return _bounding_box;
+}
+
+OGLChartGeometry_C OGLBaseChart_C::GetPlotSurfaceArea()
+{
+    return _plot_area;
 }
 
 
@@ -225,6 +246,8 @@ OGLBaseChart_C::CreateSurfaceGrid(int x_major_tick_dist_ms, float y_major_tick_d
 
     _num_of_surface_grid_positions = num_of_combined_verts / 3;
 
+    // Destroy the old buffer
+    _surface_grid_vbo.destroy();
     // Create VBO
     QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
     // Setup OGL Chart buffer - empty 

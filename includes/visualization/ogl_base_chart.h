@@ -69,6 +69,10 @@ class OGLBaseChart_C {
         //! Sets the model view projection matrix used for text rendering (e.g. axes units)
         void SetModelViewProjection(QMatrix4x4 model_view_projection);
 
+        OGLChartGeometry_C GetBoundingBox();
+        
+        OGLChartGeometry_C GetPlotSurfaceArea();
+
         const std::string& GetLabel();
 
         unsigned int GetID();
