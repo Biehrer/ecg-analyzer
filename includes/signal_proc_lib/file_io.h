@@ -119,7 +119,7 @@ std::map<unsigned int, std::vector<DataFormat_TP>> FileIO_C::ReadColumnData(uint
     auto number_of_channels = n_cols;
     std::map<unsigned int, std::vector<DataFormat_TP> > channel_data;
   
-    for ( int count = 0; count < number_of_channels; ++count ) {
+    for ( unsigned int count = 0; count < number_of_channels; ++count ) {
         // preallocate the vectors inside the map
         std::vector<DataFormat_TP> empty;
         channel_data.insert(std::make_pair(count, empty));
