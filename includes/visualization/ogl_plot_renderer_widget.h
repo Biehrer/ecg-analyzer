@@ -58,6 +58,11 @@ public:
     bool IsOpenGLInitialized() const;
     
     void SetTreeViewModel(PlotModel_C* model);
+    // Starts rendering
+    void StartPaint();
+    
+    // Stops rendering
+    void StopPaint();
 
    // Protected functions
 protected:

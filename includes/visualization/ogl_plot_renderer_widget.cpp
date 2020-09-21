@@ -62,6 +62,17 @@ QOpenGLPlotRendererWidget::SetTreeViewModel(PlotModel_C* model) {
     _model = model;
 }
 
+void QOpenGLPlotRendererWidget::StartPaint()
+{
+    _paint_update_timer->setInterval(30);
+    _paint_update_timer->start();
+}
+
+void QOpenGLPlotRendererWidget::StopPaint()
+{
+    _paint_update_timer->stop();
+}
+
 
 void QOpenGLPlotRendererWidget::initializeGL()
 {
@@ -109,7 +120,7 @@ void QOpenGLPlotRendererWidget::paintGL()
 
     //_prog.bind();
     //_prog.setUniformValue("u_MVP", *_MVP);
-    //_prog.setUniformValue("point_scale", 2.0f);
+    //_prog.setUniformValue("point_scale", 2.0f);l
     //_prog.setUniformValue("u_Color", QVector3D(1.0f, 1.0f, 1.0f));
 
     _light_shader.bind();
@@ -119,7 +130,7 @@ void QOpenGLPlotRendererWidget::paintGL()
     _light_shader.setUniformValue("u_light_color", QVector3D(1.0f, 1.0f, 1.0f));
 
 
-    for ( const auto& plot : _model->constData() ) {
+    for ( const auto& plot : /*_model->constData()*/_model->Data() ) {
         plot->Draw(_light_shader, _text_shader);
     }
 
