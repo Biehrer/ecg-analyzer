@@ -34,15 +34,17 @@ find_package(Qt5Core)
 find_package(Qt5Widgets)
 find_package(Qt5Gui)
 
-# add visualization and signal proc lib 
-if(USE_VISUALIZATION)
-    add_subdirectory(includes/visualization)
-endif()
-
-add_subdirectory(includes/signal_proc_lib)
-
 # add test directory -> do this only when a flag is set in Cmake
-add_subdirectory(includes/tests)
+add_subdirectory(includes/tests/signal_proc_lib)
+add_subdirectory(includes/tests/visualization)
+
+# add visualization and signal proc lib 
+#if(USE_VISUALIZATION)
+#    add_subdirectory(includes/visualization)
+#endif()
+
+add_subdirectory(includes/visualization)
+add_subdirectory(includes/signal_proc_lib)
 
 add_executable(${PROJECT_NAME} main.cpp 
                       # ${CMAKE_CURRENT_SOURCE_DIR}/includes/time_series_player.h
@@ -66,9 +68,8 @@ add_executable(${PROJECT_NAME} main.cpp
                         ${CMAKE_CURRENT_SOURCE_DIR}/includes/list_view_dialog.ui
                       )
 
-
-target_include_directories(signalanalyzer PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/includes/)
-
+# should be private and not be necessary because the add_subdirectory call should pass the include dirs to this project
+target_include_directories(signalanalyzer PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/includes/) 
 
 if(USE_VISUALIZATION)
     # link to the visualization lib

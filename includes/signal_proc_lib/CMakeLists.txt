@@ -34,6 +34,7 @@ if (KFR_INCLUDE_DIR AND KFR_LIBRARY)
     message(KFR found = ${KFR_FOUND})
 endif()
 
+
 add_library(signal_proc_lib
                             file_io.h
                             mit_file_io.h
@@ -41,22 +42,18 @@ add_library(signal_proc_lib
                             rt_state_filters.h
                             pan_topkins_qrs_detector.h )
 
-target_link_libraries(signal_proc_lib
+target_link_libraries(signal_proc_lib PUBLIC # these should be private(everone uses his own qt)
                                       Qt5::Widgets
                                       Qt5::Gui
                                       Qt5::Core
-                                      ${WFDB_LIBRARY_LOC}
+                                     #PUBLIC # these libraries are required as dependency to the outside => no, actually they are not
+                                     INTERFACE
+                                     ${WFDB_LIBRARY_LOC}
                                       ${KFR_LIBRARY}
 )
 
-target_include_directories(signal_proc_lib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/includes/signal_proc_lib)
-
-if(WFDB_FOUND)
-    target_include_directories(${PROJECT_NAME} PUBLIC ${WFDB_INCLUDE_DIR})
-endif()
-
-if(KFR_FOUND)
-    target_include_directories(signal_proc_lib PUBLIC ${KFR_INCLUDE_DIR})
-endif()
-
-target_compile_definitions(signal_proc_lib PRIVATE __cplusplus)
+target_include_directories(signal_proc_lib PUBLIC
+                                                  ${CMAKE_CURRENT_SOURCE_DIR}/includes/signal_proc_lib
+                                                  ${KFR_INCLUDE_DIR}
+                                                  ${WFDB_INCLUDE_DIR}
+                                                 )

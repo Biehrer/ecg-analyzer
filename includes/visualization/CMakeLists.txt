@@ -5,14 +5,20 @@ project(visualization)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 
+
 find_package(Qt5Core)
 find_package(Qt5Widgets)
 find_package(Qt5Gui)
+
+# Add tests -> only if requested
+#add_subdirectory(tests)
 
 # temporary hack to include freetype
 set(ENV{FREETYPE_DIR} "C:/Development/libs/freetype-build/")
 find_package(Freetype REQUIRED)
 message(STATUS "FREETYPE_INCLUDE_DIR_ft2build=${FREETYPE_INCLUDE_DIR_ft2build}")
+message(STATUS "Freetype library location (dot lib file)=${FREETYPE_LIBRARIES}")
+message(STATUS "Freetype include location=${FREETYPE_INCLUDE_DIRS}")
 
 add_library( visualization 
                             "ogl_plot_renderer_widget.h"
@@ -34,15 +40,22 @@ add_library( visualization
            )
 
  # link libs
-target_link_libraries(visualization Qt5::Widgets
-                                    Qt5::Gui
-                                    Qt5::Core
+target_link_libraries(visualization PUBLIC # should be private
+                                        Qt5::Widgets
+                                        Qt5::Gui
+                                        Qt5::Core
+                                    #PUBLIC # should be public
+                                         ${FREETYPE_LIBRARIES}
                                     )
 
 # link freetype to this project
-target_link_libraries(visualization ${FREETYPE_LIBRARIES} )
+#target_link_libraries(visualization PUBLIC ${FREETYPE_LIBRARIES} )
 
-target_include_directories(${PROJECT_NAME} PUBLIC ${FREETYPE_INCLUDE_DIRS})
+#target_include_directories(${PROJECT_NAME} PUBLIC ${FREETYPE_INCLUDE_DIRS})
 
 # should this be PUBLIC or better INTERFACE? 
-target_include_directories(${PROJECT_NAME} PUBLIC  ${CMAKE_CURRENT_SOURCE_DIR}/includes/visualization)
+target_include_directories(visualization PUBLIC  
+                                                   ${CMAKE_CURRENT_SOURCE_DIR}/includes/visualization
+                                                   ${FREETYPE_INCLUDE_DIRS}
+                                                   ${FREETYPE_DIR} # not necessary
+                                                   )

@@ -1,12 +1,18 @@
 #pragma once
 
 // Project includes
-#include "../signal_proc_lib/pan_topkins_qrs_detector.h"
+//#include "../visualization/text_renderer_2d.h"
+//#include "text_renderer_2d.h"
+#include "../../visualization/text_renderer_2d.h"
+//#include "text_renderer_2d.h"
 
 // STL includes
 #include <iostream>
 
-class PanTokpinsQRSDetectorTest : public CppUnit::TestFixture  {
+#include "cppunit/extensions/HelperMacros.h"
+//#include "cppunit/TestFixture.h"
+
+class TextRendererTest : public CppUnit::TestFixture  {
  
 public:
     void setUp()
