@@ -61,6 +61,7 @@ public:
         _data_series_buffer(TranslateRingBufferSize(size)),
         _number_of_elements(0)
     {
+        _size = size;
         _max_size = TranslateRingBufferSize(size);
         _data_series_buffer.reserve(_max_size);
         _data_series_buffer.resize(_max_size);
@@ -160,6 +161,10 @@ public:
         return _max_size;
     }
 
+    RingBufferSize_TP GetRingBufferSizeTP() {
+        return _size;
+    }
+
     const std::vector<T>& constData() const {
         return _data_series_buffer;
     }
@@ -168,6 +173,8 @@ public:
 private:
     //! The input buffer
     std::vector<T> _data_series_buffer;
+
+    RingBufferSize_TP _size;
 
     //! Current write position inside the buffer
     //! Is incremented each time new data was added via AddData(...)
