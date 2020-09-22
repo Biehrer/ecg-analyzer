@@ -5,13 +5,9 @@ project(visualization)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 
-
 find_package(Qt5Core)
 find_package(Qt5Widgets)
 find_package(Qt5Gui)
-
-# Add tests -> only if requested
-#add_subdirectory(tests)
 
 # temporary hack to include freetype
 set(ENV{FREETYPE_DIR} "C:/Development/libs/freetype-build/")
@@ -47,11 +43,6 @@ target_link_libraries(visualization PUBLIC # should be private
                                     #PUBLIC # should be public
                                          ${FREETYPE_LIBRARIES}
                                     )
-
-# link freetype to this project
-#target_link_libraries(visualization PUBLIC ${FREETYPE_LIBRARIES} )
-
-#target_include_directories(${PROJECT_NAME} PUBLIC ${FREETYPE_INCLUDE_DIRS})
 
 # should this be PUBLIC or better INTERFACE? 
 target_include_directories(visualization PUBLIC  

@@ -42,7 +42,7 @@ struct PlotDescription_TP
     OGLChartGeometry_C _geometry;
     PlotColors_TP _colors;
     DrawingStyle_TP _chart_type = DrawingStyle_TP::LINE_SERIES;
-    RingBufferSize_TP _buffer_size = RingBufferSize_TP::Size32768;
+    RingBufferSize_TP _input_buffer_size = RingBufferSize_TP::Size32768;
 
     unsigned int _id = 0;
     int _time_range_ms = 1000.0;
@@ -84,6 +84,9 @@ public:
 
     void AddPlot(const PlotDescription_TP & plot_info);
 
+    // Creates a copy of the plot in the argument and adds it to the plot-screen
+    void AddPlot(/*const*/ OGLSweepChart_C<ModelDataType_TP>& plot);
+
     //! Fast initialization of plots in a horizontal layout (shared timerange and max/min y values)
     //! Creates OGLSweepCharts
     bool FastInitializePlots(int number_of_plots,
@@ -121,6 +124,8 @@ public:
     //void AddPlot(PlotDescription_TP description);
     
     void SetGain(const float gain);
+
+    void ClearPlotSurfaces();
 
 private:
     //! the data this model manages

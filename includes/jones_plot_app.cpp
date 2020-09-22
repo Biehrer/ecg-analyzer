@@ -15,18 +15,20 @@ void JonesPlotApplication_C::resizeEvent(QResizeEvent* event)
 JonesPlotApplication_C::JonesPlotApplication_C(QWidget *parent)
     : QMainWindow(parent)
 {
-    // updates ogl scene
-    //    auto format = QSurfaceFormat::defaultFormat();
-    //    format.setSwapInterval(0);
-    //    format.setVersion(3, 3);
-    //    format.setProfile(QSurfaceFormat::CompatibilityProfile);
-    //    format.setProfile(QSurfaceFormat::CoreProfile);
-    //    format.setMinorVersion(1);
-    //    format.setMajorVersion(2);
-    //    format.setProfile(QSurfaceFormat::NoProfile);
-    //    QSurfaceFormat::setDefaultFormat(format);
+    
     ui.setupUi(this);
     ui._central_widget->setLayout(ui._grid_layout_general);
+    // updates ogl scene
+    auto format = QSurfaceFormat::defaultFormat();
+    format.setSwapInterval(0);
+    format.setVersion(3, 3);
+    format.setProfile(QSurfaceFormat::CompatibilityProfile);
+    format.setProfile(QSurfaceFormat::CoreProfile);
+    format.setMinorVersion(1);
+    format.setMajorVersion(2);
+    format.setProfile(QSurfaceFormat::NoProfile);
+    QSurfaceFormat::setDefaultFormat(format);
+    ui._openGL_widget->setFormat(format); // must be called before the ogl widget or its parent is shown
 
     // manage stacked widget pages 
     ui._plot_page_stckd->setLayout(ui._grid_layout_main);
@@ -42,8 +44,9 @@ JonesPlotApplication_C::JonesPlotApplication_C(QWidget *parent)
     connect(ui._btn_load_signal, SIGNAL(clicked()), this, SLOT(OnButtonSignalsPage()));
 
     // set plot model to open gl view
-    ui._openGL_widget->SetTreeViewModel(&_plot_model);
+    ui._openGL_widget->SetPlotModel(&_plot_model);
     ui._openGL_widget->show();
+
     // set plot model to table view of the plot settings page
     ui._plot_settings_table_view->setModel(&_plot_model);
     ui._plot_settings_table_view->show();
@@ -73,6 +76,7 @@ JonesPlotApplication_C::JonesPlotApplication_C(QWidget *parent)
     connect(ui._signals_page_main_widget, SIGNAL(RemoveSignalRequested(unsigned int)),
         this, SLOT(OnRemoveSignal(unsigned int)));
 
+    ui._openGL_widget->StartPaint();
 }
 
 void JonesPlotApplication_C::Setup() 
@@ -100,6 +104,12 @@ void JonesPlotApplication_C::Setup()
         throw std::runtime_error("plot initialization failed! Abort");
     }  
     
+    auto plot_0 = _plot_model.GetPlotPtr(0);
+    plot_0->SetMaxValueYAxes(20.0);
+    //plot_0->SetMaxValueYAxes(10.0);
+    //plot_0->SetTimerangeMs(1000.0);
+    //plot_0->SetTimerangeMs(1000.0);
+
      // Alternative to fast initialize: 
     // describe the plot using the PlotDescription_TP struct and 
     // add the plot to the plot_widget by calling
@@ -114,6 +124,7 @@ void JonesPlotApplication_C::Setup()
 
 void JonesPlotApplication_C::OnButtonHomePage()
 {
+    ui._openGL_widget->StartPaint();
     int _stacked_idx_home = 0;
     ui._stacked_widget->setCurrentIndex(_stacked_idx_home);
     ui._signals_page_main_widget->hide();
@@ -121,13 +132,24 @@ void JonesPlotApplication_C::OnButtonHomePage()
 
 void JonesPlotApplication_C::OnButtonSettingsPage() 
 {
+    //ui._openGL_widget->StopPaint();
     int _stacked_idx_settings = 1;
     ui._stacked_widget->setCurrentIndex(_stacked_idx_settings);
     ui._signals_page_main_widget->hide();
+
+    auto temp_copy = _plot_model.Data()[0];
+    _plot_model.RemovePlot(0);
+
+    _plot_model.AddPlot(*temp_copy);
+
+    //_plot_model.RemovePlot(0);
+    //auto plot_0 = _plot_model.GetPlotPtr(0);
+    //plot_0->SetMaxValueYAxes(20.0);
 }
 
 void JonesPlotApplication_C::OnButtonSignalsPage()
 {
+    ui._openGL_widget->StopPaint();
     int _stacked_idx_settings = 2;
     ui._stacked_widget->setCurrentIndex(_stacked_idx_settings);
     ui._signals_page_main_widget->show();
@@ -161,22 +183,12 @@ void JonesPlotApplication_C::OnBtnPlaySignal()
         auto plot_0 = _plot_model.GetPlotPtr(0);
         //plot_0->SetLabel("plot 0");
         auto plot_1 = _plot_model.GetPlotPtr(1);
-         // Change appearance of plots for testing:
         // Adapt so we can see the filtered signal in plot 1
         // MIT-BIH sig: (after MA)=0.0001720.000172
-        // !!
-        // DONT EXECUTE THESE FUNCTIONS!: THEY ARE NOT ´FINISHED => Instead do this in JonesPLotApp::Setup()
-        //!
-        //plot_1->SetMinValueYAxes(0);
-        //plot_1->SetMaxValueYAxes(0.0005);
-        //plot_1->SetLabel("plot 1");
-        //plot_1->SetTimerangeMs(10000);
-        //plot_0->SetTimerangeMs(10000);
-
         // Load the signal which was selected by the user
         TimeSignal_C<SignalModelDataType_TP>* signal = _signal_model.Data()[_current_signal_id];
 
-         auto& data = signal->constData();
+        auto& data = signal->constData();
         if ( data.empty() ) {
             throw std::runtime_error("Signal is empty!!");
         }
@@ -221,9 +233,9 @@ void JonesPlotApplication_C::OnBtnPlaySignal()
         {
             if ( series_1_begin_it != time_series_end ) {
 
+                // AddDatapoint(..) is the only thread safe method of OGLSweepChart_C!
                 plot_0->AddDatapoint(*series_1_begin_it, *timestamps_1_begin_it);
                 // Timestamp are in seconds
-                // TODO: CATCH FOUND QRS PEAKS WITH SIGNAL SLOT MECHANISM. INSIDE THE CALLBACK FUNCTION, ADD THEM TO THE FIDUCIAL MARK MANAGER
                 double filtered_sig = detector.AppendPoint(*series_1_begin_it, *timestamps_1_begin_it);
 
                 // The timestamps do not match because the filtered signal is delayed ofc..
@@ -233,9 +245,7 @@ void JonesPlotApplication_C::OnBtnPlaySignal()
                 ++timestamps_1_begin_it;
                 ++series_2_begin_it;
                 ++timestamps_2_begin_it;
-            }
-            else {
-                // Todo: clear plots
+            } else {
                 signal_processed = true;
                 _is_signal_playing.store(false);
                 std::cout << "processing finished; thread returns" << std::endl;
@@ -276,6 +286,7 @@ void JonesPlotApplication_C::OnBtnStopSignal()
     // (and its not frozen forever)
     ui._btn_plotpage_start->setEnabled(true);
     _is_signal_playing = false;
+    _plot_model.ClearPlotSurfaces();
 }
 void JonesPlotApplication_C::OnGainChanged(int new_gain) 
 {

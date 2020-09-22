@@ -20,7 +20,7 @@ QOpenGLPlotRendererWidget::~QOpenGLPlotRendererWidget() {
 
 QOpenGLPlotRendererWidget::QOpenGLPlotRendererWidget(QWidget* parent)
     :
-      _prog()
+     _prog()
 {
     // Attention: DO NOT USE OPENGL COMMANDS INSIDE THE CONSTRUCTOR
     // => Instead use InizializeGl()
@@ -41,7 +41,7 @@ QOpenGLPlotRendererWidget::QOpenGLPlotRendererWidget(QWidget* parent)
 
     _paint_update_timer = new QTimer();
     connect(_paint_update_timer, SIGNAL(timeout()), this, SLOT(update()));
-    _paint_update_timer->setInterval(30);
+    //_paint_update_timer->setInterval(30);
 }
 
 const QMatrix4x4 QOpenGLPlotRendererWidget::GetModelViewProjection() const
@@ -58,7 +58,8 @@ QOpenGLPlotRendererWidget::IsOpenGLInitialized() const
 
 
 void 
-QOpenGLPlotRendererWidget::SetTreeViewModel(PlotModel_C* model) {
+QOpenGLPlotRendererWidget::SetPlotModel(PlotModel_C* model) 
+{
     _model = model;
 }
 
@@ -74,7 +75,8 @@ void QOpenGLPlotRendererWidget::StopPaint()
 }
 
 
-void QOpenGLPlotRendererWidget::initializeGL()
+void 
+QOpenGLPlotRendererWidget::initializeGL()
 {
     std::cout << "Start OpenGlPlotter by Jonas Biehrer" << std::endl;
 
@@ -90,7 +92,8 @@ void QOpenGLPlotRendererWidget::initializeGL()
 
 // This window is never resized. only JonesPlot.h is resized (the window this widget is placed in).
 // If this event should be triggered, it needs to be passed to this widget from JonesPlot
-void QOpenGLPlotRendererWidget::resizeGL(int width, int height)
+void 
+QOpenGLPlotRendererWidget::resizeGL(int width, int height)
 {
     QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
 
@@ -109,7 +112,8 @@ void QOpenGLPlotRendererWidget::resizeGL(int width, int height)
     }
 }
 
-void QOpenGLPlotRendererWidget::paintGL()
+void 
+QOpenGLPlotRendererWidget::paintGL()
 {
 	QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
     f->glClearColor(0.0f, 0.0f, 0.0f, 0.8f);
@@ -144,7 +148,8 @@ void QOpenGLPlotRendererWidget::paintGL()
     _light_shader.release();
 }
 
-void QOpenGLPlotRendererWidget::InitializeGLParameters()
+void 
+QOpenGLPlotRendererWidget::InitializeGLParameters()
 {
     QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
     // Initialize OGL functions before any other OpenGL call
@@ -295,14 +300,3 @@ bool QOpenGLPlotRendererWidget::CreateShader(QOpenGLShaderProgram& shader,
     return success;
 }
 
-void QOpenGLPlotRendererWidget::mouseMoveEvent(QMouseEvent* evt) 
-{
-    float x  = evt->x();
-    //float y = evt->y();
-}
-
-void QOpenGLPlotRendererWidget::mousePressEvent(QMouseEvent* evt) 
-{
-    float x = evt->x();
-    float y = evt->y();
-}

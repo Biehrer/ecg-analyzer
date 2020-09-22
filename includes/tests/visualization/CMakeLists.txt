@@ -37,3 +37,8 @@ target_include_directories(visualization_lib_test PUBLIC
                                                          ${CPP_UNIT_INCLUDE_DIR}
                                                          )
 
+message(Source_test_dir= ${CMAKE_CURRENT_SOURCE_DIR})
+message(try to read from=${CMAKE_CURRENT_SOURCE_DIR}/../../../Resources/)
+
+message(Binary_test_dir=${CMAKE_CURRENT_BINARY_DIR})
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/../../../Resources/ DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/Resources/)

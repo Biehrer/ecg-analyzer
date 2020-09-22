@@ -1,12 +1,8 @@
 #include "plot_model.h"
 
-PlotModel_C::PlotModel_C( QObject* parent) 
+PlotModel_C::PlotModel_C(QObject* parent)
     : QAbstractTableModel(parent)
 {
-    //QHash<int, QByteArray> roles;
-    //roles[TypeRole] = "type";
-    //roles[SizeRole] = "size";
-    //setRoleNames(roles);
 }
 
 enum OGLPlotProperty {
@@ -19,7 +15,7 @@ enum OGLPlotProperty {
     PLOT_MAJTICK_Y
 };
 // Sets the first row and determines the layout ( with #COLS items)
-QVariant 
+QVariant
 PlotModel_C::headerData(int section, Qt::Orientation orientation, int role) const
 {
     if ( role == Qt::DisplayRole && orientation == Qt::Horizontal ) {
@@ -57,45 +53,46 @@ bool PlotModel_C::setData(const QModelIndex &index, const QVariant &value, int r
             return false;
         }
 
-        int row = index.row()-1;
+        int row = index.row() - 1;
 
         if ( row < 0 ) {
+            std::cout << "some fix was needed. row = " << row << std::endl;
             row = 0;
-            std::cout << "some fix was needed" << std::endl;
             //throw std::runtime_error("Something wrong with the index");
         }
 
         switch ( index.column() ) {
-            case OGLPlotProperty::PLOT_ID:
-                _plots[row]->SetID(value.toInt() );
-                break;
+        case OGLPlotProperty::PLOT_ID:
+            _plots[row]->SetID(value.toInt());
+            break;
 
-            case OGLPlotProperty::PLOT_LABEL:
-                _plots[row]->SetLabel(value.toString().toStdString());
-                break;
+        case OGLPlotProperty::PLOT_LABEL:
+            _plots[row]->SetLabel(value.toString().toStdString());
+            break;
 
-            case OGLPlotProperty::PLOT_TIMERANGE:
-                _plots[row]->SetTimerangeMs(value.toDouble());
-                break;
+        case OGLPlotProperty::PLOT_TIMERANGE:
+            _plots[row]->SetTimerangeMs(value.toDouble());
+            break;
 
-            case OGLPlotProperty::PLOT_YMAX:
-                _plots[row]->SetMaxValueYAxes(value.toFloat());
-                break;
+        case OGLPlotProperty::PLOT_YMAX:
+            std::cout << "change plot y max val (plot_id = " << row << ")" << std::endl;
+            _plots[row]->SetMaxValueYAxes(value.toDouble());
+            break;
 
-            case OGLPlotProperty::PLOT_YMIN:
-                _plots[row]->SetMinValueYAxes(value.toFloat());
-                break;
+        case OGLPlotProperty::PLOT_YMIN:
+            _plots[row]->SetMinValueYAxes(value.toDouble());
+            break;
 
-            case OGLPlotProperty::PLOT_MAJTICK_X:
-                _plots[row]->SetMajorTickValueXAxes(value.toFloat());
-                break;
+        case OGLPlotProperty::PLOT_MAJTICK_X:
+            _plots[row]->SetMajorTickValueXAxes(value.toFloat());
+            break;
 
-            case OGLPlotProperty::PLOT_MAJTICK_Y:
-               _plots[row]->SetMajorTickValueYAxes(value.toFloat());
-               break;
+        case OGLPlotProperty::PLOT_MAJTICK_Y:
+            _plots[row]->SetMajorTickValueYAxes(value.toFloat());
+            break;
         }
-        
-         return true;
+
+        return true;
     }
 
     return false;
@@ -111,16 +108,16 @@ int PlotModel_C::columnCount(const QModelIndex & parent) const
     return COLS;
 }
 
-QVariant 
-PlotModel_C::data(const QModelIndex & index, int role) const 
+QVariant
+PlotModel_C::data(const QModelIndex & index, int role) const
 {
     int row = index.row();
     int col = index.column();
-   
+
     switch ( role ) {
     case Qt::DisplayRole:
 
-        switch ( col ) 
+        switch ( col )
         {
         case OGLPlotProperty::PLOT_ID:
             return _plots[row]->GetID();
@@ -143,7 +140,7 @@ PlotModel_C::data(const QModelIndex & index, int role) const
         case OGLPlotProperty::PLOT_MAJTICK_Y:
             return _plots[row]->GetMajorTickValueYAxes();
         }
-        
+
         //case Qt::FontRole:
         //    if ( row == 0 && col == 0 ) { //change font only for cell(0,0)
         //        QFont boldFont;
@@ -164,6 +161,13 @@ void PlotModel_C::SetGain(const float gain) {
     }
 }
 
+void PlotModel_C::ClearPlotSurfaces()
+{
+    for ( auto& plot : _plots ) {
+        plot->Clear();
+    }
+}
+
 void PlotModel_C::RemovePlot(unsigned int plot_id)
 {
     for ( auto plot_it = _plots.begin(); plot_it < _plots.end(); ++plot_it ) {
@@ -176,10 +180,10 @@ void PlotModel_C::RemovePlot(unsigned int plot_id)
 }
 
 bool PlotModel_C::FastInitializePlots(int number_of_plots,
-                                      int view_width, 
-                                      int view_height,
-                                      int time_range_ms,
-                                      const std::vector<std::pair<ModelDataType_TP, ModelDataType_TP>>& y_ranges)
+    int view_width,
+    int view_height,
+    int time_range_ms,
+    const std::vector<std::pair<ModelDataType_TP, ModelDataType_TP>>& y_ranges)
 {
     DEBUG("initialize plots");
 
@@ -202,17 +206,17 @@ bool PlotModel_C::FastInitializePlots(int number_of_plots,
     int chart_offset_from_origin_S = 4;
 
     // Create plots
-    for( int chart_idx = 0; chart_idx < number_of_plots; ++chart_idx ) {
+    for ( int chart_idx = 0; chart_idx < number_of_plots; ++chart_idx ) {
 
         int chart_pos_y = chart_idx * (chart_height + chart_to_chart_offset_S) +
-                          chart_offset_from_origin_S;
+            chart_offset_from_origin_S;
         OGLChartGeometry_C geometry(chart_pos_x, chart_pos_y, chart_width, chart_height);
-       _plots.push_back(new OGLSweepChart_C<ModelDataType_TP >(time_range_ms,
-                                                    chart_buffer_size,
-                                                    /*max_y*/y_ranges[chart_idx].second,
-                                                    /*min_y*/y_ranges[chart_idx].first,
-                                                    geometry,
-                                                    *this));
+        _plots.push_back(new OGLSweepChart_C<ModelDataType_TP >(time_range_ms,
+            chart_buffer_size,
+            /*max_y*/y_ranges[chart_idx].second,
+            /*min_y*/y_ranges[chart_idx].first,
+            geometry,
+            *this));
     }
 
     QVector3D series_color(0.0f, 1.0f, 0.0f); // green
@@ -229,25 +233,27 @@ bool PlotModel_C::FastInitializePlots(int number_of_plots,
     unsigned int r_id = 1;
 
     for ( auto& plot : _plots ) {
-
         //beginInsertRows(QModelIndex(), _plots.size(), _plots.size() + 1);
         beginInsertRows(QModelIndex(), r_id - 1, r_id);
         // modifyable variables (from user):
-        setData(createIndex(r_id, c_id), r_id );
-        QString label = QString("plot #" + QString::fromStdString(std::to_string(r_id)) );
+        setData(createIndex(r_id, c_id), r_id-1);
+        QString label = QString("plot #" + QString::fromStdString(std::to_string(r_id)));
         setData(createIndex(r_id, c_id + 1), QVariant(label));
-        setData(createIndex(r_id, c_id + 2), QVariant(time_range_ms ));
-        setData(createIndex(r_id, c_id + 3), QVariant(/*max_y*/static_cast<double>(y_ranges[r_id-1].second)));
-        setData(createIndex(r_id, c_id + 4), QVariant(/*min_y*/static_cast<double>(y_ranges[r_id-1].first)));
+        setData(createIndex(r_id, c_id + 2), QVariant(time_range_ms));
+        //setData(createIndex(r_id, c_id + 3), QVariant(/*max_y*/static_cast<double>(y_ranges[r_id-1].second)));
+        //setData(createIndex(r_id, c_id + 4), QVariant(/*min_y*/static_cast<double>(y_ranges[r_id-1].first)));
+        plot->SetMaxValueYAxes(static_cast<double>(y_ranges[r_id - 1].second));
+        plot->SetMinValueYAxes(static_cast<double>(y_ranges[r_id - 1].first));
         // Divide through 4 to create 4 horizontal and 4 vertical lines 
         setData(createIndex(r_id, c_id + 5), QVariant(time_range_ms / 4));
-        setData(createIndex(r_id, c_id + 6), QVariant((static_cast<double>(y_ranges[r_id-1].second - y_ranges[r_id-1].first)) / 4));
+        setData(createIndex(r_id, c_id + 6), QVariant((static_cast<double>(y_ranges[r_id - 1].second - y_ranges[r_id - 1].first)) / 4));
         endInsertRows();
         ++r_id;
         //plot->SetID(plot_idx);
         //plot->SetLabel("plot #" + std::to_string(plot_idx));
         //++plot_idx;
         // Set up axes
+
         //plot->SetMajorTickValueXAxes(time_range_ms / 4);
         //plot->SetMajorTickValueYAxes((max_y - min_y) / 4);
         // Non modifyale
@@ -266,10 +272,10 @@ bool PlotModel_C::FastInitializePlots(int number_of_plots,
         plot->Initialize();
     }
 
-        //emit a signal to make the view reread identified data
+    //emit a signal to make the view reread identified data
     emit dataChanged(createIndex(0, 0), //  top left table index
-                     createIndex(number_of_plots, COLS), // bottom right table index
-                     { Qt::DisplayRole });
+        createIndex(number_of_plots, COLS), // bottom right table index
+        { Qt::DisplayRole });
     return true;
 }
 
@@ -292,30 +298,29 @@ PlotModel_C::GetPlotPtr(const std::string & plot_label) {
     }
     return nullptr;
 }
-const std::vector<OGLSweepChart_C<ModelDataType_TP>*>& 
+const std::vector<OGLSweepChart_C<ModelDataType_TP>*>&
 PlotModel_C::constData() const
 {
     return _plots;
 }
 
-std::vector<OGLSweepChart_C<ModelDataType_TP>*>& 
+std::vector<OGLSweepChart_C<ModelDataType_TP>*>&
 PlotModel_C::Data()
 {
     return _plots;
 }
 
 
-void PlotModel_C::AddPlot( const PlotDescription_TP& plot_info)
+void PlotModel_C::AddPlot(const PlotDescription_TP& plot_info)
 {
     int number_of_plots = _plots.size();
     // Create plot
     _plots.push_back(new OGLSweepChart_C<ModelDataType_TP>(plot_info._time_range_ms,
-                                                           plot_info._buffer_size, 
-                                                           plot_info._max_y,
-                                                           plot_info._min_y,
-                                                           plot_info._geometry, 
-                                                           *this));
-    //++_number_of_plots;
+        plot_info._input_buffer_size,
+        plot_info._max_y,
+        plot_info._min_y,
+        plot_info._geometry,
+        *this));
     auto* plot = *(_plots.end() - 1);
     plot->SetLabel(plot_info._label);
     plot->SetID(plot_info._id);
@@ -336,19 +341,50 @@ void PlotModel_C::AddPlot( const PlotDescription_TP& plot_info)
 
     //emit a signal to make the view reread identified data
     emit dataChanged(createIndex(number_of_plots, 0), //  top left table index
-                     createIndex(number_of_plots + 1, COLS), // bottom right table index
-                     { Qt::DisplayRole });
+        createIndex(number_of_plots + 1, COLS), // bottom right table index
+        { Qt::DisplayRole });
 }
 
-bool 
+void
+PlotModel_C::AddPlot(OGLSweepChart_C<ModelDataType_TP>& plot)
+{
+
+    int number_of_plots = _plots.size();
+    // Create plot
+    _plots.push_back(new OGLSweepChart_C<ModelDataType_TP>(static_cast<int>(plot.GetTimerangeMs()),
+        plot.GetInputBufferSize(),
+        plot.GetMaxValueYAxes(),
+        plot.GetMinValueYAxes(),
+        plot.GetBoundingBox(),
+        *this));
+
+    auto* plot_new = *(_plots.end() - 1);
+    plot_new->SetLabel(plot.GetLabel());
+    plot_new->SetID(plot.GetID());
+    // Set up axes
+    plot_new->SetMajorTickValueXAxes(plot.GetMajorTickValueXAxes());
+    plot_new->SetMajorTickValueYAxes(plot.GetMajorTickValueYAxes());
+    // Set chart type ( Point or Line series )
+    plot_new->SetChartType(plot.GetChartType());
+    // Initialize
+    plot_new->Initialize();
+
+    //emit a signal to make the view reread identified data
+    emit dataChanged(createIndex(number_of_plots, 0), //  top left table index
+        createIndex(number_of_plots + 1, COLS), // bottom right table index
+        { Qt::DisplayRole });
+}
+
+
+bool
 PlotModel_C::RemovePlot(const std::string & label)
 {
     for ( auto plot_it = _plots.begin(); plot_it < _plots.end(); ++plot_it ) {
         if ( label == (*plot_it)->GetLabel() ) {
             // match
             _plots.erase(plot_it);
-             return true;
+            return true;
         }
     }
-     return false;
+    return false;
 }

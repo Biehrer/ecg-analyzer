@@ -57,8 +57,9 @@ public:
 
     bool IsOpenGLInitialized() const;
     
-    void SetTreeViewModel(PlotModel_C* model);
-    // Starts rendering
+    void SetPlotModel(PlotModel_C* model);
+
+    // Starts rendering (again)
     void StartPaint();
     
     // Stops rendering
@@ -75,12 +76,6 @@ protected:
     //! "Render-loop" - draws the scene
     virtual void paintGL();
     
-    //!
-    virtual void mousePressEvent(QMouseEvent* evt);
-    
-    //!
-    virtual void mouseMoveEvent(QMouseEvent* evt);
-
     // Private helper functions
 private:
     
@@ -149,4 +144,5 @@ private:
 
     //! (render)data model
     PlotModel_C* _model;  
+
 };

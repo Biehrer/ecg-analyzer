@@ -31,10 +31,21 @@ int main(int argc, char *argv[])
     QApplication::setAttribute(Qt::AA_UseDesktopOpenGL);
     QApplication a(argc, argv);
     
-    JonesPlotApplication_C j;
+    //// updates ogl scene
+    //auto format = QSurfaceFormat::defaultFormat();
+    //format.setSwapInterval(0);
+    //format.setVersion(3, 3);
+    //format.setProfile(QSurfaceFormat::CompatibilityProfile);
+    //format.setProfile(QSurfaceFormat::CoreProfile);
+    //format.setMinorVersion(1);
+    //format.setMajorVersion(2);
+    //format.setProfile(QSurfaceFormat::NoProfile);
+    //QSurfaceFormat::setDefaultFormat(format);
+
+    JonesPlotApplication_C j;    
     j.setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     j.showFullScreen();
-    
+
     j.Setup();
 
     j.showNormal();
@@ -114,8 +125,3 @@ int main(int argc, char *argv[])
 //      stl includes
 //
 //=> If there is an error in a project file its recoginzed before other errors in third party dependencies
-
-//TimeSeriesPlacer_C<double, double> wavedata_generator(signal);
-//wavedata_generator.Play(1000.0, 2, PushInterfaceFunction, w);
-//std::this_thread::sleep_for(std::chrono::milliseconds(6000));
-//wavedata_generator.Stop();  
