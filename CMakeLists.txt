@@ -68,7 +68,6 @@ add_executable(${PROJECT_NAME} main.cpp
                         ${CMAKE_CURRENT_SOURCE_DIR}/includes/list_view_dialog.ui
                       )
 
-# should be private and not be necessary because the add_subdirectory call should pass the include dirs to this project
 target_include_directories(signalanalyzer PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/includes/) 
 
 if(USE_VISUALIZATION)
