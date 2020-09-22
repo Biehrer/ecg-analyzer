@@ -1,3 +1,4 @@
+// CPPUnit includes
 #include "cppunit/CompilerOutputter.h"
 #include "cppunit/XmlOutputter.h"
 #include "cppunit/extensions/TestFactoryRegistry.h"
@@ -5,8 +6,7 @@
 #include "cppunit/TestResult.h"
 #include "cppunit/TestResultCollector.h"
 
-//#include "pan_topkins_qrs_detector_test.h"
-
+// STL includes
 #include <string>
 #include <iostream>
 #include <fstream>
@@ -44,7 +44,7 @@ int main(int argc, char **argv)
 //        // In XML format
 //        std::ofstream xml_os(xml_fname);
 //        if ( !xml_os )
-//            std::cerr << "WARNING: XML test output requested to " << xml_fname << ", but can't create file.\n";
+//            std::cerr << "WARNING: XML test output requested to " << xml_fname << ",  can't create file.\n";
 //        else {
 //            CppUnit::XmlOutputter xml_out(&result_collector, xml_os);
 //            xml_out.write();
