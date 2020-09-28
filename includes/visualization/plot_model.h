@@ -16,11 +16,25 @@
 #include <vector>
 #include <string>
 #include <atomic>
-
+#include <list>
+#include <mutex>
 const int COLS = 7;
 const int ROWS = 2;
 
 using ModelDataType_TP = float;
+
+enum OGLPlotProperty_TP {
+    PLOT_ID,
+    PLOT_LABEL,
+    PLOT_TIMERANGE,
+    PLOT_YMAX,
+    PLOT_YMIN,
+    PLOT_MAJTICK_X,
+    PLOT_MAJTICK_Y,
+    PLOT_NOT_DEFINED
+};
+// Register, to make it work with signals & slots
+Q_DECLARE_METATYPE(OGLPlotProperty_TP);
 
 //! Definition of plot colors
 struct PlotColors_TP {
@@ -74,9 +88,12 @@ class PlotModel_C : public QAbstractTableModel
 
 public:
     PlotModel_C( QObject *parent = nullptr);
+    ~PlotModel_C();
 
 public:
-
+    /**************
+    * End Testing
+    ***************/
     //! Removes a plot from the view
     void RemovePlot(unsigned int plot_id);
 
@@ -87,9 +104,11 @@ public:
     // Creates a copy of the plot in the argument and adds it to the plot-screen
     void AddPlot(/*const*/ OGLSweepChart_C<ModelDataType_TP>& plot);
 
+    unsigned int GetNumberOfPlots();
+
     //! Fast initialization of plots in a horizontal layout (shared timerange and max/min y values)
     //! Creates OGLSweepCharts
-    bool FastInitializePlots(int number_of_plots,
+    bool InitializePlots(int number_of_plots,
         int view_width,
         int view_height,
         int time_range_ms,
@@ -99,10 +118,20 @@ public:
 
     OGLSweepChart_C<ModelDataType_TP>* GetPlotPtr(const std::string & plot_label);
 
-    std::vector<OGLSweepChart_C<ModelDataType_TP >*>& Data();
+    //! Adds a plot to the view
+    //! Writes PlotDescription_TP to _data as string -> implement to String method 
+    //void AddPlot(PlotDescription_TP description);
 
+    void SetGain(const float gain);
+
+    void ClearPlotSurfaces();
+
+    std::vector<OGLSweepChart_C<ModelDataType_TP >*>& Data();
     const std::vector<OGLSweepChart_C<ModelDataType_TP >*>& constData() const;
     
+    //std::list<OGLSweepChart_C<ModelDataType_TP >*>& Data();
+    //const std::list<OGLSweepChart_C<ModelDataType_TP >*>& constData() const;
+
     //!
     QVariant headerData(int section, Qt::Orientation orientation, int role) const;
 
@@ -118,18 +147,19 @@ public:
     
     //!
     QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
-    
-    //! Adds a plot to the view
-    //! Writes PlotDescription_TP to _data as string -> implement to String method 
-    //void AddPlot(PlotDescription_TP description);
-    
-    void SetGain(const float gain);
 
-    void ClearPlotSurfaces();
+
+signals:
+    void NewMajorTickValueRequested(unsigned int plot_id, ModelDataType_TP major_tick_val);
+    
+    void NewChangeRequest(int plot_id, OGLPlotProperty_TP type,  QVariant value);
 
 private:
     //! the data this model manages
+    //std::list<OGLSweepChart_C<ModelDataType_TP >*>* _plots;
     std::vector<OGLSweepChart_C<ModelDataType_TP >*> _plots;
 
     std::atomic<float> _sig_gain;
+
+    std::mutex* _mutex;
 };

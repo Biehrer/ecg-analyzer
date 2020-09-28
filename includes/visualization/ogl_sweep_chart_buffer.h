@@ -34,6 +34,10 @@ public:
     OGLSweepChartBuffer_C(int buffer_size, 
                           double time_range_ms, 
                           RingBufferOptimized_TC<ChartPoint_TP<Position3D_TC<DataType_TP>>>& input_buffer);
+    // Copy constructor
+    OGLSweepChartBuffer_C(const OGLSweepChartBuffer_C& other);
+
+    OGLSweepChartBuffer_C& operator=(const OGLSweepChartBuffer_C& other);
 
     ~OGLSweepChartBuffer_C();
 
@@ -151,6 +155,45 @@ OGLSweepChartBuffer_C<DataType_TP>::OGLSweepChartBuffer_C(int buffer_size,
     _chart_vbo(QOpenGLBuffer::VertexBuffer)
 {
     _no_line_vertices.fill(NAN, buffer_size * 3);
+}
+
+template<typename DataType_TP>
+inline 
+OGLSweepChartBuffer_C<DataType_TP>::OGLSweepChartBuffer_C(const OGLSweepChartBuffer_C & other)
+{
+    _head_idx = other._head_idx;
+    _tail_idx = other._tail_idx;
+    _input_buffer_size = other._input_buffer_size;
+    _vbo_size = other._vbo_size;
+    _point_count = other._point_count;;
+    _chart_vbo = other._chart_vbo;
+    _time_range_ms = other._time_range_ms;
+    _dataseries_wrapped_once = other._dataseries_wrapped_once;
+    _no_line_vertices = other._no_line_vertices;
+    _last_plotted_y_value_S = other._last_plotted_y_value_S;
+    _last_plotted_x_value_S = other._last_plotted_x_value_S;
+    _input_buffer = other._input_buffer;
+    _primitive_type =  other._primitive_type;
+}
+
+template<typename DataType_TP>
+OGLSweepChartBuffer_C<DataType_TP>&
+OGLSweepChartBuffer_C<DataType_TP>::operator=(const OGLSweepChartBuffer_C & other)
+{
+    _head_idx = other._head_idx;
+    _tail_idx = other._tail_idx;
+    _input_buffer_size = other._input_buffer_size;
+    _vbo_size = other._vbo_size;
+    _point_count = other._point_count;;
+    _chart_vbo = other._chart_vbo;
+    _time_range_ms = other._time_range_ms;
+    _dataseries_wrapped_once = other._dataseries_wrapped_once;
+    _no_line_vertices = other._no_line_vertices;
+    _last_plotted_y_value_S = other._last_plotted_y_value_S;
+    _last_plotted_x_value_S = other._last_plotted_x_value_S;
+    _input_buffer = other._input_buffer;
+    _primitive_type = other._primitive_type;
+    return *this;
 }
 
 

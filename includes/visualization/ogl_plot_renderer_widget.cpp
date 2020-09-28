@@ -20,7 +20,8 @@ QOpenGLPlotRendererWidget::~QOpenGLPlotRendererWidget() {
 
 QOpenGLPlotRendererWidget::QOpenGLPlotRendererWidget(QWidget* parent)
     :
-     _prog()
+    _prog(),
+    _request_buffer(RingBufferSize_TP::Size16)
 {
     // Attention: DO NOT USE OPENGL COMMANDS INSIDE THE CONSTRUCTOR
     // => Instead use InizializeGl()
@@ -41,10 +42,11 @@ QOpenGLPlotRendererWidget::QOpenGLPlotRendererWidget(QWidget* parent)
 
     _paint_update_timer = new QTimer();
     connect(_paint_update_timer, SIGNAL(timeout()), this, SLOT(update()));
-    //_paint_update_timer->setInterval(30);
 }
 
-const QMatrix4x4 QOpenGLPlotRendererWidget::GetModelViewProjection() const
+const 
+QMatrix4x4 
+QOpenGLPlotRendererWidget::GetModelViewProjection() const
 {
     return *_MVP;
 }
@@ -84,9 +86,9 @@ QOpenGLPlotRendererWidget::initializeGL()
 
     InitializeShaderProgramms();
 
-    _paint_update_timer->start();
-    
     _ogl_initialized = true;
+
+    //StartPaint();
 }
 
 
@@ -107,7 +109,7 @@ QOpenGLPlotRendererWidget::resizeGL(int width, int height)
     // Alternative: Trigger a signal, when the viewport is resized
     *_MVP = *(_projection_mat) * *(_view_mat) * *(_model_mat);
     // Send the new model view projection to the charts for correct text rendering 
-    for ( auto& plot : _model->Data() ) {
+    for ( auto& plot : _model->Data()/*_plots*/ ) {
         plot->SetModelViewProjection(*_MVP);
     }
 }
@@ -119,23 +121,28 @@ QOpenGLPlotRendererWidget::paintGL()
     f->glClearColor(0.0f, 0.0f, 0.0f, 0.8f);
 	f->glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     ++_framecounter;
-
     *_MVP = *(_projection_mat) * *(_view_mat) * *(_model_mat);
 
     //_prog.bind();
     //_prog.setUniformValue("u_MVP", *_MVP);
     //_prog.setUniformValue("point_scale", 2.0f);l
     //_prog.setUniformValue("u_Color", QVector3D(1.0f, 1.0f, 1.0f));
-
     _light_shader.bind();
     _light_shader.setUniformValue("u_MVP", *_MVP);
     _light_shader.setUniformValue("point_scale", 2.0f);
     _light_shader.setUniformValue("u_object_color", QVector3D(1.0f, 1.0f, 1.0f));
     _light_shader.setUniformValue("u_light_color", QVector3D(1.0f, 1.0f, 1.0f));
 
+    // Check if we should change some geometries
+    ProcessRequests();
 
-    for ( const auto& plot : /*_model->constData()*/_model->Data() ) {
+    // Draw on screen 
+    for ( const auto& plot : /*_model->constData()*/ _model->Data() /*_plots*/ ) {
+        //if ( plot->GetMaxValueYAxes() == 20.0 ) {
+        //    plot->SetMajorTickValueYAxes(1.0);
+        //}
         plot->Draw(_light_shader, _text_shader);
+
     }
 
     //_prog.release();
@@ -193,7 +200,9 @@ QOpenGLPlotRendererWidget::InitializeGLParameters()
     f->glEnable(GL_PROGRAM_POINT_SIZE);
 }
 
-bool QOpenGLPlotRendererWidget::InitializeShaderProgramms()
+
+bool
+QOpenGLPlotRendererWidget::InitializeShaderProgramms()
 {
     std::cout << std::endl << "Shader Compiling Error Log:" << std::endl
      << "Standard Shader error log: " << std::endl;
@@ -300,3 +309,74 @@ bool QOpenGLPlotRendererWidget::CreateShader(QOpenGLShaderProgram& shader,
     return success;
 }
 
+void 
+QOpenGLPlotRendererWidget::OnNewChangeRequest(int plot_id, 
+                                              const OGLPlotProperty_TP type, 
+                                              const QVariant value)
+{
+    _request_buffer.InsertAtTail({ plot_id, type, value });
+    // This could trigger many updates in short times
+    if( _ogl_initialized ){
+        this->update(); // after the update the changes should be applied to the model 
+    }
+    
+    // now we need to update the model view ( normally done by triggering DataChanged() signal inside the model itself)
+    // but we can trigger a signal here, which triggers a slot inside the model, WHICH then again triggers the DataChanged() Signal to which the model respones with view update
+    ////_model->dataChanged();
+    //QModelIndex nIndex = _model->index(0, 0);
+    //int b = nIndex.row();
+    //QModelIndex end = _model->index(_model->GetNumberOfPlots(), COLS);
+
+    //_model->dataChanged(nIndex, //  top left table index
+    //                    end, // bottom right table index
+    //                    { Qt::DisplayRole });
+}
+
+
+// Call this function just before the paintGl() call:
+void
+QOpenGLPlotRendererWidget::ProcessRequests()
+{
+    if ( _request_buffer.Size() <= 0 ) {
+        return;
+    }
+
+    const auto& requests = _request_buffer.PopLatest(); // PopLatest creates a copy. is this necessary?
+
+    for ( const auto& request : requests ) {
+
+        switch ( request._type ) {
+
+        case OGLPlotProperty_TP::PLOT_ID:
+            _model->Data()[request._plot_id]->SetID((request._value.toInt()));
+            break;
+
+        case OGLPlotProperty_TP::PLOT_LABEL:
+            _model->Data()[request._plot_id]->SetLabel(request._value.toString().toStdString());
+            break;
+
+        case OGLPlotProperty_TP::PLOT_TIMERANGE:
+            _model->Data()[request._plot_id]->SetTimerangeMs(request._value.toDouble());
+            break;
+
+        case OGLPlotProperty_TP::PLOT_YMAX:
+            _model->Data()[request._plot_id]->SetMaxValueYAxes(request._value.toDouble());
+            break;
+
+        case OGLPlotProperty_TP::PLOT_YMIN:
+            _model->Data()[request._plot_id]->SetMinValueYAxes(request._value.toDouble());
+            break;
+
+        case OGLPlotProperty_TP::PLOT_MAJTICK_X:
+            _model->Data()[request._plot_id]->SetMajorTickValueXAxes(request._value.toDouble());
+            break;
+
+        case OGLPlotProperty_TP::PLOT_MAJTICK_Y:
+            //_plots[plot_idx].SetMajorTickValueYAxes(value.ToFloat()); // This function can also be called, when the plots are inside the model. its only important to do this in the paintGl loop, before issueing plot.Draw() calls
+          //PLOTS SHOULD BE INSIDE THE MODEL!=> this is no problem, as long this function is called in paintGl()!
+            _model->Data()[request._plot_id]->SetMajorTickValueYAxes(request._value.toDouble());
+            break;
+ 
+        }
+    }
+}

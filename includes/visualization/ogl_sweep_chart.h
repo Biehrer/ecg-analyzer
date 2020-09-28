@@ -77,6 +77,12 @@ public:
         const OGLChartGeometry_C& geometry,
         const QObject& parent);
 
+    // Copy initialization
+    OGLSweepChart_C(const OGLSweepChart_C&) = delete;
+    
+    // Copy assignment
+    OGLSweepChart_C& operator=(const OGLSweepChart_C& other) = delete;
+
     ~OGLSweepChart_C();
 
     // Public access functions
@@ -176,10 +182,10 @@ private:
     int _number_of_bytes_lead_line;
 
     //! The maximum value of the y axis 
-    /*int*/DataType_TP _max_y_axis_value;
+    DataType_TP _max_y_axis_value;
 
     //! The minimum value of the y axis 
-    /*int*/DataType_TP _min_y_axis_value;
+    DataType_TP _min_y_axis_value;
 
     //! Timerange of the x axis in milliseconds 
     //! (_max_x_axis_val_ms - _min_x_axis_val_ms)
@@ -204,16 +210,13 @@ private:
     DataType_TP _last_plotted_x_value_S = 0;
 
     // Colors for the shader
-    QVector3D _lead_line_color;
+    //QVector3D _lead_line_color;
 
-    //! modifies the surface grid
-    float _major_tick_x_axes;
+    ////! modifies the surface grid
+    //float _major_tick_x_axes;
 
-    //! modifies the surface grid
-    float _major_tick_y_axes;
-
-    //! Model view projection transform matrix for text rendering
-    QMatrix4x4 _chart_mvp;
+    ////! modifies the surface grid
+    //float _major_tick_y_axes;
 
     std::atomic<float> _gain = 1.0f;
 
@@ -229,6 +232,7 @@ private:
 template<typename DataType_TP>
 OGLSweepChart_C<DataType_TP>::~OGLSweepChart_C()
 {
+    std::cout << "Destruct SweepChart_C " << std::endl;
     _lead_line_vbo.destroy();
 }
 
@@ -239,7 +243,7 @@ OGLSweepChart_C<DataType_TP>::OGLSweepChart_C(int time_range_ms,
     DataType_TP min_y_value,
     const OGLChartGeometry_C& geometry,
     const QObject& parent)
-    : OGLBaseChart_C(geometry, parent),
+    : OGLBaseChart_C(geometry, &parent),
     _lead_line_vbo(QOpenGLBuffer::VertexBuffer),
     _time_range_ms(time_range_ms),
     _input_buffer(buffer_size),
@@ -247,9 +251,53 @@ OGLSweepChart_C<DataType_TP>::OGLSweepChart_C(int time_range_ms,
     _ogl_data_series(_input_buffer.MaxSize(), time_range_ms, _input_buffer),
     _ogl_fiducial_data_series(_fiducial_buffer.MaxSize(), time_range_ms, _fiducial_buffer)
 {
+    std::cout << "Construct SweepChart_C " << std::endl;
     _max_y_axis_value = max_y_value;
     _min_y_axis_value = min_y_value;
 }
+
+//template<typename DataType_TP>
+//inline 
+//OGLSweepChart_C<DataType_TP>::OGLSweepChart_C(const OGLSweepChart_C<DataType_TP>& other)
+//{
+//    _lead_line_vbo = other._lead_line_vbo;
+//    _lead_line_vertices = other._lead_line_vertices;
+//    _number_of_bytes_lead_line = other._number_of_bytes_lead_line;
+//    _max_y_axis_value = other._max_y_axis_value;
+//    _min_y_axis_value = other._min_y_axis_value;
+//    _time_range_ms = other._time_range_ms;
+//    _input_buffer = other._input_buffer; // requires =operator overload
+//    _fiducial_buffer = other._fiducial_buffer;
+//    _ogl_data_series = other._ogl_data_series;
+//    _ogl_fiducial_data_series = other._ogl_fiducial_data_series;
+//    _last_plotted_y_value_S = other._last_plotted_y_value_S;
+//    _last_plotted_x_value_S = other._last_plotted_x_value_S;
+//    _gain = other._gain;
+//    _initialized = other._initialized;
+//
+//}
+//
+//template<typename DataType_TP>
+//inline
+//OGLSweepChart_C&
+//OGLSweepChart_C<DataType_TP>::operator=(const OGLSweepChart_C & other)
+//{
+//    _lead_line_vbo = other._lead_line_vbo;
+//    _lead_line_vertices = other._lead_line_vertices;
+//    _number_of_bytes_lead_line = other._number_of_bytes_lead_line;
+//    _max_y_axis_value = other._max_y_axis_value;
+//    _min_y_axis_value = other._min_y_axis_value;
+//    _time_range_ms = other._time_range_ms;
+//    _input_buffer = other._input_buffer;
+//    _fiducial_buffer = other._fiducial_buffer;
+//    _ogl_data_series = other._ogl_data_series;
+//    _ogl_fiducial_data_series = other._ogl_fiducial_data_series;
+//    _last_plotted_y_value_S = other._last_plotted_y_value_S;
+//    _last_plotted_x_value_S = other._last_plotted_x_value_S;
+//    _gain = other._gain;
+//    _initialized = other._initialized;
+//    return *this;
+//}
 
 template<typename DataType_TP>
 void
@@ -268,8 +316,8 @@ OGLSweepChart_C<DataType_TP>::Initialize()
         // Allocate a vertex buffer object to store data for the lead line
         CreateLeadLineVbo();
 
-        // Create vbo for the x and y axis
-        SetupAxes();
+        // Create vbo for the x and y axis => replaced by surfaced grid
+        //SetupAxes();
 
         // Create vbo for the bounding box of the chart
         CreateBoundingBox();
@@ -495,7 +543,6 @@ OGLSweepChart_C<DataType_TP>::GetInputBufferSize()
 }
 
 template<typename DataType_TP>
-//inline
 void
 OGLSweepChart_C<DataType_TP>::Draw(QOpenGLShaderProgram& shader,
     QOpenGLShaderProgram& text_shader)
@@ -599,6 +646,10 @@ inline
 void
 OGLSweepChart_C<DataType_TP>::CreateAxesGrid()
 {
+    _in_init.store(true);
+    _mutex->lock();
+    //bool locked = _mutex->try_lock();
+    //std::cout << "mutex locked? -> " << locked << std::endl;
     // Create surface grid vbo
     auto grid_vertices = CreateSurfaceGrid(_major_tick_x_axes,
         _major_tick_y_axes,
@@ -617,6 +668,8 @@ OGLSweepChart_C<DataType_TP>::CreateAxesGrid()
         _max_y_axis_value,
         _major_tick_x_axes,
         _major_tick_y_axes);
+    _in_init.store(false);
+    _mutex->unlock();
 }
 
 template<typename DataType_TP>

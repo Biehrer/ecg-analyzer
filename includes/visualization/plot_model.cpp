@@ -1,19 +1,23 @@
 #include "plot_model.h"
 
+
 PlotModel_C::PlotModel_C(QObject* parent)
     : QAbstractTableModel(parent)
 {
+    _mutex = new std::mutex();
+    //_plots = new std::vector<OGLSweepChart_C<ModelDataType_TP >/***/>();
 }
 
-enum OGLPlotProperty {
-    PLOT_ID,
-    PLOT_LABEL,
-    PLOT_TIMERANGE,
-    PLOT_YMAX,
-    PLOT_YMIN,
-    PLOT_MAJTICK_X,
-    PLOT_MAJTICK_Y
-};
+PlotModel_C::~PlotModel_C()
+{
+    delete _mutex;
+    //for ( auto plot_it = _plots.begin(); plot_it != _plots.end(); ++plot_it ) {
+    //    delete *plot_it;
+    //    _plots.erase(plot_it);
+    //}
+    //delete _plots;
+}
+
 // Sets the first row and determines the layout ( with #COLS items)
 QVariant
 PlotModel_C::headerData(int section, Qt::Orientation orientation, int role) const
@@ -58,40 +62,68 @@ bool PlotModel_C::setData(const QModelIndex &index, const QVariant &value, int r
         if ( row < 0 ) {
             std::cout << "some fix was needed. row = " << row << std::endl;
             row = 0;
-            //throw std::runtime_error("Something wrong with the index");
         }
+
+        //auto plot_it = *_plots.begin();
+        //std::advance(plot_it, row);
 
         switch ( index.column() ) {
-        case OGLPlotProperty::PLOT_ID:
-            _plots[row]->SetID(value.toInt());
-            break;
+            case OGLPlotProperty_TP::PLOT_ID:
+                emit NewChangeRequest(row, OGLPlotProperty_TP::PLOT_ID, value.toInt());
+                break;
 
-        case OGLPlotProperty::PLOT_LABEL:
-            _plots[row]->SetLabel(value.toString().toStdString());
-            break;
+            case OGLPlotProperty_TP::PLOT_LABEL:
+                emit NewChangeRequest(row, OGLPlotProperty_TP::PLOT_LABEL, value.toString());
+                break;
 
-        case OGLPlotProperty::PLOT_TIMERANGE:
-            _plots[row]->SetTimerangeMs(value.toDouble());
-            break;
+            case OGLPlotProperty_TP::PLOT_TIMERANGE:
+                emit NewChangeRequest(row, OGLPlotProperty_TP::PLOT_TIMERANGE, value.toDouble());
+                break;
 
-        case OGLPlotProperty::PLOT_YMAX:
-            std::cout << "change plot y max val (plot_id = " << row << ")" << std::endl;
-            _plots[row]->SetMaxValueYAxes(value.toDouble());
-            break;
+            case OGLPlotProperty_TP::PLOT_YMAX:
+                emit NewChangeRequest(row, OGLPlotProperty_TP::PLOT_YMAX, value.toDouble());
+                break;
 
-        case OGLPlotProperty::PLOT_YMIN:
-            _plots[row]->SetMinValueYAxes(value.toDouble());
-            break;
+            case OGLPlotProperty_TP::PLOT_YMIN:
+                emit NewChangeRequest(row, OGLPlotProperty_TP::PLOT_YMIN, value.toDouble());
+                break;
 
-        case OGLPlotProperty::PLOT_MAJTICK_X:
-            _plots[row]->SetMajorTickValueXAxes(value.toFloat());
-            break;
+            case OGLPlotProperty_TP::PLOT_MAJTICK_X:
+                //_plots[row]->SetMajorTickValueXAxes(value.toFloat());
+                emit NewChangeRequest(row, OGLPlotProperty_TP::PLOT_MAJTICK_X, value.toDouble());
 
-        case OGLPlotProperty::PLOT_MAJTICK_Y:
-            _plots[row]->SetMajorTickValueYAxes(value.toFloat());
-            break;
+                break;
+
+            case OGLPlotProperty_TP::PLOT_MAJTICK_Y:
+                emit NewChangeRequest(row, OGLPlotProperty_TP::PLOT_MAJTICK_Y, value.toDouble());
+                break;
+                //_plots[row]->SetMajorTickValueYAxes(value.toFloat());
+                //SetMajorTickValueYAxes(row, value.toDouble()); // uses a mutex
+                //
+                // First possibility: signal here, which is caught inside the ogl plot renderer widget.
+                 //emit NewMajorTickValueRequested(row, value.toDouble());
+
+                // But Inside the PlotRendererWidget we have to request data from the model again, 
+                // so we can set it in the signal inside the plotrendererWidget
+                // In OpenGLPlotRenderWidget::OnNewMajorTickValueRequested(plot_id, val){ _model->Data()[plot_id].SetMajorTickValueYAxes(val) )
+
+                // Second possibility -> Vector, in which positions map to enums. 
+                // We iterate this vector inside paintGl() to check if the axes should be modified..
+                // this works because I verified its possible to change the axis inside the paintGl loop without render errors.
+                // before calling plot->Draw(), call a function ( CheckPlotChangeRequests()), which looks like this:
+                // CheckPlotChangeRequest(OGLPlotProperty_TP prop, ){ switch(prop){ case PLOT_MAJTICK_Y: _model->Data()[plot_id].SetMajorTickValueYAxes(val) ; break;} }
+                // This vector is owned by the render widget and modified through signals inside here
+                //emit NewMajorTickValueRequested(row, value.toDouble()/*, OGLPlotProperty_TP::PLOT_MAJTICK_Y*/);
+                // inside the slot inside OpenGLPlotRendererWidget::OnNewMajorTickValueRequested{
+                // _requests[row][]
+                //}
+                //break;
         }
 
+        //emit a signal to make the view reread identified data
+        emit dataChanged(createIndex(0, 0), //  top left table index
+            createIndex(_plots.size(), COLS), // bottom right table index
+            { Qt::DisplayRole });
         return true;
     }
 
@@ -114,30 +146,33 @@ PlotModel_C::data(const QModelIndex & index, int role) const
     int row = index.row();
     int col = index.column();
 
+    if ( row > _plots.size() ) {
+        return QVariant();
+    }
+
     switch ( role ) {
     case Qt::DisplayRole:
-
         switch ( col )
         {
-        case OGLPlotProperty::PLOT_ID:
-            return _plots[row]->GetID();
+        case OGLPlotProperty_TP::PLOT_ID:
+            return /*_plots[row]->GetID();*/ _plots[row]->GetID(); // _plots[row]->GetID();
 
-        case OGLPlotProperty::PLOT_LABEL:
+        case OGLPlotProperty_TP::PLOT_LABEL:
             return QString::fromStdString(_plots[row]->GetLabel());
 
-        case OGLPlotProperty::PLOT_TIMERANGE:
+        case OGLPlotProperty_TP::PLOT_TIMERANGE:
             return _plots[row]->GetTimerangeMs();
 
-        case OGLPlotProperty::PLOT_YMAX:
+        case OGLPlotProperty_TP::PLOT_YMAX:
             return _plots[row]->GetMaxValueYAxes();
 
-        case OGLPlotProperty::PLOT_YMIN:
+        case OGLPlotProperty_TP::PLOT_YMIN:
             return _plots[row]->GetMinValueYAxes();
 
-        case OGLPlotProperty::PLOT_MAJTICK_X:
+        case OGLPlotProperty_TP::PLOT_MAJTICK_X:
             return _plots[row]->GetMajorTickValueXAxes();
 
-        case OGLPlotProperty::PLOT_MAJTICK_Y:
+        case OGLPlotProperty_TP::PLOT_MAJTICK_Y:
             return _plots[row]->GetMajorTickValueYAxes();
         }
 
@@ -170,16 +205,16 @@ void PlotModel_C::ClearPlotSurfaces()
 
 void PlotModel_C::RemovePlot(unsigned int plot_id)
 {
-    for ( auto plot_it = _plots.begin(); plot_it < _plots.end(); ++plot_it ) {
-        if ( (*plot_it)->GetID() == plot_id ) {
-            // beginRemoveRows()
-            plot_it = _plots.erase(plot_it);
-            // endRemoveRows()
-        }
-    }
+    //for ( auto plot_it = _plots.begin(); plot_it != _plots.end(); ++plot_it ) {
+    //    if ( plot_it->GetID() == plot_id ) {
+    //        // beginRemoveRows()
+    //        plot_it = _plots.erase(plot_it);
+    //        // endRemoveRows()
+    //    }
+    //}
 }
 
-bool PlotModel_C::FastInitializePlots(int number_of_plots,
+bool PlotModel_C::InitializePlots(int number_of_plots,
     int view_width,
     int view_height,
     int time_range_ms,
@@ -217,6 +252,12 @@ bool PlotModel_C::FastInitializePlots(int number_of_plots,
             /*min_y*/y_ranges[chart_idx].first,
             geometry,
             *this));
+        //_plots.push_back(OGLSweepChart_C<ModelDataType_TP >(time_range_ms,
+        //   chart_buffer_size,
+        //   /*max_y*/y_ranges[chart_idx].second,
+        //   /*min_y*/y_ranges[chart_idx].first,
+        //   geometry,
+        //   *this));
     }
 
     QVector3D series_color(0.0f, 1.0f, 0.0f); // green
@@ -233,30 +274,19 @@ bool PlotModel_C::FastInitializePlots(int number_of_plots,
     unsigned int r_id = 1;
 
     for ( auto& plot : _plots ) {
-        //beginInsertRows(QModelIndex(), _plots.size(), _plots.size() + 1);
         beginInsertRows(QModelIndex(), r_id - 1, r_id);
         // modifyable variables (from user):
         setData(createIndex(r_id, c_id), r_id-1);
         QString label = QString("plot #" + QString::fromStdString(std::to_string(r_id)));
         setData(createIndex(r_id, c_id + 1), QVariant(label));
         setData(createIndex(r_id, c_id + 2), QVariant(time_range_ms));
-        //setData(createIndex(r_id, c_id + 3), QVariant(/*max_y*/static_cast<double>(y_ranges[r_id-1].second)));
-        //setData(createIndex(r_id, c_id + 4), QVariant(/*min_y*/static_cast<double>(y_ranges[r_id-1].first)));
         plot->SetMaxValueYAxes(static_cast<double>(y_ranges[r_id - 1].second));
         plot->SetMinValueYAxes(static_cast<double>(y_ranges[r_id - 1].first));
         // Divide through 4 to create 4 horizontal and 4 vertical lines 
-        setData(createIndex(r_id, c_id + 5), QVariant(time_range_ms / 4));
+        setData(createIndex(r_id, c_id + 5), QVariant(static_cast<double>(time_range_ms / 4)));
         setData(createIndex(r_id, c_id + 6), QVariant((static_cast<double>(y_ranges[r_id - 1].second - y_ranges[r_id - 1].first)) / 4));
         endInsertRows();
-        ++r_id;
-        //plot->SetID(plot_idx);
-        //plot->SetLabel("plot #" + std::to_string(plot_idx));
-        //++plot_idx;
-        // Set up axes
-
-        //plot->SetMajorTickValueXAxes(time_range_ms / 4);
-        //plot->SetMajorTickValueYAxes((max_y - min_y) / 4);
-        // Non modifyale
+        plot->SetID(r_id-1);
         // Setup colors
         plot->SetSeriesColor(series_color);
         plot->SetAxesColor(axes_color);
@@ -270,6 +300,8 @@ bool PlotModel_C::FastInitializePlots(int number_of_plots,
         plot->SetChartType(DrawingStyle_TP::LINE_SERIES);
         // Initialize
         plot->Initialize();
+
+        ++r_id;
     }
 
     //emit a signal to make the view reread identified data
@@ -282,33 +314,76 @@ bool PlotModel_C::FastInitializePlots(int number_of_plots,
 OGLSweepChart_C<ModelDataType_TP>*
 PlotModel_C::GetPlotPtr(unsigned int plot_idx)
 {
+    std::unique_lock<std::mutex> lck(*_mutex);
     if ( plot_idx < _plots.size() ) {
-        return _plots[plot_idx];
+        /*This creates a copy but should just return a referece? -> seems to be the root of all bugs*/ 
+        return _plots[plot_idx]; /*(&_plots.at(plot_idx));*/ /*(*_plots.begin() + plot_idx);*/ // create plots on theheap??
     }
 
     return nullptr;
 }
 
+
 OGLSweepChart_C<ModelDataType_TP>*
 PlotModel_C::GetPlotPtr(const std::string & plot_label) {
+
+    if ( _plots.empty() ) {
+        return nullptr;
+    }
+
     for ( const auto& plot : _plots ) {
         if ( plot_label == plot->GetLabel() ) {
             return plot;
         }
     }
+
+    //for ( auto plot_it = _plots.begin(); plot_it != _plots.end(); ++plot_it ) {
+    //    if ( plot_label == plot_it->GetLabel() ) {
+    //        return (plot_it)._Ptr;
+    //    }
+    //}
     return nullptr;
 }
-const std::vector<OGLSweepChart_C<ModelDataType_TP>*>&
+
+const 
+std::vector<OGLSweepChart_C<ModelDataType_TP>*>&
 PlotModel_C::constData() const
 {
+    //return (*_plots);
     return _plots;
 }
-
 std::vector<OGLSweepChart_C<ModelDataType_TP>*>&
 PlotModel_C::Data()
 {
-    return _plots;
+    // Protect the data with a mutex! because the OGLRendererWidget is still rendering old OGLTextboxes (inside _plot_axs)
+    //, even it they were destructed through new-initialization inside SetMajorTickValueYAxes()
+    std::cout <<"access data, before lock" << std::endl;
+    // The mutex needs to pro
+    std::unique_lock<std::mutex> lck(*_mutex);
+    //return (*_plots);
+    std::cout << "mutex locked, return data" << std::endl;
+    return _plots; 
 }
+//
+//std::list<OGLSweepChart_C<ModelDataType_TP>*>&
+//PlotModel_C::Data()
+//{
+//    // Protect the data with a mutex! because the OGLRendererWidget is still rendering old OGLTextboxes (inside _plot_axs)
+//    //, even it they were destructed through new-initialization inside SetMajorTickValueYAxes()
+//
+//    // The mutex needs to pro
+//    std::unique_lock<std::mutex> lck(*_mutex);
+//    return *_plots;
+//}
+//
+//
+//const std::list<OGLSweepChart_C<ModelDataType_TP>*>&
+//PlotModel_C::constData() const
+//{
+//    return *_plots;
+//}
+
+
 
 
 void PlotModel_C::AddPlot(const PlotDescription_TP& plot_info)
@@ -321,7 +396,10 @@ void PlotModel_C::AddPlot(const PlotDescription_TP& plot_info)
         plot_info._min_y,
         plot_info._geometry,
         *this));
-    auto* plot = *(_plots.end() - 1);
+    
+    //auto* plot = *(_plots.end() - 1);
+    auto* plot = (*_plots.end() - 1);
+
     plot->SetLabel(plot_info._label);
     plot->SetID(plot_info._id);
     // Setup colors
@@ -358,7 +436,8 @@ PlotModel_C::AddPlot(OGLSweepChart_C<ModelDataType_TP>& plot)
         plot.GetBoundingBox(),
         *this));
 
-    auto* plot_new = *(_plots.end() - 1);
+    auto* plot_new = (*_plots.end() - 1);
+    //auto* plot_new = *(_plots.end() - 1);
     plot_new->SetLabel(plot.GetLabel());
     plot_new->SetID(plot.GetID());
     // Set up axes
@@ -375,11 +454,16 @@ PlotModel_C::AddPlot(OGLSweepChart_C<ModelDataType_TP>& plot)
         { Qt::DisplayRole });
 }
 
+unsigned int PlotModel_C::GetNumberOfPlots()
+{
+    return _plots.size();
+}
+
 
 bool
 PlotModel_C::RemovePlot(const std::string & label)
 {
-    for ( auto plot_it = _plots.begin(); plot_it < _plots.end(); ++plot_it ) {
+    for ( auto plot_it = _plots.begin(); plot_it != /*<*/ _plots.end(); ++plot_it ) {
         if ( label == (*plot_it)->GetLabel() ) {
             // match
             _plots.erase(plot_it);

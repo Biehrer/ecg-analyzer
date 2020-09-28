@@ -19,17 +19,17 @@ JonesPlotApplication_C::JonesPlotApplication_C(QWidget *parent)
     ui.setupUi(this);
     ui._central_widget->setLayout(ui._grid_layout_general);
     // updates ogl scene
-    auto format = QSurfaceFormat::defaultFormat();
-    format.setSwapInterval(0);
-    format.setVersion(3, 3);
-    format.setProfile(QSurfaceFormat::CompatibilityProfile);
-    format.setProfile(QSurfaceFormat::CoreProfile);
-    format.setMinorVersion(1);
-    format.setMajorVersion(2);
-    format.setProfile(QSurfaceFormat::NoProfile);
-    QSurfaceFormat::setDefaultFormat(format);
-    ui._openGL_widget->setFormat(format); // must be called before the ogl widget or its parent is shown
-
+    //auto format = QSurfaceFormat::defaultFormat();
+    //format.setSwapInterval(0);
+    //format.setVersion(3, 3);
+    //format.setProfile(QSurfaceFormat::CompatibilityProfile);
+    //format.setProfile(QSurfaceFormat::CoreProfile);
+    //format.setMinorVersion(1);
+    //format.setMajorVersion(2);
+    //format.setProfile(QSurfaceFormat::NoProfile);
+    //QSurfaceFormat::setDefaultFormat(format);
+    //ui._openGL_widget->setFormat(format); // must be called before the ogl widget or its parent is shown
+    //
     // manage stacked widget pages 
     ui._plot_page_stckd->setLayout(ui._grid_layout_main);
     ui._settings_page_stckd->setLayout(ui._grid_layout_page_settings);
@@ -45,7 +45,6 @@ JonesPlotApplication_C::JonesPlotApplication_C(QWidget *parent)
 
     // set plot model to open gl view
     ui._openGL_widget->SetPlotModel(&_plot_model);
-    ui._openGL_widget->show();
 
     // set plot model to table view of the plot settings page
     ui._plot_settings_table_view->setModel(&_plot_model);
@@ -76,7 +75,21 @@ JonesPlotApplication_C::JonesPlotApplication_C(QWidget *parent)
     connect(ui._signals_page_main_widget, SIGNAL(RemoveSignalRequested(unsigned int)),
         this, SLOT(OnRemoveSignal(unsigned int)));
 
-    ui._openGL_widget->StartPaint();
+    qRegisterMetaType<OGLPlotProperty_TP>("OGLPlotProperty_TP");
+
+    // Connect model to plot widget, so modifications in the plot_model are also displayed in the widget
+    connect(&_plot_model, SIGNAL(NewChangeRequest(int, OGLPlotProperty_TP, QVariant)),
+            ui._openGL_widget, SLOT(OnNewChangeRequest(int, OGLPlotProperty_TP, QVariant)));
+
+    //ui._openGL_widget->StartPaint();
+    //_ogl_update_timer = new QTimer();
+    //connect(_ogl_update_timer, SIGNAL(timerout()), ui._openGL_widget, SLOT(ui._openGL_widget->update()) );
+    //_ogl_update_timer->setInterval(30);
+    //_ogl_update_timer->start();
+
+    ui._openGL_widget->show();
+    // Start drawing
+    //ui._openGL_widget->StartPaint();
 }
 
 void JonesPlotApplication_C::Setup() 
@@ -94,18 +107,29 @@ void JonesPlotApplication_C::Setup()
     y_ranges[1].second = 0.0009; // max val
 
 
-    bool success = _plot_model.FastInitializePlots(number_of_plots, 
+    bool success = _plot_model.InitializePlots(number_of_plots, 
                                                     ui._openGL_widget->width(), 
                                                     ui._openGL_widget->height(),
                                                     10000.0, 
                                                     y_ranges );
 
+    //bool success = ui._openGL_widget->InitializePlots(number_of_plots,
+    //                                                 ui._openGL_widget->width(), 
+    //                                                 ui._openGL_widget->height(),
+    //                                                 10000.0, 
+    //                                                 y_ranges );
+
+    /*FAILS BECAUSE MOST DATA IS NOT SET*/
+        
+
     if ( !success ) {
         throw std::runtime_error("plot initialization failed! Abort");
     }  
     
+    //_plot_model.SetMajorTickValueYAxes(0, 1.0);
     auto plot_0 = _plot_model.GetPlotPtr(0);
-    plot_0->SetMaxValueYAxes(20.0);
+    plot_0->SetMajorTickValueYAxes(1.0);
+    //plot_0->SetMaxValueYAxes(20.0);
     //plot_0->SetMaxValueYAxes(10.0);
     //plot_0->SetTimerangeMs(1000.0);
     //plot_0->SetTimerangeMs(1000.0);
@@ -124,7 +148,7 @@ void JonesPlotApplication_C::Setup()
 
 void JonesPlotApplication_C::OnButtonHomePage()
 {
-    ui._openGL_widget->StartPaint();
+    //ui._openGL_widget->StartPaint();
     int _stacked_idx_home = 0;
     ui._stacked_widget->setCurrentIndex(_stacked_idx_home);
     ui._signals_page_main_widget->hide();
@@ -133,14 +157,15 @@ void JonesPlotApplication_C::OnButtonHomePage()
 void JonesPlotApplication_C::OnButtonSettingsPage() 
 {
     //ui._openGL_widget->StopPaint();
+    //ui._openGL_widget->StopPaint();
     int _stacked_idx_settings = 1;
     ui._stacked_widget->setCurrentIndex(_stacked_idx_settings);
-    ui._signals_page_main_widget->hide();
+    //ui._signals_page_main_widget->hide();
 
-    auto temp_copy = _plot_model.Data()[0];
-    _plot_model.RemovePlot(0);
-
-    _plot_model.AddPlot(*temp_copy);
+    //auto temp_copy = _plot_model.Data()[0];
+    //_plot_model.RemovePlot(0);
+    
+    //_plot_model.AddPlot(*temp_copy);
 
     //_plot_model.RemovePlot(0);
     //auto plot_0 = _plot_model.GetPlotPtr(0);
@@ -149,7 +174,8 @@ void JonesPlotApplication_C::OnButtonSettingsPage()
 
 void JonesPlotApplication_C::OnButtonSignalsPage()
 {
-    ui._openGL_widget->StopPaint();
+    //ui._openGL_widget->OnNewMajorTickValue(0, 5.0);
+    //ui._openGL_widget->StopPaint();
     int _stacked_idx_settings = 2;
     ui._stacked_widget->setCurrentIndex(_stacked_idx_settings);
     ui._signals_page_main_widget->show();

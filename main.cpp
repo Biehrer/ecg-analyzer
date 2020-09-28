@@ -26,6 +26,10 @@ int main(int argc, char *argv[])
         std::cout << std::to_string(*argv[idx]) << std::endl;
     }
 
+    auto format = QSurfaceFormat::defaultFormat();
+    format.setSwapInterval(0);
+    QSurfaceFormat::setDefaultFormat(format);
+
     // Do this ogl stuff before the line: QApplication a(argc, arv)
     QCoreApplication::setAttribute(Qt::AA_UseDesktopOpenGL);
     QApplication::setAttribute(Qt::AA_UseDesktopOpenGL);
@@ -41,6 +45,7 @@ int main(int argc, char *argv[])
     //format.setMajorVersion(2);
     //format.setProfile(QSurfaceFormat::NoProfile);
     //QSurfaceFormat::setDefaultFormat(format);
+
 
     JonesPlotApplication_C j;    
     j.setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);

@@ -67,6 +67,28 @@ public:
         _data_series_buffer.resize(_max_size);
     }
 
+    RingBufferOptimized_TC(const RingBufferOptimized_TC& other) 
+    {
+        _size = other._size;
+        _max_size = other._max_size;
+        _data_series_buffer = other._data_series_buffer;
+        _head_idx = other._head_idx;
+        _tail_idx = other._tail_idx;
+        //_lock = other._lock;
+        _number_of_elements.store(other._number_of_elements.load());
+    }
+
+    RingBufferOptimized_TC& operator=(const RingBufferOptimized_TC& other) 
+    {
+        _size = other._size;
+        _max_size = other._max_size;
+        _data_series_buffer = other._data_series_buffer;
+        _head_idx = other._head_idx;
+        _tail_idx = other._tail_idx;
+        //_lock = other._lock;
+        _number_of_elements.store(other._number_of_elements.load());
+        return *this;
+    }
     // Public access functions
 public:
     //! Insert a new element inside the buffer

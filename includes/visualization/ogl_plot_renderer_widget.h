@@ -37,9 +37,47 @@
 #include <qglobalstatic.h>
 #include <qvector.h>
 #include <qstring.h>
+// for the model
+#include <QAbstractTableModel>
 
 // Project defines
 using ChartDataType_TP = float;
+
+
+// TODO: Private member?
+struct Request_TP {
+
+public:
+
+    Request_TP() 
+        : 
+        _plot_id(-1),
+        _type(OGLPlotProperty_TP::PLOT_NOT_DEFINED),
+        _value(0)
+    {
+    }
+
+    Request_TP(int plot_id, const OGLPlotProperty_TP type, const QVariant& value)
+        :
+        _plot_id(plot_id),
+        _type(type), 
+        _value(value)
+    {
+    }
+
+    Request_TP(const Request_TP& other) {
+        _plot_id = other._plot_id;
+        _type = other._type;
+        _value = other._value;
+    }
+
+public:
+    int _plot_id = -1;
+    OGLPlotProperty_TP _type;
+    QVariant _value = 0;
+};
+
+
 
 class QOpenGLPlotRendererWidget : public QOpenGLWidget
 {
@@ -52,6 +90,13 @@ public:
 
     // Public access functions
 public:    
+
+    bool InitializePlots(int number_of_plots,
+        int view_width,
+        int view_height,
+        int time_range_ms,
+        const std::vector<std::pair<ModelDataType_TP, ModelDataType_TP>>& y_ranges);
+
     //! Returns the model view projection transform matrix
     const QMatrix4x4 GetModelViewProjection() const;
 
@@ -97,6 +142,11 @@ private:
                       QString& vertex_path,
                       QString& fragment_path, 
                       std::vector<QString>& attribute_locations);
+
+    void ProcessRequests();
+
+public slots:
+    void OnNewChangeRequest(int plot_id, const OGLPlotProperty_TP type, const QVariant value);
 
     // Private attributes
 private:
@@ -145,4 +195,9 @@ private:
     //! (render)data model
     PlotModel_C* _model;  
 
+    // New member, which is used by the setData() methods signal, to add gui requests to the buffer
+    RingBufferOptimized_TC<Request_TP> _request_buffer;
+
+    // WIthout model - testing
+    //std::vector<OGLSweepChart_C<ModelDataType_TP >*> _plots;
 };

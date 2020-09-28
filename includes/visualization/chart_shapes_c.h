@@ -75,13 +75,26 @@ public:
         // |                                            |
         // ----------------------------------------------
 
-        // Creaete vertices
+        // Create vertices
         QVector<VertexType_TP> horizontal_line_pos;
         
         // Horizontal (spanning) lines (length of each line = chart_width )
-        int number_of_horizontal_grid_lines = (max_y_val - min_y_val) / y_major_tick_dist_unit;
-        VertexType_TP y_axis_major_tick_value = max_y_val;
+        int number_of_horizontal_grid_lines;
+        VertexType_TP y_axis_major_tick_value;
 
+        //if( (max_y_val - min_y_val) % y_major_tick_dist_unit != 0 ){
+        //    // change any of the three values (the tick value?) so it works again
+        //    // BUT REPORT THIS CHANGE TO THE OUTSIDE?
+        //    // or just return empty, so the user knows, the values do not work
+        //    y_major_tick_dist_unit = (max_y_val - min_y_val) / std::ceil(y_major_tick_dist_unit);
+        //}
+
+        number_of_horizontal_grid_lines = (max_y_val - min_y_val) / y_major_tick_dist_unit;
+        y_axis_major_tick_value = max_y_val;
+
+        /*int number_of_horizontal_grid_lines = (max_y_val - min_y_val) / y_major_tick_dist_unit;
+        VertexType_TP y_axis_major_tick_value = max_y_val;
+        */
         for ( int line_idx = 0; line_idx <= number_of_horizontal_grid_lines; ++line_idx ) {
             VertexType_TP major_tick_y_pos_S = GetScreenCoordsFromYChartValue(y_axis_major_tick_value, max_y_val, min_y_val, geometry);
 

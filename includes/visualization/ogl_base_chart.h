@@ -14,6 +14,7 @@
 #include <vector>
 #include <chrono>
 #include <time.h>
+#include <atomic>
 #include <ctime>
 
 // Qt includes
@@ -36,8 +37,20 @@ class OGLBaseChart_C {
         // Constructor / Destructor / Copying..
     public:
         OGLBaseChart_C(const OGLChartGeometry_C& geometry,
-                       const QObject& parent);
+                       const QObject* parent = nullptr);
 
+        // Copy initialization
+        OGLBaseChart_C(const OGLBaseChart_C& other) = delete;
+        
+        // Copy assignment
+        OGLBaseChart_C& operator=(const OGLBaseChart_C& other) = delete;
+
+        // Move initialization
+        //OGLBaseChart_C(OGLBaseChart_C&& other);
+
+        // Move assignment
+        //OGLBaseChart_C& operator=(OGLBaseChart_C&& other);
+        
         ~OGLBaseChart_C();
 
         // Public access functions
@@ -135,6 +148,12 @@ class OGLBaseChart_C {
         //! The plot area is the area in which the data series is drawn
         OGLChartGeometry_C _plot_area;
 
+        //! modifies the surface grid
+        float _major_tick_x_axes;
+
+        //! modifies the surface grid
+        float _major_tick_y_axes;
+
         // Colors for the shader
         QVector3D _lead_line_color;
         
@@ -157,18 +176,22 @@ class OGLBaseChart_C {
         QVector3D _text_color;
 
         //! unit descriptions for the x and y axes
-        std::vector<OGLTextBox> _plot_axes;
+        std::vector<OGLTextBox*> _plot_axes;
 
         //! Model view projection transform matrix for text rendering
         QMatrix4x4 _chart_mvp;
 
         //! The parent widget with the opengl context
-        const QObject& _parent_widget;
+        const QObject* _parent_widget;
 
         // the label (name) of the plot (avR, I, II,...)
         std::string _label = "";
 
         // plot id
         unsigned int _id;
+        
+        std::atomic<bool> _in_init = true;
+
+        std::mutex* _mutex;
 };
 

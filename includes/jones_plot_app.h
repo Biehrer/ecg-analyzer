@@ -12,6 +12,7 @@
 #include <QString>
 #include <qobject.h>
 #include <qmessagebox.h>
+#include <qtimer.h>
 // stl includes
 #include <thread>
 #include <functional>
@@ -69,6 +70,8 @@ private:
     // The ID of the signal inside the _signal_model which will be plotted when the Start button is clicked
     // 
     unsigned int _current_signal_id = 0;
+
+    QTimer* _ogl_update_timer;
 
    std::atomic<bool> _is_signal_playing = false;
    std::atomic<bool> _is_stop_requested = false;
