@@ -31,8 +31,13 @@ add_library( visualization
                             "chart_types.h"
                             "plot_model.h"
                             "plot_model.cpp"
-                            "plot_notation.h"
-                            "line_notation.h"
+                           # "plot_notation.h"
+                           # "line_notation.h"
+                           "timer_c.h"
+                           "font_c.h"
+                           "font_c.cpp"
+                           "font_manager_c.h"
+                           "font_manager_c.cpp"
            )
 
  # link libs

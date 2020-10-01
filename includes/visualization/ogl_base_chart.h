@@ -9,7 +9,6 @@
 // STL includes
 #include <iostream>
 #include <string>
-#include <mutex>
 #include <algorithm>
 #include <vector>
 #include <chrono>
@@ -176,7 +175,7 @@ class OGLBaseChart_C {
         QVector3D _text_color;
 
         //! unit descriptions for the x and y axes
-        std::vector<OGLTextBox*> _plot_axes;
+        std::vector<OGLTextBox> _plot_axes;
 
         //! Model view projection transform matrix for text rendering
         QMatrix4x4 _chart_mvp;
@@ -189,9 +188,5 @@ class OGLBaseChart_C {
 
         // plot id
         unsigned int _id;
-        
-        std::atomic<bool> _in_init = true;
-
-        std::mutex* _mutex;
 };
 

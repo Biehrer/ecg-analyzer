@@ -37,12 +37,12 @@
 #include <qglobalstatic.h>
 #include <qvector.h>
 #include <qstring.h>
+#include <qapplication.h>
 // for the model
 #include <QAbstractTableModel>
 
 // Project defines
 using ChartDataType_TP = float;
-
 
 // TODO: Private member?
 struct Request_TP {
@@ -91,12 +91,6 @@ public:
     // Public access functions
 public:    
 
-    bool InitializePlots(int number_of_plots,
-        int view_width,
-        int view_height,
-        int time_range_ms,
-        const std::vector<std::pair<ModelDataType_TP, ModelDataType_TP>>& y_ranges);
-
     //! Returns the model view projection transform matrix
     const QMatrix4x4 GetModelViewProjection() const;
 
@@ -143,10 +137,8 @@ private:
                       QString& fragment_path, 
                       std::vector<QString>& attribute_locations);
 
-    void ProcessRequests();
-
 public slots:
-    void OnNewChangeRequest(int plot_id, const OGLPlotProperty_TP type, const QVariant value);
+    void OnNewChangeRequest(int plot_id, const OGLPlotProperty_TP& type, const QVariant& value);
 
     // Private attributes
 private:
@@ -197,7 +189,4 @@ private:
 
     // New member, which is used by the setData() methods signal, to add gui requests to the buffer
     RingBufferOptimized_TC<Request_TP> _request_buffer;
-
-    // WIthout model - testing
-    //std::vector<OGLSweepChart_C<ModelDataType_TP >*> _plots;
 };

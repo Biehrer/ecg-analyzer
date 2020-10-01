@@ -1,9 +1,13 @@
 #pragma once
 
+// Project includes
+#include "timer_c.h"
+#include "font_manager_c.h"
+
 // STL includes
 #include <iostream>
-#include<assert.h>
-#include <mutex>
+#include <assert.h>
+
 // Qt includes
 #include <qopenglbuffer.h>
 #include <qvector.h>
@@ -11,7 +15,6 @@
 #include <qopenglextrafunctions.h>
 #include <qopenglshaderprogram.h>
 #include <qvector3d.h>
-#include <qvector2d.h>
 
 // Freetype
 #include "ft2build.h"
@@ -41,12 +44,7 @@ GLenum glCheckError_(const char *file, int line)
     return errorCode;
 }
 #define glCheckError() glCheckError_(__FILE__, __LINE__) 
-//! Defines the font to use when rendering text
-enum Font2D_TP {
-    ARIAL,
-    TNR,
-    CALIBRI
-};
+
 //
 //!  Description: 
 //!  A two dimensional opengl text renderer which 
@@ -65,16 +63,13 @@ class OGLTextBox {
 public:
     OGLTextBox()
     {
-        //std::cout << "construct textbox, VAO = " << _VAO << ", VBO = " << _VBO << std::endl;
-        _mutex = new std::mutex();
     }
 
     //OGLTextBox(const OGLTextBox& other) = delete;
     OGLTextBox& operator=(const OGLTextBox& other) = delete;
 
-    OGLTextBox(const OGLTextBox& other) = delete;
+    OGLTextBox(const OGLTextBox& other) = default;
     //{
-    //    _mutex = other._mutex;
     //    _initialized = other._initialized;
     //    _VAO = other._VAO;
     //    _VBO = other._VBO;
@@ -85,8 +80,7 @@ public:
     
     //OGLTextBox& operator=(const OGLTextBox& other) 
     //{
-    //    _mutex = new std::mutex();
-    //    _mutex = other._mutex;
+
     //    _initialized = other._initialized;
     //    _VAO = other._VAO;
     //    _VBO = other._VBO;
@@ -98,155 +92,42 @@ public:
 
     ~OGLTextBox()
     {   
-        std::cout << "Destruct textbox, VAO = " << _VAO << ", VBO = " << _VBO  << std::endl;
         if ( _initialized ){
-            _mutex->lock();
             Cleanup();
-            _mutex->unlock();
         }
-        delete _mutex;
-
     }
 
 private:
-    //! Holds all state information relevant to a character as loaded using FreeType
-    struct Character {
-        GLuint TextureID;   // ID handle of the glyph texture
-        QVector<GLfloat> Size;    // Size of glyph
-        QVector<GLfloat> Bearing;  // Offset from baseline to left/top of glyph
-        GLuint Advance;    // Horizontal byte_offset to advance to next glyph
-        QVector<GLfloat> vertices;
-        char character;
-    };
 
     bool _initialized = false;
 
-    std::mutex* _mutex;
     // Public access functions
 public:
-    //! Initialize the freetype library
-    //! Creates the Freetype character glyphs and stores them in the member map
-    //! This function requires an active OpenGL context to work
-    //! 
-    //! \param font the font style to use when loading character glyphs
-    void Initialize(Font2D_TP font)
-    {
-        if ( !_initialized ){ 
-            //_characters.clear();
-            std::unique_lock<std::mutex> lck(*_mutex);
-            //if( _characters.size() > 0){
-            //    _characters.erase(_characters.begin(), _characters.end());
-            //}
-
-            // FreeType
-            FT_Library ft;
-            // All functions return a value different than 0 whenever an error occurred
-            if ( FT_Init_FreeType(&ft) )
-                std::cout << "ERROR::FREETYPE: Could not init FreeType Library" << std::endl;
-
-            // Refactor in function
-            // Load path to the font
-            // Todo: load paths from a textfile with a configuration manager ?
-            std::string pathname_2_font = GetFontPathname(font);
-
-            // Load font as face
-            FT_Face face;
-            if ( FT_New_Face(ft, pathname_2_font.c_str(), 0, &face) )
-                std::cout << "ERROR::FREETYPE: Failed to load font" << std::endl;
-
-            // Set size to load glyphs as
-            FT_Set_Pixel_Sizes(face, 0, 48);
-        
-            // Disable byte-alignment restriction
-            QOpenGLFunctions* f = QOpenGLContext::currentContext()->functions();
-            f->glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-
-            // Load first 128 characters of ASCII set
-            for ( GLubyte c = 0; c < 128; c++ )
-            {
-                // Load character glyph 
-                if ( FT_Load_Char(face, c, FT_LOAD_RENDER) )
-                {
-                    std::cout << "ERROR::FREETYTPE: Failed to load Glyph" << std::endl;
-                    continue;
-                }
-                
-                // Generate texture
-                GLuint texture = 0; // Handle to the texture
-                f->glGenTextures(1, &texture);
-                f->glBindTexture(GL_TEXTURE_2D, texture);
-                f->glTexImage2D(
-                    GL_TEXTURE_2D,
-                    0,
-                    GL_RED,
-                    face->glyph->bitmap.width,
-                    face->glyph->bitmap.rows,
-                    0,
-                    GL_RED,
-                    GL_UNSIGNED_BYTE,
-                    face->glyph->bitmap.buffer
-                );
-                glCheckError();
-                // Set texture options
-                f->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-                f->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-                f->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-                f->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-                // Now store character for later use
-                QVector<GLfloat> vec2_x;
-                vec2_x.push_back(face->glyph->bitmap.width);
-                vec2_x.push_back(face->glyph->bitmap.rows);
-
-                QVector<GLfloat> vec2_y;
-                vec2_y.push_back(face->glyph->bitmap_left);
-                vec2_y.push_back(face->glyph->bitmap_top);
-
-                Character character = {
-                    texture,
-                    vec2_x,
-                    vec2_y,
-                    static_cast<GLuint>(face->glyph->advance.x)
-                };
-                _characters.insert(std::make_pair(c, character));
-            }
-            f->glBindTexture(GL_TEXTURE_2D, 0);
-
-            // Destroy FreeType once we're finished
-            FT_Done_Face(face);
-            FT_Done_FreeType(ft);
-
-            _initialized = true;
-        }
-    }
-
+   
     bool IsTextSet() const {
         return _text_set;
     }
     //! Set the text to render via RenderText(..)
     //! The test must be set before it can be rendered
-    void SetText(const std::string& text, GLfloat x, GLfloat y, GLfloat scale)
+    void SetText(const std::string& text, 
+                 GLfloat x,
+                 GLfloat y,
+                 GLfloat scale, 
+                 Font2D_TP font)
     {
-        //_current_text.clear();
-        //std::vector<Character>().swap(_current_text);
-        //_current_text.erase(_current_text.begin(), _current_text.end());
-        //_current_text.resize(0);
+        Timer_C("Set text");
         assert(_current_text.size() == 0);
-
-        auto* f = QOpenGLContext::currentContext()->functions();
-        auto* extra_f = QOpenGLContext::currentContext()->extraFunctions();
-        //f->glActiveTexture(GL_TEXTURE0); // GO BACK
-        //extra_f->glBindVertexArray(_VAO);
 
         // Iterate through all characters
         // Create vertices (quads made from triangles) for the text.
         for ( std::string::const_iterator c = text.begin(); c != text.end(); c++ ) {
-            Character ch = _characters[*c];
+            Character ch = /*_characters[*c];*/ FontManager_C::GetFontCharacter(font, *c);
             // Calculate character position
             GLfloat xpos = x + ch.Bearing[0] * scale;
             // Use the character T as reference to calculate the descent 
             // (descent=distance of the letter to some reference line at the top / bottom of the text line )
             // -> Use 'T', because T is always the biggest letter
-            GLfloat ypos = y + (_characters['T'].Size[1] - ch.Bearing[1]) * scale;
+            GLfloat ypos = y + (FontManager_C::GetFontCharacter(font, 'T').Size[1] - ch.Bearing[1]) * scale;
 
             // Calculate character width / height. 
             // Scaling could also be done inside the shader
@@ -264,22 +145,19 @@ public:
                  xpos + w, ypos + h,   1.0, 1.0
                 });
             // Store the text for rendering
-            ch.vertices = vertices;
+            ch.vertices = vertices; // DO i change the original character here ? I
             ch.character = *c;
-            _current_text.push_back(ch);
+            _current_text.emplace_back(ch);
             // Now advance cursors for next glyph (note that advance is number of 1/64 pixels)
             x += (ch.Advance >> 6) * scale;
             // Bitshift by 6 to get value in pixels (2^6 = 64 (divide amount of 1/64th pixels by 64 to get amount of pixels))
         }
-        //_mutex->lock();
-
         // Allocate an vertex buffer which can store the current text
         SetupVAO();
 
         // Send the data to the graphics card
         WriteTextToVBO();
 
-        //_mutex->unlock();
         _text_set = true;
     }
 
@@ -294,41 +172,34 @@ public:
         QVector3D& color,
         QMatrix4x4& model_view_projection) /*const*/
     {
-        _mutex->lock();
-
         auto* f = QOpenGLContext::currentContext()->functions();
         auto* extra_f = QOpenGLContext::currentContext()->extraFunctions();
         shader.bind();
         shader.setUniformValue("u_MVP", model_view_projection);
-        shader.setUniformValue("u_text_color", color);
-        
-        //f->glEnable(GL_CULL_FACE);
+        shader.setUniformValue("u_text_color", color);        
         f->glEnable(GL_BLEND);
+        glCheckError();
         f->glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        glCheckError();
         f->glActiveTexture(GL_TEXTURE0);
         glCheckError();
         int byte_offset = 0;
         // The char quad is made of two triangles, ach of them made of three vertices
         // Each quad is drawn by itself
-        int number_of_vertices_per_char = 6; 
         extra_f->glBindVertexArray(_VAO);
-        // WHEN THE TEXTBOX IS DELETED FROM THE SIGNAL TRIGGERED BY ME, SOMEONE STILL IS TRYING TO RENDER IT, although it should be removed 
         glCheckError();
 
         for ( const auto& character : _current_text ) {
             f->glBindTexture(GL_TEXTURE_2D, character.TextureID);
-            //extra_f->glBindVertexArray(_VAO);
             glCheckError();
-
-            f->glDrawArrays(GL_TRIANGLES, byte_offset, number_of_vertices_per_char);
+            f->glDrawArrays(GL_TRIANGLES, byte_offset, _number_of_vertices_per_char);
             glCheckError();
-            byte_offset += number_of_vertices_per_char; 
+            byte_offset += _number_of_vertices_per_char; 
         }
         extra_f->glBindVertexArray(0);
         f->glBindTexture(GL_TEXTURE_2D, 0);
         f->glDisable(GL_BLEND);
         shader.release();
-        _mutex->unlock();
     }
 
     // Private helper functions
@@ -336,24 +207,19 @@ private:
     //!  Allocate memory to store the whole text 
     //! this function needs to be called when the text changes because the vbo has to adapt its size
     void SetupVAO() {
+        Timer_C("SetupVAO");
         QOpenGLFunctions* f = QOpenGLContext::currentContext()->functions();
         QOpenGLExtraFunctions* extra_f = QOpenGLContext::currentContext()->extraFunctions();
         // Configure VAO/VBO for texture quads
-        //if( !_text_set ){
-            std::cout << "generate buffers ( because text was not set before and we needed to generate)" << std::endl;
-            extra_f->glGenVertexArrays(1, &_VAO);
-            glCheckError();
-            f->glGenBuffers(1, &_VBO);
-            glCheckError();
-        //}
-        std::cout << "construct textbox, VAO = " << _VAO << ", VBO = " << _VBO << std::endl;
-
+        extra_f->glGenVertexArrays(1, &_VAO);
+        glCheckError();
+        f->glGenBuffers(1, &_VBO);
+        glCheckError();
         extra_f->glBindVertexArray(_VAO);
         glCheckError();
         f->glBindBuffer(GL_ARRAY_BUFFER, _VBO);
         glCheckError();
         // This does resize the buffer! it's not necessary to delete the old one and create a new one
-        // DO I need to respect the texture size?
         f->glBufferData(GL_ARRAY_BUFFER, this->GetVBOSizeInBytes(), nullptr, GL_DYNAMIC_DRAW /*GL_STATIC_DRAW*/); 
         glCheckError();
         f->glEnableVertexAttribArray(0);
@@ -367,6 +233,7 @@ private:
     void Cleanup() 
     {
         if ( _text_set ) {
+            Timer_C("Cleanup textbox");
             QOpenGLExtraFunctions* f_extra = QOpenGLContext::currentContext()->extraFunctions();
             QOpenGLFunctions* f = QOpenGLContext::currentContext()->functions();
             //QOpenGLContext::currentContext()->makeCurrent(ui._openGlWidget.GetSurface());
@@ -383,9 +250,6 @@ private:
                 // Log the error
             }
 
-            // The textures never are deleted, because before this function is called, 
-            // the last text inside _current_text already was already cleared so its empty
-
             for (const auto& character : _characters /*_current_text*/) {
                 f->glDeleteTextures(1, &character.second.TextureID);
                 glCheckError();
@@ -394,13 +258,14 @@ private:
             glCheckError();
             f_extra->glDeleteBuffers(1, &_VBO);
             glCheckError();
-            //_text_set = false;
+            _text_set = false;
         }
     }
 
     //! Writes the current text to the VBO as textured GL_QUADS
     void WriteTextToVBO()
     {
+        Timer_C("Write text to vbo");
         auto* f = QOpenGLContext::currentContext()->functions();
         auto* extra_f = QOpenGLContext::currentContext()->extraFunctions();
         // Store the quads + texture data for each quad inside the VBO
@@ -419,14 +284,12 @@ private:
             glCheckError();
             // Update content of VBO memory
             // Be sure to use glBufferSubData and not glBufferData
-            //f->glBindBuffer(GL_ARRAY_BUFFER, _VBO);
             f->glBufferSubData(GL_ARRAY_BUFFER,
                 byte_write_offset,
                 char_glyph_size_bytes,
                 ch.vertices.constData()
             );
             glCheckError();
-            //f->glBindBuffer(GL_ARRAY_BUFFER, 0);
             byte_write_offset += char_glyph_size_bytes;
         }
         f->glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -465,13 +328,8 @@ private:
     }
 
     //! Returns the size of the vertex buffer object in bytes
-    //! Calculation:
-    //! Each Quad (=2 x 3 = 6vertices) requires 
-    //! 4 floats ( 2 position coordinates and 2 texture coorindates)
-    //! => two triangles(6verts in sum) per char. Each verte
-
-    // one triangle = 3 verts. => 6 verts for triangle
-    // for the quad = 4 coordinates(2 texture positions + 2vertex positions )
+    //! Quad for glyph = 3 verts. => 6 verts for Quad
+    //! Glyph texture = 4 coordinates(2 texture positions + 2vertex positions)
     //! One quad can be used to display one letter of text
     //!
     //! \returns the size of the vertex buffer object in bytes
@@ -484,6 +342,8 @@ private:
     //! Vertex array and buffer object
     GLuint _VAO = 0;
     GLuint _VBO = 0;
+
+    const int _number_of_vertices_per_char = 6;
 
     //! Stores 128 ascii character glyphs
     std::map<GLchar, Character> _characters;
