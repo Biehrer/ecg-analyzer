@@ -1,6 +1,6 @@
 #pragma once
 
-#define __cplusplus
+//#define __cplusplus
 
 // Project includes
 #include "file_io.h"

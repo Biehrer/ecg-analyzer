@@ -8,7 +8,6 @@
 // STL includes
 #include <iostream>
 #include <string>
-#include <mutex>
 #include <algorithm>
 #include <vector>
 #include <chrono>
@@ -102,7 +101,7 @@ public:
     //template<DrawingStyle_TP type = DrawingStyle_TP::LINE_SERIES >
     void Draw(QOpenGLShaderProgram& shader, QOpenGLShaderProgram& text_shader);
 
-    void AddNewFiducialMark(/*const */Timestamp_TP/*&*/ timestamp);
+    void AddNewFiducialMark(const Timestamp_TP& timestamp);
 
     //! Clears the plot screen and buffers
     void Clear();
@@ -232,7 +231,6 @@ private:
 template<typename DataType_TP>
 OGLSweepChart_C<DataType_TP>::~OGLSweepChart_C()
 {
-    std::cout << "Destruct SweepChart_C " << std::endl;
     _lead_line_vbo.destroy();
 }
 
@@ -251,9 +249,24 @@ OGLSweepChart_C<DataType_TP>::OGLSweepChart_C(int time_range_ms,
     _ogl_data_series(_input_buffer.MaxSize(), time_range_ms, _input_buffer),
     _ogl_fiducial_data_series(_fiducial_buffer.MaxSize(), time_range_ms, _fiducial_buffer)
 {
-    std::cout << "Construct SweepChart_C " << std::endl;
     _max_y_axis_value = max_y_value;
     _min_y_axis_value = min_y_value;
+    // setup buffer for the vertices, used to draw the lead line: 
+    // The most vertices are fixed and only the x value of the vertices needs to be adapted when new data was added.
+    // The only value that changes when adding new data, is the x value of the lead line. 
+    // The y values are fixed because the lead line is a vertical line, which is always drawn through the whole chart.
+    // The z values are fixed anyway
+    _lead_line_vertices.resize(buffer_size);
+    // point from:
+    // y value
+    _lead_line_vertices[1] = _plot_area.GetLeftBottom()._y;
+    // z value
+    _lead_line_vertices[2] = _plot_area.GetZPosition();
+    // point to:
+    // y value
+    _lead_line_vertices[4] = _plot_area.GetLeftTop()._y;
+    // z value
+    _lead_line_vertices[5] = _plot_area.GetZPosition();
 }
 
 //template<typename DataType_TP>
@@ -397,21 +410,19 @@ template<typename DataType_TP>
 void
 OGLSweepChart_C<DataType_TP>::SetMajorTickValueXAxes(float tick_value_ms)
 {
+    _major_tick_x_axes = tick_value_ms;
+
     if ( _initialized ) {
         // Only set the timerange, if the major-tick-x-value is smaller than the new time_range_ms value, 
         // to prevent flase rendering of the surface grid.
         // OR
         // Set the timerange to major_tick_x_value, if its smaller.
-        if ( tick_value_ms <= _time_range_ms ) {
-            tick_value_ms = _time_range_ms;
-        }
-
+        //if ( tick_value_ms <= _time_range_ms ) {
+        //    tick_value_ms = _time_range_ms;
+        //}
         Clear();
-        _major_tick_x_axes = tick_value_ms;
         CreateAxesGrid();
     }
-    _major_tick_x_axes = tick_value_ms;
-
 }
 
 template<typename DataType_TP>
@@ -426,16 +437,16 @@ template<typename DataType_TP>
 void
 OGLSweepChart_C<DataType_TP>::SetMajorTickValueYAxes(float tick_value_unit)
 {
+    _major_tick_y_axes = tick_value_unit;
+
     if ( _initialized ) {
         if ( tick_value_unit > _max_y_axis_value - _min_y_axis_value ) {
             tick_value_unit = _max_y_axis_value;
         }
 
         Clear();
-        _major_tick_y_axes = tick_value_unit;     
         CreateAxesGrid();
     }
-    _major_tick_y_axes = tick_value_unit;
 
 }
 
@@ -452,9 +463,10 @@ inline
 void
 OGLSweepChart_C<DataType_TP>::SetMaxValueYAxes(const DataType_TP max_y_val)
 {
+    _max_y_axis_value = max_y_val;
+
     if ( _initialized ) {
         Clear();
-        _max_y_axis_value = max_y_val;
         CreateAxesGrid();
     }
 }
@@ -472,9 +484,10 @@ inline
 void 
 OGLSweepChart_C<DataType_TP>::SetMinValueYAxes(const DataType_TP min_y_val)
 {
+    _min_y_axis_value = min_y_val;
+
     if ( _initialized ) {
         Clear();
-        _min_y_axis_value = min_y_val;
         CreateAxesGrid();
     }
 }
@@ -492,21 +505,19 @@ inline
 void
 OGLSweepChart_C<DataType_TP>::SetTimerangeMs(double time_range_ms)
 {
-   
+    _time_range_ms = time_range_ms;
+    _ogl_data_series.SetTimeRange(time_range_ms);
+    _ogl_fiducial_data_series.SetTimeRange(time_range_ms);
+
     if ( _initialized ) {
         // Only set the timerange, if the major-tick-x-value is smaller than the new time_range_ms value, 
         // to prevent flase rendering of the surface grid.
         // OR
         // Set the timerange to major_tick_x_value, if its smaller.
-
-        if ( _major_tick_x_axes >= time_range_ms ) {
-            time_range_ms = _major_tick_x_axes;
-        }
-
+        //if ( _major_tick_x_axes >= time_range_ms ) {
+        //    time_range_ms = _major_tick_x_axes;
+        //}
         Clear();
-        _time_range_ms = time_range_ms;
-        _ogl_data_series.SetTimeRange(time_range_ms);
-        _ogl_fiducial_data_series.SetTimeRange(time_range_ms);
         CreateAxesGrid();
     }
     
@@ -557,7 +568,7 @@ OGLSweepChart_C<DataType_TP>::Draw(QOpenGLShaderProgram& shader,
 template<typename DataType_TP>
 inline
 void
-OGLSweepChart_C<DataType_TP>::AddNewFiducialMark(/*const*/ Timestamp_TP/*&*/ timestamp_sec)
+OGLSweepChart_C<DataType_TP>::AddNewFiducialMark(const Timestamp_TP& timestamp_sec)
 {
     auto x_ms = timestamp_sec.GetMilliseconds();
     // use modulo to wrap the dataseries 
@@ -613,21 +624,6 @@ OGLSweepChart_C<DataType_TP>::CreateLeadLineVbo()
     f->glDisableVertexAttribArray(0);
     _lead_line_vbo.release();
 
-    // setup the buffer: The most vertices are fixed and only the x value of the vertices needs to be adapted when new data was added.
-    // The only value that changes when adding new data, is the x value of the lead line. 
-    // The y values are fixed because the lead line is a vertical line, which is always drawn through the whole chart.
-    // The z values are fixed anyway
-    _lead_line_vertices.resize(buffer_size);
-    // point from:
-    // y value
-    _lead_line_vertices[1] = _plot_area.GetLeftBottom()._y;
-    // z value
-    _lead_line_vertices[2] = _plot_area.GetZPosition();
-    // point to:
-    // y value
-    _lead_line_vertices[4] = _plot_area.GetLeftTop()._y;
-    // z value
-    _lead_line_vertices[5] = _plot_area.GetZPosition();
 }
 
 template<typename DataType_TP>
@@ -646,11 +642,6 @@ inline
 void
 OGLSweepChart_C<DataType_TP>::CreateAxesGrid()
 {
-    _in_init.store(true);
-    _mutex->lock();
-    //bool locked = _mutex->try_lock();
-    //std::cout << "mutex locked? -> " << locked << std::endl;
-    // Create surface grid vbo
     auto grid_vertices = CreateSurfaceGrid(_major_tick_x_axes,
         _major_tick_y_axes,
         _time_range_ms,
@@ -668,8 +659,6 @@ OGLSweepChart_C<DataType_TP>::CreateAxesGrid()
         _max_y_axis_value,
         _major_tick_x_axes,
         _major_tick_y_axes);
-    _in_init.store(false);
-    _mutex->unlock();
 }
 
 template<typename DataType_TP>

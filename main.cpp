@@ -1,58 +1,44 @@
-// Visualization lib includes
-#ifdef USE_VISUALIZATION_CPP // (VISUALIZATION_ENABLED_CPP == TRUE) 
-#define VISUALIZATION_ENABLED TRUE
-//#include "includes/visualization/ogl_plot_renderer_widget.h"
-#else
-#endif
-
 // Project includes
-//#include "time_series_player.h" // see std::invoke for member function bindings or other possibility to pass a member func
 #include "jones_plot_app.h"
 
 // Qt includes
 #include <QtWidgets/QApplication>
-#include "qopenglwidget.h"
 
 // STL includes
 #include <string>
 #include <iostream>
-#include <thread>
-#include <functional>
 
 int main(int argc, char *argv[])
 {
-    std::cout << "argc:" << argc << ", arguments:" << std::endl;
+    std::cout << "argc: " << argc << ", arguments:" << std::endl;
     for ( int idx = 0; idx < argc; ++idx ) {
         std::cout << std::to_string(*argv[idx]) << std::endl;
     }
 
-    auto format = QSurfaceFormat::defaultFormat();
-    format.setSwapInterval(0);
-    QSurfaceFormat::setDefaultFormat(format);
+    // auto format = QSurfaceFormat::defaultFormat();
+    // 0 - Disable VSync; 1 - Enable VSync; > 1 - check documentary!
+    // format.setSwapInterval(1); 
+
+    // format.setVersion(3, 3);
+    // format.setMinorVersion(1);
+    // format.setMajorVersion(2);
+
+    // format.setProfile(QSurfaceFormat::CompatibilityProfile);
+    // format.setProfile(QSurfaceFormat::CoreProfile);
+    // format.setProfile(QSurfaceFormat::NoProfile);
+    
+    // QSurfaceFormat::setDefaultFormat(format);
 
     // Do this ogl stuff before the line: QApplication a(argc, arv)
     QCoreApplication::setAttribute(Qt::AA_UseDesktopOpenGL);
     QApplication::setAttribute(Qt::AA_UseDesktopOpenGL);
+
     QApplication a(argc, argv);
     
-    //// updates ogl scene
-    //auto format = QSurfaceFormat::defaultFormat();
-    //format.setSwapInterval(0);
-    //format.setVersion(3, 3);
-    //format.setProfile(QSurfaceFormat::CompatibilityProfile);
-    //format.setProfile(QSurfaceFormat::CoreProfile);
-    //format.setMinorVersion(1);
-    //format.setMajorVersion(2);
-    //format.setProfile(QSurfaceFormat::NoProfile);
-    //QSurfaceFormat::setDefaultFormat(format);
-
-
     JonesPlotApplication_C j;    
     j.setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     j.showFullScreen();
-
     j.Setup();
-
     j.showNormal();
     j.showMaximized();
 

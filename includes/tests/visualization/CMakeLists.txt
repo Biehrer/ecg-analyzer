@@ -17,7 +17,9 @@ find_library(CPP_UNIT_LIB cppunit_lib)
 
 add_executable(visualization_lib_test   
                                     main.cpp
-                                    text_renderer_test.h)
+                                  #  text_renderer_test.h
+                                    text_renderer_test_independent.h
+                                    )
 
 
 

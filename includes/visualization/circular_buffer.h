@@ -8,6 +8,7 @@
 #include "chart_Types.h"
 
 // STL includes
+#include <array>
 #include <vector>
 #include <iostream>
 #include <assert.h>
@@ -15,6 +16,58 @@
 #include <algorithm>
 #include <mutex>
 #include <atomic>
+
+#include <cstdint>
+
+//template<typename T>
+//class array_view {
+//    T* ptr_;
+//    std::size_t len_;
+//public:
+//    array_view(T* ptr, std::size_t len) noexcept : ptr_{ ptr }, len_{ len } {}
+//
+//    T& operator[](int i) noexcept { return ptr_[i]; }
+//    T const& operator[](int i) const noexcept { return ptr_[i]; }
+//    auto size() const noexcept { return len_; }
+//
+//    auto begin() noexcept { return ptr_; }
+//    auto end() noexcept { return ptr_ + len_; }
+//};
+
+template<typename T>
+class span {
+    T* ptr_;
+    std::size_t len_;
+
+public:
+    span(T* ptr, std::size_t len) noexcept
+        : ptr_{ ptr }, len_{ len }
+    {}
+
+    span() noexcept
+        : ptr_{ nullptr}, len_{0}
+    {}
+
+    T& operator[](int i) noexcept {
+        return *ptr_[i];
+    }
+
+    T const& operator[](int i) const noexcept {
+        return *ptr_[i];
+    }
+
+    std::size_t size() const noexcept {
+        return len_;
+    }
+
+    T* begin() noexcept {
+        return ptr_;
+    }
+
+    T* end() noexcept {
+        return ptr_ + len_;
+    }
+};
 
 enum RingBufferSize_TP {
     Size2, Size4, Size8, Size16, Size32,
@@ -125,7 +178,8 @@ public:
     //! \returns a vector with all data which was added until the buffer was read the last time
     const std::vector<T> PopLatest() {
         std::vector<T> latest_data;
-        // This while loop could be dangerous when an thread inserts data too fast 
+        latest_data.reserve(_number_of_elements);
+        // This while loop could be dangerous, when a thread inserts data too fast.
         // the number of objects which should be poped from the buffer should be known at the beginning 
         //int current_size = Size();
         //std::unique_lock<std::mutex> lck(_lock);
@@ -140,6 +194,30 @@ public:
 
         return latest_data;
     }
+
+    /*const*/ /*array_view*/span<T> PopLatestRef() {
+        if ( !IsBufferEmpty() ) {
+            // return just a slice from the original vector
+            int num_elements = _number_of_elements;
+            span<T> av(&_data_series_buffer[_head_idx], num_elements);
+            _head_idx = (_head_idx + num_elements) & (_max_size - 1);
+            _number_of_elements -= num_elements;
+            return av;
+        } else {
+            return {}; // TODO what is constructed here in span?
+        }
+
+        //if ( !IsBufferEmpty() ){
+        //    //return { _data_series_buffer[_head_idx], _data_series_buffer[_tail_idx]);
+        //    //_number_of_elements -= (_tail_idx - _head_idx);
+        //    //_head_idx = (_head_idx + 1) & (_max_size - 1);
+        //    array_view<T> av(_data_series_buffer[_head_idx], _number_of_elements);
+        //} else {
+        //    return {};
+        //}
+    }
+
+
 
     //! Returns the last item which was added to the buffer.
     //! Returns the standard constructed item T, if no item is inside the buffer

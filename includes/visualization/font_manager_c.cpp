@@ -29,7 +29,7 @@ FontManager_C::GetFontCharacter(Font2D_TP font, const GLchar character)
             return f->GetCharacter(character);
         }
     }
-
+    
     return {};
 }
 
