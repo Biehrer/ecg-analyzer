@@ -23,7 +23,7 @@ ListViewDialog_C::~ListViewDialog_C()
 void ListViewDialog_C::SetSignalModel(SignalModel_C * model)
 {
     ui->_list_view->setModel(model);
-    connect(ui->_button_box, SIGNAL(accept()), this, SLOT(OnButtonOK()));
+    connect(ui->_button_box, SIGNAL(accepted()), this, SLOT(OnButtonOK()));
 }
 
 void ListViewDialog_C::OnButtonCancel()

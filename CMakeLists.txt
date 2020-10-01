@@ -92,4 +92,4 @@ target_link_libraries(signalanalyzer PUBLIC
                                      )
 
 
-target_compile_definitions(signalanalyzer PRIVATE __cplusplus)
+#target_compile_definitions(signalanalyzer PRIVATE __cplusplus)

@@ -34,10 +34,14 @@ public:
     OGLSweepChartBuffer_C(int buffer_size, 
                           double time_range_ms, 
                           RingBufferOptimized_TC<ChartPoint_TP<Position3D_TC<DataType_TP>>>& input_buffer);
-    // Copy constructor
-    OGLSweepChartBuffer_C(const OGLSweepChartBuffer_C& other);
 
-    OGLSweepChartBuffer_C& operator=(const OGLSweepChartBuffer_C& other);
+    // Copy constructor / assignment
+    OGLSweepChartBuffer_C(const OGLSweepChartBuffer_C& other) = delete;
+    OGLSweepChartBuffer_C& operator=(const OGLSweepChartBuffer_C& other) = delete;
+    
+    // Move constructor / assignment
+    OGLSweepChartBuffer_C(OGLSweepChartBuffer_C &&) = delete;/*default;*/
+    OGLSweepChartBuffer_C& operator=(OGLSweepChartBuffer_C &&) = delete;
 
     ~OGLSweepChartBuffer_C();
 
@@ -48,17 +52,14 @@ public:
 
     void SetTimeRange(double time_range_ms);
 
+    //! currently supported: GL_LINE_STRIP and GL_POINTS
+    void SetPrimitiveType(DrawingStyle_TP primitive_type);
+
     //! Returns the x value last addded to the plot
     DataType_TP GetLastPlottedXValue();
 
     //! Returns the y value last addded to the plot
     DataType_TP GetLastPlottedYValue();
-    
-    //! Destroy the content of the buffer 
-    void Clear();
-
-    //! Creates and allocates an empty OpenGL vertex buffer object used to store data for visualization
-    void AllocateSeriesVbo();
 
     //! Returns the nuber of 3d positions stored inside the buffer
     //! You can do calculation to get the number of stored vertices or bytes
@@ -66,10 +67,13 @@ public:
     //! return_value * 3 * sizeof(float) = number of bytes in buffer
     int GetNumberOfPoints();
 
-    //! currently supported: GL_LINE_STRIP and GL_POINTS
-    void SetPrimitiveType(DrawingStyle_TP primitive_type);
-
     DrawingStyle_TP GetDrawingStyle();
+    
+    //! Destroy the content of the buffer 
+    void Clear();
+
+    //! Creates and allocates an empty OpenGL vertex buffer object used to store data for visualization
+    void AllocateSeriesVbo();
 
 private:
     //! Updates the chart buffer with the newest data from the input_buffer
@@ -156,45 +160,45 @@ OGLSweepChartBuffer_C<DataType_TP>::OGLSweepChartBuffer_C(int buffer_size,
 {
     _no_line_vertices.fill(NAN, buffer_size * 3);
 }
-
-template<typename DataType_TP>
-inline 
-OGLSweepChartBuffer_C<DataType_TP>::OGLSweepChartBuffer_C(const OGLSweepChartBuffer_C & other)
-{
-    _head_idx = other._head_idx;
-    _tail_idx = other._tail_idx;
-    _input_buffer_size = other._input_buffer_size;
-    _vbo_size = other._vbo_size;
-    _point_count = other._point_count;;
-    _chart_vbo = other._chart_vbo;
-    _time_range_ms = other._time_range_ms;
-    _dataseries_wrapped_once = other._dataseries_wrapped_once;
-    _no_line_vertices = other._no_line_vertices;
-    _last_plotted_y_value_S = other._last_plotted_y_value_S;
-    _last_plotted_x_value_S = other._last_plotted_x_value_S;
-    _input_buffer = other._input_buffer;
-    _primitive_type =  other._primitive_type;
-}
-
-template<typename DataType_TP>
-OGLSweepChartBuffer_C<DataType_TP>&
-OGLSweepChartBuffer_C<DataType_TP>::operator=(const OGLSweepChartBuffer_C & other)
-{
-    _head_idx = other._head_idx;
-    _tail_idx = other._tail_idx;
-    _input_buffer_size = other._input_buffer_size;
-    _vbo_size = other._vbo_size;
-    _point_count = other._point_count;;
-    _chart_vbo = other._chart_vbo;
-    _time_range_ms = other._time_range_ms;
-    _dataseries_wrapped_once = other._dataseries_wrapped_once;
-    _no_line_vertices = other._no_line_vertices;
-    _last_plotted_y_value_S = other._last_plotted_y_value_S;
-    _last_plotted_x_value_S = other._last_plotted_x_value_S;
-    _input_buffer = other._input_buffer;
-    _primitive_type = other._primitive_type;
-    return *this;
-}
+//
+//template<typename DataType_TP>
+//inline 
+//OGLSweepChartBuffer_C<DataType_TP>::OGLSweepChartBuffer_C(const OGLSweepChartBuffer_C & other)
+//{
+//    _head_idx = other._head_idx;
+//    _tail_idx = other._tail_idx;
+//    _input_buffer_size = other._input_buffer_size;
+//    _vbo_size = other._vbo_size;
+//    _point_count = other._point_count;;
+//    _chart_vbo = other._chart_vbo; // TODO: copy content into this _chart_vbo?
+//    _time_range_ms = other._time_range_ms;
+//    _dataseries_wrapped_once = other._dataseries_wrapped_once;
+//    _no_line_vertices = other._no_line_vertices;
+//    _last_plotted_y_value_S = other._last_plotted_y_value_S;
+//    _last_plotted_x_value_S = other._last_plotted_x_value_S;
+//    _input_buffer = other._input_buffer;
+//    _primitive_type =  other._primitive_type;
+//}
+//
+//template<typename DataType_TP>
+//OGLSweepChartBuffer_C<DataType_TP>&
+//OGLSweepChartBuffer_C<DataType_TP>::operator=(const OGLSweepChartBuffer_C & other)
+//{
+//    _head_idx = other._head_idx;
+//    _tail_idx = other._tail_idx;
+//    _input_buffer_size = other._input_buffer_size;
+//    _vbo_size = other._vbo_size;
+//    _point_count = other._point_count;;
+//    _chart_vbo = other._chart_vbo;
+//    _time_range_ms = other._time_range_ms;
+//    _dataseries_wrapped_once = other._dataseries_wrapped_once;
+//    _no_line_vertices = other._no_line_vertices;
+//    _last_plotted_y_value_S = other._last_plotted_y_value_S;
+//    _last_plotted_x_value_S = other._last_plotted_x_value_S;
+//    _input_buffer = other._input_buffer;
+//    _primitive_type = other._primitive_type;
+//    return *this;
+//}
 
 
 template<typename DataType_TP>
@@ -268,18 +272,19 @@ OGLSweepChartBuffer_C<DataType_TP>::OnChartUpdate()
     }
 
     //Get latest data from the input buffer
-    auto latest_data = _input_buffer.PopLatest();
+    //auto latest_data = _input_buffer.PopLatest();
+    auto latest_data = _input_buffer.PopLatestRef();
 
-    if ( !latest_data.empty() ) {
-        QVector<float> additional_point_vertices; // TODO: Preallocate for performance - do not use append, but use an idx to iterate and insert new values
+    //if ( !latest_data.empty() ) {
+     if ( latest_data.size() > 0 ) {
+        QVector<float> additional_point_vertices; 
+        // TODO: Preallocate for performance - do not use append, but use an idx to iterate and insert new values
+        additional_point_vertices.reserve(latest_data.size());
+        //additional_point_vertices.insert()
         for ( const auto& element : latest_data ) {
             //Check if its neccessary to end the line strip,
             //due to a wrap of the series from the right to the left screen border
-
-            // TOdo: Can this be problematic when using the sweep chart buffer for the fiducial marks?
-            // YES it is, because then he tries to create a 'line', where one value is NAN(this is not valid ofc)
-            // But it is required when drawing the data series as LINE_STRIP
-            // Solution=> one more condition in if statement ( check if we draw an line strip)
+            // The 'break' is achieved by sending NAN values to OpenGl.
             if ( _primitive_type == GL_LINE_STRIP && 
                 element._value._x < _last_plotted_x_value_S )
             {
@@ -287,10 +292,11 @@ OGLSweepChartBuffer_C<DataType_TP>::OnChartUpdate()
                 additional_point_vertices.append(NAN);
                 additional_point_vertices.append(NAN);
             }
-            //DEBUG(element);
-            additional_point_vertices.append(element._value._x);
-            additional_point_vertices.append(element._value._y);
-            additional_point_vertices.append(element._value._z);
+            // DEBUG(element);
+            // force construction inplace via std::move (because QVector is missing emplace_back())
+            additional_point_vertices.append(std::move(element._value._x));
+            additional_point_vertices.append(std::move(element._value._y));
+            additional_point_vertices.append(std::move(element._value._z));
             _last_plotted_x_value_S = element._value._x;
         }
 
@@ -299,9 +305,8 @@ OGLSweepChartBuffer_C<DataType_TP>::OnChartUpdate()
         WriteToVbo(additional_point_vertices);
 
         RemoveOutdatedDataInsideVBO();
-    }
+     }
 }
-
 
 template<typename DataType_TP>
 int
@@ -392,17 +397,29 @@ OGLSweepChartBuffer_C<DataType_TP>::FindIdxToTimestampInsideData(const Timestamp
         return index;
     }
 
-    auto current_data_ptr = data.begin() + current_idx;
+    auto current_data_ptr = data.begin() + current_idx +1;// +1 ? -> because .end() does also point to one position after the end
     auto it_interesting_data_range_until_current =
         std::lower_bound(data.begin(), current_data_ptr, timestamp, CmpTimestamps);
 
-    if ( it_interesting_data_range_until_current != current_data_ptr ) {
+    if ( it_interesting_data_range_until_current != current_data_ptr  ) {
         std::size_t index = std::distance(data.begin(), it_interesting_data_range_until_current);
         return index;
-    } else {
+    }else {
         return -1;
+        std::cout << "could not find idx to timestamp. return -1 " << std::endl;
     }
 
+    //// Not good, because binary search does only work when everything is sorted. this is not the case with the ring buffer (only two parts are sorted)
+    //auto complete_range =
+    //    std::lower_bound(data.begin(), data.end(), timestamp, CmpTimestamps);
+
+    //if ( complete_range != data.end() ) {
+    //    std::size_t index = std::distance(data.begin(), complete_range);
+    //    return index;
+    //}
+    //else {
+    //    return -1;
+    //}
 }
 
 template<typename DataType_TP>
@@ -417,11 +434,18 @@ OGLSweepChartBuffer_C<DataType_TP>::WriteToVbo(const QVector<DataType_TP>& data)
         _chart_vbo.write(static_cast<int>(_head_idx), data.constData(), number_of_new_data_bytes);
         // increment write offset in bytes
         _head_idx += number_of_new_data_bytes;
+        // TODO:  When we draw GL_LINES, we need to increment the pointcount different? data.size() / 6, because each line is made of 6 vertices?
+        // =>Nope, that is wrong, because when we render GL_LINES, we already pushed twice as much data inside data, as when we render GL_LINE_STRIP
+        //if ( _primitive_type == GL_LINES ) {
+        //    IncrementPointCount(data.size() / 6);
+        //}else{
+        //    IncrementPointCount(data.size() / 3); 
+        //}
         IncrementPointCount(data.size() / 3);
     }
     else {
-        // buffer is full or not all new data can fit into it; 
-        // reset buffer index and start overwriting data at the beginning
+        // currently the buffer is full or not all the new data can fit into it; 
+        // reset buffer index and start overwriting data at the beginning.
         // Calculate how much bytes can fit into the buffer until the end is reached:
         int number_of_free_bytes_until_end = _vbo_size - _head_idx;
         int bytes_to_write_at_beginning = number_of_new_data_bytes - number_of_free_bytes_until_end;
@@ -432,6 +456,12 @@ OGLSweepChartBuffer_C<DataType_TP>::WriteToVbo(const QVector<DataType_TP>& data)
             _chart_vbo.write(static_cast<int>(_head_idx),
                 data.data(),
                 bytes_to_write_until_end);
+
+            //if ( _primitive_type == GL_LINES ) {
+            //    IncrementPointCount(number_of_free_bytes_until_end / sizeof(float) / 6);
+            //} else {
+            //    IncrementPointCount(number_of_free_bytes_until_end / sizeof(float) / 3);
+            //}
             IncrementPointCount(number_of_free_bytes_until_end / sizeof(float) / 3);
         }
 

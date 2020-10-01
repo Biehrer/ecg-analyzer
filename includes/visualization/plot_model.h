@@ -1,23 +1,19 @@
 #pragma once
 
 // Project includes
-//#include "ogl_plot_renderer_widget.h"
 #include "ogl_sweep_chart.h"
 
 // Qt includes
-#include <qobject.h>
 #include <QAbstractTableModel>
+#include <qobject.h>
 #include <qvariant.h>
 #include <qvector3d.h>
 #include <qvector.h>
 #include <qstring.h>
-
 // STL includes
 #include <vector>
 #include <string>
 #include <atomic>
-#include <list>
-#include <mutex>
 const int COLS = 7;
 const int ROWS = 2;
 
@@ -150,9 +146,7 @@ public:
 
 
 signals:
-    void NewMajorTickValueRequested(unsigned int plot_id, ModelDataType_TP major_tick_val);
-    
-    void NewChangeRequest(int plot_id, OGLPlotProperty_TP type,  QVariant value);
+    void NewChangeRequest(int plot_id, const OGLPlotProperty_TP& type, const QVariant& value);
 
 private:
     //! the data this model manages
@@ -160,6 +154,4 @@ private:
     std::vector<OGLSweepChart_C<ModelDataType_TP >*> _plots;
 
     std::atomic<float> _sig_gain;
-
-    std::mutex* _mutex;
 };

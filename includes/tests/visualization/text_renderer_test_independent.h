@@ -2,32 +2,38 @@
 
 // Project includes
 #include "../../visualization/ogl_plot_renderer_widget.h"
-#include "../../visualization/text_renderer_2d.h"
-
-// CPPUnit includes
-#include "cppunit/extensions/HelperMacros.h"
 
 // Qt includes
 #include <QtWidgets/QApplication>
+#include <QObject>
+#include <qtimer>
+#include <qtimer.h>
+#include <qobject.h>
 
 // STL includes
 #include <iostream>
 #include <string>
-class TextRendererTest : public CppUnit::TestFixture {
-
-private:
-    CPPUNIT_TEST_SUITE(TextRendererTest);
-    CPPUNIT_TEST(TestSetText);
-    CPPUNIT_TEST_SUITE_END();
+class TextRendererTestIndependent : public QObject {
+    Q_OBJECT
 
 public:
-    void setUp();
+        TextRendererTestIndependent();
+        ~TextRendererTestIndependent();
 
-    void tearDown();
+public:
 
+    void Initialize();
     void TestSetText();
 
+signals:
+    void NewTimerEvent();
+
+public slots:
+    void OnNewMajortickYAxesValue();
+
 private:
+    QTimer* _timer;
+
     PlotModel_C _model;
 
     QOpenGLPlotRendererWidget _renderer;
@@ -35,8 +41,24 @@ private:
     const std::string _test_name = "TextRendererTest";
 };
 
+// Instead of inline: Make a own .cpp file
+inline
+TextRendererTestIndependent::TextRendererTestIndependent() 
+{
+    _timer = new QTimer();
+    connect(_timer, SIGNAL(timeout()), this, SLOT(OnNewMajortickYAxesValue()) );
+}
+
+
+inline
+TextRendererTestIndependent::~TextRendererTestIndependent()
+{
+    delete _timer;
+}
+
+inline
 void
-TextRendererTest::setUp()
+TextRendererTestIndependent::Initialize()
 { 
 
     _renderer.SetPlotModel(&_model);
@@ -46,11 +68,31 @@ TextRendererTest::setUp()
     _model.InitializePlots(2, 400, 600, 1000, { { -10, 10 },{ -10, 10 } });
     _renderer.StartPaint();
 
-   CPPUNIT_ASSERT_EQUAL_MESSAGE("Could not initialize OpenGL renderer", true, _renderer.IsOpenGLInitialized());
+    auto* plot = _model.GetPlotPtr(0);
+    plot->SetMajorTickValueYAxes(1.0);
+
+    plot->SetMajorTickValueYAxes(5.0);
+
+
+    //// Reproduces the bug
+    //_timer->setInterval(5000);
+    //_timer->start();
 }
 
+inline
 void 
-TextRendererTest::TestSetText() 
+TextRendererTestIndependent::OnNewMajortickYAxesValue()
+{
+    //auto* plot = _model.GetPlotPtr(0);
+    //plot->SetMajorTickValueYAxes(1.0);
+    //_renderer.StopPaint();
+    _model.SetMajorTickValueYAxes(0, 1.0);
+    //_renderer.StartPaint();
+}
+
+inline
+void 
+TextRendererTestIndependent::TestSetText()
 {
     auto* plot = _model.GetPlotPtr(0);
     plot->SetMajorTickValueYAxes(1.0);
@@ -72,11 +114,3 @@ TextRendererTest::TestSetText()
 
 }
 
-
-
-void TextRendererTest::tearDown() {
-
-    std::cout << "tear down" << std::endl;
-}
-
-CPPUNIT_TEST_SUITE_REGISTRATION(TextRendererTest);

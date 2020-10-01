@@ -17,7 +17,9 @@ class PanTopkinsQRSDetection {
 
     // Constructor / Destrcutor/...
 public:
-    PanTopkinsQRSDetection(double sample_freq_hz, unsigned int training_hase_duration_sec);
+    PanTopkinsQRSDetection(double sample_freq_hz, 
+                           unsigned int training_hase_duration_sec);
+
     ~PanTopkinsQRSDetection();
 
     // Public functions
@@ -26,7 +28,7 @@ public:
     //!
     //! \param data the current sample of the datastream which is analyzed
     //! \param timestamp the timestamp of the current sample inside the datastream
-    /*void*/DataType_TP AppendPoint(const DataType_TP data, double timestamp_sec);
+    void AppendPoint(const DataType_TP& data, const double timestamp_sec);
 
     //! Returns the delay due to the filtering in number of samples
     int GetFilterDelay();
@@ -35,12 +37,11 @@ public:
     void Reset(float sample_freq_hz, unsigned int training_phase_duration_sec);
 
     //! Stores the callback, which is called, when a qrs complex was detected
-    void Connect(std::function<void(double)> callback);
+    void Connect(std::function<void(const double&)> callback);
 
     // Private functions
 public:
-
-    // Initializes the thresholds - learning phase 1
+    // Initializes the signal and noise thresholds - learning phase 1
     void InitializeThresholds(const std::vector<DataType_TP>& training_data);
 
     // Private variables
@@ -103,6 +104,7 @@ private:
 
     //! Buffer for the training phase of the algorithm
     std::vector<DataType_TP> _training_buffer;
+    //! Tail index for the training buffer
     unsigned int _training_data_idx = 0;
 
     //! Bandpass filter
@@ -129,6 +131,7 @@ private:
 
     //! Amplitude value of the current peak
     DataType_TP _peak_amplitude = 0;
+
     //! Timestamp of the current peak
     double _peak_timestamp = 0;
 
@@ -144,7 +147,7 @@ private:
     PeakDetectorFilter<DataType_TP> _peak_filter;
 
     //! The function called, when a qrs complex is detected
-    std::function<void(double)> _qrs_callback;
+    std::function<void(const double)> _qrs_callback;
 };
 
 
@@ -186,16 +189,17 @@ PanTopkinsQRSDetection<DataType_TP>::~PanTopkinsQRSDetection()
 
 
 template<typename DataType_TP>
-//void
-DataType_TP // TODO: Pass sample by refernce
-PanTopkinsQRSDetection<DataType_TP>::AppendPoint(const DataType_TP sample, double timestamp)
+void
+PanTopkinsQRSDetection<DataType_TP>::AppendPoint(const DataType_TP& sample, const double timestamp)
 {
-    // For testing only: TODO: Function should return void again and not the filtered signal sample by sample! ( Or it should return a bool(true), if its a peak
     _input_buff[0] = sample;
+    
     // Use bandpass as state filter: filter each sample by sample
     _bandpass_filter->apply(_input_buff);
+
     // derivation state filter
     _diff_filter.Apply(_input_buff[0]);
+
     // square derivated sig
     _input_buff[0] = _input_buff[0] * _input_buff[0];
     // moving average state filter 
@@ -206,9 +210,9 @@ PanTopkinsQRSDetection<DataType_TP>::AppendPoint(const DataType_TP sample, doubl
     // => but for safe use of the class, we should always check if thresholds are initialized eitherway?
     if ( !_thresholds_initialized ) {
         if ( _training_data_idx < _number_of_training_samples ) {
-            // Collect more data and then initialize the threshold when we got enough..
+            // Collect more data and initialize the thresholds when we got enough
             _training_buffer[_training_data_idx] = _input_buff[0];
-            // thresholds are not initialized yet
+            // thresholds are not initialized yet!
         } else {
             InitializeThresholds(_training_buffer);
             _thresholds_initialized = true;
@@ -220,13 +224,12 @@ PanTopkinsQRSDetection<DataType_TP>::AppendPoint(const DataType_TP sample, doubl
     // Peak detection (=> detect peaks only when not in refractory period)
     bool is_peak = _peak_filter.Apply(_input_buff[0]);
 
-    bool is_qrs = false;
+    // bool is_qrs = false;
     // bool is_t_wave = false;
 
     // Performance tips:  check right here, if we are still in refractory period. If this is the case, 
     // we do not need to do all stuff below
     if ( is_peak ) {
-
         _time_since_last_peak_sec = timestamp - _last_peak_timestamp; 
         _refractory_period_counter -= _time_since_last_peak_sec;
         _t_wave_counter -= _time_since_last_peak_sec;
@@ -246,7 +249,7 @@ PanTopkinsQRSDetection<DataType_TP>::AppendPoint(const DataType_TP sample, doubl
                 _t_wave_counter = 0;
             } // It's not a t-wave, check for qrs:
             else if ( _refractory_period_counter <= 0 ) {
-                is_qrs = true;
+                //is_qrs = true;
                 // Call callback to notify the listener the detected qrs location
                 _qrs_callback(_peak_timestamp-(_filter_delay_samples/_sample_freq_hz) );
 
@@ -285,7 +288,7 @@ PanTopkinsQRSDetection<DataType_TP>::AppendPoint(const DataType_TP sample, doubl
     _peak_amplitude = _input_buff[0];
     _peak_timestamp = timestamp;
     // Just for prototyping: return the filtered signal
-    return _input_buff[0];
+    return /*_input_buff[0]*/;
 }
 
 template<typename DataType_TP>
@@ -310,7 +313,7 @@ void PanTopkinsQRSDetection<DataType_TP>::Reset(float sample_freq_hz, unsigned i
 template<typename DataType_TP>
 inline 
 void 
-PanTopkinsQRSDetection<DataType_TP>::Connect(std::function<void(double)> qrs_callback)
+PanTopkinsQRSDetection<DataType_TP>::Connect(std::function<void(const double&)> qrs_callback)
 {
     _qrs_callback = qrs_callback;
 }
