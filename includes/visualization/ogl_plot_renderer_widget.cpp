@@ -23,7 +23,6 @@ QOpenGLPlotRendererWidget::~QOpenGLPlotRendererWidget()
 QOpenGLPlotRendererWidget::QOpenGLPlotRendererWidget(QWidget* parent)
     :
     _prog(),
-    _request_buffer(RingBufferSize_TP::Size64)
 {
     // Attention: Do not use OpenGL commands inside this constructor
     // => Instead use InizializeGl()

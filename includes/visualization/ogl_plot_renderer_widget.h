@@ -187,6 +187,4 @@ private:
     //! (render)data model
     PlotModel_C* _model;  
 
-    // New member, which is used by the setData() methods signal, to add gui requests to the buffer
-    RingBufferOptimized_TC<Request_TP> _request_buffer;
 };
