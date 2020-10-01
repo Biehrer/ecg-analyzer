@@ -52,9 +52,8 @@ GLenum glCheckError_(const char *file, int line)
 //! 
 //! Usage:
 //! Make sure there is an active OpenGL context (InitializeGLFunctions() was called inside the QOpenGLWidget)
-//! - Call .Initialize() to setup the object internals and set the text font. ! Attention: This already requires an active opengl context 
 //! - Call .SetText() to specify the render text and position of the text inside the OGL window.
-//! - Call .RenderText() inside the rendering loop ( paintGL() ) to draw the previously specified text onscreen
+//! - Call .RenderText() inside the rendering loop ( paintGL() ), to draw the previously specified text onscreen
 //!
 //! Requires an fragment shader which can manage textures (Sampler2D)
 //
@@ -65,41 +64,13 @@ public:
     {
     }
 
-    //OGLTextBox(const OGLTextBox& other) = delete;
     OGLTextBox& operator=(const OGLTextBox& other) = delete;
-
     OGLTextBox(const OGLTextBox& other) = default;
-    //{
-    //    _initialized = other._initialized;
-    //    _VAO = other._VAO;
-    //    _VBO = other._VBO;
-    //    _characters = other._characters;
-    //    _current_text = other._current_text;
-    //    _text_set = other._text_set;
-    //}
     
-    //OGLTextBox& operator=(const OGLTextBox& other) 
-    //{
-
-    //    _initialized = other._initialized;
-    //    _VAO = other._VAO;
-    //    _VBO = other._VBO;
-    //    _characters = other._characters;
-    //    _current_text = other._current_text;
-    //    _text_set = other._text_set;
-    //    return *this;
-    //}
-
     ~OGLTextBox()
     {   
-        if ( _initialized ){
             Cleanup();
-        }
     }
-
-private:
-
-    bool _initialized = false;
 
     // Public access functions
 public:
@@ -116,12 +87,14 @@ public:
                  Font2D_TP font)
     {
         Timer_C("Set text");
+
+        Cleanup();
         assert(_current_text.size() == 0);
 
         // Iterate through all characters
         // Create vertices (quads made from triangles) for the text.
         for ( std::string::const_iterator c = text.begin(); c != text.end(); c++ ) {
-            Character ch = /*_characters[*c];*/ FontManager_C::GetFontCharacter(font, *c);
+            Character ch =  FontManager_C::GetFontCharacter(font, *c);
             // Calculate character position
             GLfloat xpos = x + ch.Bearing[0] * scale;
             // Use the character T as reference to calculate the descent 
@@ -170,7 +143,7 @@ public:
     //! \param model_view_projection the current active mvp transform
     void RenderText(QOpenGLShaderProgram &shader,
         QVector3D& color,
-        QMatrix4x4& model_view_projection) /*const*/
+        QMatrix4x4& model_view_projection)
     {
         auto* f = QOpenGLContext::currentContext()->functions();
         auto* extra_f = QOpenGLContext::currentContext()->extraFunctions();
@@ -210,11 +183,14 @@ private:
         Timer_C("SetupVAO");
         QOpenGLFunctions* f = QOpenGLContext::currentContext()->functions();
         QOpenGLExtraFunctions* extra_f = QOpenGLContext::currentContext()->extraFunctions();
-        // Configure VAO/VBO for texture quads
-        extra_f->glGenVertexArrays(1, &_VAO);
-        glCheckError();
-        f->glGenBuffers(1, &_VBO);
-        glCheckError();
+        //if ( !_initialized ){
+            // Configure VAO/VBO for texture quads
+            extra_f->glGenVertexArrays(1, &_VAO);
+            glCheckError();
+            f->glGenBuffers(1, &_VBO);
+            glCheckError();
+            _initialized = true;
+        //}
         extra_f->glBindVertexArray(_VAO);
         glCheckError();
         f->glBindBuffer(GL_ARRAY_BUFFER, _VBO);
@@ -236,7 +212,6 @@ private:
             Timer_C("Cleanup textbox");
             QOpenGLExtraFunctions* f_extra = QOpenGLContext::currentContext()->extraFunctions();
             QOpenGLFunctions* f = QOpenGLContext::currentContext()->functions();
-            //QOpenGLContext::currentContext()->makeCurrent(ui._openGlWidget.GetSurface());
             f_extra->glBindVertexArray(_VAO);
             glCheckError();
             f->glBindBuffer(GL_ARRAY_BUFFER, _VBO);
@@ -250,10 +225,7 @@ private:
                 // Log the error
             }
 
-            for (const auto& character : _characters /*_current_text*/) {
-                f->glDeleteTextures(1, &character.second.TextureID);
-                glCheckError();
-            }
+            _current_text.clear();
             f_extra->glDeleteVertexArrays(1, &_VAO);
             glCheckError();
             f_extra->glDeleteBuffers(1, &_VBO);
@@ -300,33 +272,7 @@ private:
         f->glBindTexture(GL_TEXTURE_2D, 0);
     }
 
-    //! Get a filepath from an Font2D_TP enum 
-    //!
-    //!\param font the font to use for drawing
-    //!\returns üath and filename of the .tff font file
-    std::string GetFontPathname(Font2D_TP font) 
-    {
-        std::string pathname_2_font;
-
-        switch ( font )
-        {
-        case Font2D_TP::ARIAL:
-            pathname_2_font = "C:/Development/projects/EcgAnalyzer/ecg-analyzer-build/Resources/fonts/arial.ttf";
-            break;
-
-        case Font2D_TP::CALIBRI:
-            pathname_2_font = "C:/Development/projects/EcgAnalyzer/ecg-analyzer-build/Resources/fonts/calibri.ttf";
-            break;
-        
-        default:
-            // Load arial on default
-            pathname_2_font = "C:/Development/projects/EcgAnalyzer/ecg-analyzer-build/Resources/fonts/arial.ttf";
-            break;
-        }
-
-        return pathname_2_font;
-    }
-
+    
     //! Returns the size of the vertex buffer object in bytes
     //! Quad for glyph = 3 verts. => 6 verts for Quad
     //! Glyph texture = 4 coordinates(2 texture positions + 2vertex positions)
@@ -343,10 +289,9 @@ private:
     GLuint _VAO = 0;
     GLuint _VBO = 0;
 
-    const int _number_of_vertices_per_char = 6;
+    bool _initialized = false;
 
-    //! Stores 128 ascii character glyphs
-    std::map<GLchar, Character> _characters;
+    const int _number_of_vertices_per_char = 6;
 
     //! The characters of the current text
     std::vector<Character> _current_text;

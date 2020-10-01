@@ -19,21 +19,6 @@
 
 #include <cstdint>
 
-//template<typename T>
-//class array_view {
-//    T* ptr_;
-//    std::size_t len_;
-//public:
-//    array_view(T* ptr, std::size_t len) noexcept : ptr_{ ptr }, len_{ len } {}
-//
-//    T& operator[](int i) noexcept { return ptr_[i]; }
-//    T const& operator[](int i) const noexcept { return ptr_[i]; }
-//    auto size() const noexcept { return len_; }
-//
-//    auto begin() noexcept { return ptr_; }
-//    auto end() noexcept { return ptr_ + len_; }
-//};
-
 template<typename T>
 class span {
     T* ptr_;
@@ -78,7 +63,8 @@ enum RingBufferSize_TP {
     SizeINVALID
 };
 
-// a really stupid function
+// a really stupid function, but makes 
+// the usage of the optimized buffer error prone..
 inline
 int 
 TranslateRingBufferSize(RingBufferSize_TP size) 
