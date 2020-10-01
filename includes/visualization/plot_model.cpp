@@ -4,16 +4,10 @@
 PlotModel_C::PlotModel_C(QObject* parent)
     : QAbstractTableModel(parent)
 {
-    //_plots = new std::vector<OGLSweepChart_C<ModelDataType_TP >/***/>();
 }
 
 PlotModel_C::~PlotModel_C()
 {
-    //for ( auto plot_it = _plots.begin(); plot_it != _plots.end(); ++plot_it ) {
-    //    delete *plot_it;
-    //    _plots.erase(plot_it);
-    //}
-    //delete _plots;
 }
 
 // Sets the first row and determines the layout ( with #COLS items)
@@ -36,6 +30,10 @@ PlotModel_C::headerData(int section, Qt::Orientation orientation, int role) cons
             return QString("Maj-tick x-axes");
         case 6:
             return QString("Maj-tick y-axes");
+        case 7:
+            return QString("Min-tick x-axes");
+        case 8:
+            return QString("Min-tick y-axes");
 
         }
     }
@@ -58,33 +56,40 @@ bool PlotModel_C::setData(const QModelIndex &index, const QVariant &value, int r
         int row = index.row();
 
         switch ( index.column() ) {
-            case OGLPlotProperty_TP::PLOT_ID:
-                emit NewChangeRequest(row, OGLPlotProperty_TP::PLOT_ID, value.toInt());
+            case OGLPlotProperty_TP::ID:
+                emit NewChangeRequest(row, OGLPlotProperty_TP::ID, value.toInt());
                 break;
 
-            case OGLPlotProperty_TP::PLOT_LABEL:
-                emit NewChangeRequest(row, OGLPlotProperty_TP::PLOT_LABEL, value.toString());
+            case OGLPlotProperty_TP::LABEL:
+                emit NewChangeRequest(row, OGLPlotProperty_TP::LABEL, value.toString());
                 break;
 
-            case OGLPlotProperty_TP::PLOT_TIMERANGE:
-                emit NewChangeRequest(row, OGLPlotProperty_TP::PLOT_TIMERANGE, value.toDouble());
+            case OGLPlotProperty_TP::TIMERANGE:
+                emit NewChangeRequest(row, OGLPlotProperty_TP::TIMERANGE, value.toDouble());
                 break;
 
-            case OGLPlotProperty_TP::PLOT_YMAX:
-                emit NewChangeRequest(row, OGLPlotProperty_TP::PLOT_YMAX, value.toDouble());
+            case OGLPlotProperty_TP::YMAX:
+                emit NewChangeRequest(row, OGLPlotProperty_TP::YMAX, value.toDouble());
                 break;
 
-            case OGLPlotProperty_TP::PLOT_YMIN:
-                emit NewChangeRequest(row, OGLPlotProperty_TP::PLOT_YMIN, value.toDouble());
+            case OGLPlotProperty_TP::YMIN:
+                emit NewChangeRequest(row, OGLPlotProperty_TP::YMIN, value.toDouble());
                 break;
 
-            case OGLPlotProperty_TP::PLOT_MAJTICK_X:
-                emit NewChangeRequest(row, OGLPlotProperty_TP::PLOT_MAJTICK_X, value.toDouble());
-
+            case OGLPlotProperty_TP::MAJOR_TICK_X:
+                emit NewChangeRequest(row, OGLPlotProperty_TP::MAJOR_TICK_X, value.toDouble());
                 break;
 
-            case OGLPlotProperty_TP::PLOT_MAJTICK_Y:
-                emit NewChangeRequest(row, OGLPlotProperty_TP::PLOT_MAJTICK_Y, value.toDouble());
+            case OGLPlotProperty_TP::MAJOR_TICK_Y:
+                emit NewChangeRequest(row, OGLPlotProperty_TP::MAJOR_TICK_Y, value.toDouble());
+                break;
+
+            case OGLPlotProperty_TP::MINOR_TICK_X:
+                emit NewChangeRequest(row, OGLPlotProperty_TP::MINOR_TICK_X, value.toDouble());
+                break;
+
+            case OGLPlotProperty_TP::MINOR_TICK_Y:
+                emit NewChangeRequest(row, OGLPlotProperty_TP::MINOR_TICK_Y, value.toDouble());
                 break;
         }
         return true;
@@ -117,26 +122,32 @@ PlotModel_C::data(const QModelIndex & index, int role) const
     case Qt::DisplayRole:
         switch ( col )
         {
-        case OGLPlotProperty_TP::PLOT_ID:
+        case OGLPlotProperty_TP::ID:
             return  _plots[row]->GetID();
 
-        case OGLPlotProperty_TP::PLOT_LABEL:
+        case OGLPlotProperty_TP::LABEL:
             return QString::fromStdString(_plots[row]->GetLabel());
 
-        case OGLPlotProperty_TP::PLOT_TIMERANGE:
+        case OGLPlotProperty_TP::TIMERANGE:
             return _plots[row]->GetTimerangeMs();
 
-        case OGLPlotProperty_TP::PLOT_YMAX:
+        case OGLPlotProperty_TP::YMAX:
             return _plots[row]->GetMaxValueYAxes();
 
-        case OGLPlotProperty_TP::PLOT_YMIN:
+        case OGLPlotProperty_TP::YMIN:
             return _plots[row]->GetMinValueYAxes();
 
-        case OGLPlotProperty_TP::PLOT_MAJTICK_X:
+        case OGLPlotProperty_TP::MAJOR_TICK_X:
             return _plots[row]->GetMajorTickValueXAxes();
 
-        case OGLPlotProperty_TP::PLOT_MAJTICK_Y:
+        case OGLPlotProperty_TP::MAJOR_TICK_Y:
             return _plots[row]->GetMajorTickValueYAxes();
+
+        case OGLPlotProperty_TP::MINOR_TICK_X:
+            return _plots[row]->GetMinorTickValueXAxes();
+
+        case OGLPlotProperty_TP::MINOR_TICK_Y:
+            return _plots[row]->GetMinorTickValueYAxes();
         }
 
         //case Qt::FontRole:

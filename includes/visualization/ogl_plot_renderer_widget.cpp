@@ -10,10 +10,6 @@
 
 QOpenGLPlotRendererWidget::~QOpenGLPlotRendererWidget() 
 {
-    delete _projection_mat;
-    delete _model_mat;
-    delete _view_mat;
-    delete _MVP;
     _paint_update_timer->deleteLater();
     delete _paint_update_timer;
     makeCurrent();
@@ -23,28 +19,26 @@ QOpenGLPlotRendererWidget::~QOpenGLPlotRendererWidget()
 QOpenGLPlotRendererWidget::QOpenGLPlotRendererWidget(QWidget* parent)
     :
     _prog(),
+    _projection_mat(),
+    _model_mat(),
+    _view_mat(),
+    _MVP()
 {
-    // Attention: Do not use OpenGL commands inside this constructor
+    // Attention: Do not use OpenGL-commands inside this constructor
     // => Instead use InizializeGl()
 	_nearZ = 1.0;
 	_farZ = 100.0;
-    // TODO: Why are these on the Heap? -> initialize them in initializer list on the stack
-    _projection_mat = new QMatrix4x4();
-    _model_mat = new QMatrix4x4();
-    _view_mat = new QMatrix4x4();
-    _MVP = new QMatrix4x4();
-
-    _projection_mat->setToIdentity();
-    _model_mat->setToIdentity();
-    _view_mat->setToIdentity();
-    _MVP->setToIdentity();
+    _projection_mat.setToIdentity();
+    _model_mat.setToIdentity();
+    _view_mat.setToIdentity();
+    _MVP.setToIdentity();
 
     _framecounter = 0;
-
     _paint_update_timer = new QTimer();
     connect(_paint_update_timer, SIGNAL(timeout()), this, SLOT(update()));
 }
 
+// TODO: Move this into JonesPlot_C ? -> No because when visualization is a library, we would also need this!
 void
 QOpenGLPlotRendererWidget::OnNewChangeRequest(int plot_id,
     const OGLPlotProperty_TP& type,
@@ -53,32 +47,40 @@ QOpenGLPlotRendererWidget::OnNewChangeRequest(int plot_id,
     makeCurrent();
 
     switch ( type ) {
-    case OGLPlotProperty_TP::PLOT_ID:
+    case OGLPlotProperty_TP::ID:
         _model->Data()[plot_id]->SetID((value.toInt()));
         break;
 
-    case OGLPlotProperty_TP::PLOT_LABEL:
+    case OGLPlotProperty_TP::LABEL:
         _model->Data()[plot_id]->SetLabel(value.toString().toStdString());
         break;
 
-    case OGLPlotProperty_TP::PLOT_TIMERANGE:
+    case OGLPlotProperty_TP::TIMERANGE:
         _model->Data()[plot_id]->SetTimerangeMs(value.toDouble());
         break;
 
-    case OGLPlotProperty_TP::PLOT_YMAX:
+    case OGLPlotProperty_TP::YMAX:
         _model->Data()[plot_id]->SetMaxValueYAxes(value.toDouble());
         break;
 
-    case OGLPlotProperty_TP::PLOT_YMIN:
+    case OGLPlotProperty_TP::YMIN:
         _model->Data()[plot_id]->SetMinValueYAxes(value.toDouble());
         break;
 
-    case OGLPlotProperty_TP::PLOT_MAJTICK_X:
+    case OGLPlotProperty_TP::MAJOR_TICK_X:
         _model->Data()[plot_id]->SetMajorTickValueXAxes(value.toDouble());
         break;
 
-    case OGLPlotProperty_TP::PLOT_MAJTICK_Y:
+    case OGLPlotProperty_TP::MAJOR_TICK_Y:
         _model->Data()[plot_id]->SetMajorTickValueYAxes(value.toDouble());
+        break;
+
+    case OGLPlotProperty_TP::MINOR_TICK_X:
+        _model->Data()[plot_id]->SetMinorTickValueXAxes(value.toDouble());
+        break;
+
+    case OGLPlotProperty_TP::MINOR_TICK_Y:
+        _model->Data()[plot_id]->SetMinorTickValueYAxes(value.toDouble());
         break;
     }
 }
@@ -88,7 +90,7 @@ const
 QMatrix4x4 
 QOpenGLPlotRendererWidget::GetModelViewProjection() const
 {
-    return *_MVP;
+    return _MVP;
 }
 
 
@@ -105,17 +107,18 @@ QOpenGLPlotRendererWidget::SetPlotModel(PlotModel_C* model)
     _model = model;
 }
 
-void QOpenGLPlotRendererWidget::StartPaint()
+void 
+QOpenGLPlotRendererWidget::StartPaint()
 {
     _paint_update_timer->setInterval(30);
     _paint_update_timer->start();
 }
 
-void QOpenGLPlotRendererWidget::StopPaint()
+void 
+QOpenGLPlotRendererWidget::StopPaint()
 {
     _paint_update_timer->stop();
 }
-
 
 void 
 QOpenGLPlotRendererWidget::initializeGL()
@@ -133,35 +136,35 @@ QOpenGLPlotRendererWidget::initializeGL()
 void 
 QOpenGLPlotRendererWidget::resizeGL(int width, int height)
 {
-    _projection_mat->setToIdentity();
-    _view_mat->setToIdentity();
-    _projection_mat->ortho(QRect(0, 0, width,height));
+    _projection_mat.setToIdentity();
+    _view_mat.setToIdentity();
+    _projection_mat.ortho(QRect(0, 0, width,height));
     QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
     f->glViewport(0, 0, width, height);
 	this->update();
-    // Alternative: Trigger a signal, when the viewport is resized
-    *_MVP = *(_projection_mat) * *(_view_mat) * *(_model_mat);
+    _MVP = _projection_mat * _view_mat * _model_mat;
     // Send the new model view projection to the charts for correct text rendering 
     for ( auto& plot : _model->Data()) {
-        plot->SetModelViewProjection(*_MVP);
+        plot->SetModelViewProjection(_MVP);
     }
 }
 
 void 
 QOpenGLPlotRendererWidget::paintGL()
 {
-	QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
+    Timer_C timer("paintGL loop");
+    QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
     f->glClearColor(0.0f, 0.0f, 0.0f, 0.8f);
 	f->glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     ++_framecounter;
-    *_MVP = *(_projection_mat) * *(_view_mat) * *(_model_mat);
+    _MVP = _projection_mat * _view_mat * _model_mat;
 
     //_prog.bind();
     //_prog.setUniformValue("u_MVP", *_MVP);
     //_prog.setUniformValue("point_scale", 2.0f);l
     //_prog.setUniformValue("u_Color", QVector3D(1.0f, 1.0f, 1.0f));
     _light_shader.bind();
-    _light_shader.setUniformValue("u_MVP", *_MVP);
+    _light_shader.setUniformValue("u_MVP", _MVP);
     _light_shader.setUniformValue("point_scale", 2.0f);
     _light_shader.setUniformValue("u_object_color", QVector3D(1.0f, 1.0f, 1.0f));
     _light_shader.setUniformValue("u_light_color", QVector3D(1.0f, 1.0f, 1.0f));
@@ -179,6 +182,7 @@ QOpenGLPlotRendererWidget::paintGL()
     //_light_shader.setUniformValue("u_light_color", QVector3D(1.0f, 0.0f, 1.0f));
     //_light_source.Draw();
     _light_shader.release();
+    timer.StopNow();
 }
 
 void 
@@ -284,10 +288,11 @@ QOpenGLPlotRendererWidget::InitializeShaderProgramms()
     return success;
 }
 
-bool QOpenGLPlotRendererWidget::CreateShader(QOpenGLShaderProgram& shader, 
-                                     QString& vertex_path, 
-                                     QString& fragment_path,
-                                     std::vector<QString>& uniforms)
+bool 
+QOpenGLPlotRendererWidget::CreateShader(QOpenGLShaderProgram& shader, 
+                                        QString& vertex_path, 
+                                        QString& fragment_path,
+                                        std::vector<QString>& uniforms)
 {   
     bool success = false;
     success = shader.addShaderFromSourceFile(QOpenGLShader::Vertex, vertex_path);
@@ -319,12 +324,11 @@ bool QOpenGLPlotRendererWidget::CreateShader(QOpenGLShaderProgram& shader,
     std::cout << std::endl;
 
     shader.bind();
-    // The following loop does set the uniforms like this:
+    // Set the uniforms in the order they are positioned inside the vector
+    // The loop does set the uniforms like this:
     //shader.bindAttributeLocation("position", 0);
     //shader.bindAttributeLocation("vertexColor", 1);
     //...
-
-    // Set the uniforms in the order they are positioned inside the vector
     int position_idx = 0;
     for ( const auto& uniform_str : uniforms ) {
         shader.bindAttributeLocation(uniform_str, position_idx);

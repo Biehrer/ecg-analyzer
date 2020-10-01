@@ -14,21 +14,23 @@
 #include <vector>
 #include <string>
 #include <atomic>
-const int COLS = 7;
-const int ROWS = 2;
+const int COLS = 9;
 
 using ModelDataType_TP = float;
 
 enum OGLPlotProperty_TP {
-    PLOT_ID,
-    PLOT_LABEL,
-    PLOT_TIMERANGE,
-    PLOT_YMAX,
-    PLOT_YMIN,
-    PLOT_MAJTICK_X,
-    PLOT_MAJTICK_Y,
+    ID,
+    LABEL,
+    TIMERANGE,
+    YMAX,
+    YMIN,
+    MAJOR_TICK_X,
+    MAJOR_TICK_Y, 
+    MINOR_TICK_X,
+    MINOR_TICK_Y,
     PLOT_NOT_DEFINED
 };
+
 // Register, to make it work with signals & slots
 Q_DECLARE_METATYPE(OGLPlotProperty_TP);
 

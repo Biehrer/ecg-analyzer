@@ -44,65 +44,36 @@
 // Project defines
 using ChartDataType_TP = float;
 
-// TODO: Private member?
-struct Request_TP {
-
-public:
-
-    Request_TP() 
-        : 
-        _plot_id(-1),
-        _type(OGLPlotProperty_TP::PLOT_NOT_DEFINED),
-        _value(0)
-    {
-    }
-
-    Request_TP(int plot_id, const OGLPlotProperty_TP type, const QVariant& value)
-        :
-        _plot_id(plot_id),
-        _type(type), 
-        _value(value)
-    {
-    }
-
-    Request_TP(const Request_TP& other) {
-        _plot_id = other._plot_id;
-        _type = other._type;
-        _value = other._value;
-    }
-
-public:
-    int _plot_id = -1;
-    OGLPlotProperty_TP _type;
-    QVariant _value = 0;
-};
-
-
-
 class QOpenGLPlotRendererWidget : public QOpenGLWidget
 {
 	Q_OBJECT
         // Construction / Destruction / Copying
 public:
     QOpenGLPlotRendererWidget(QWidget* parent = 0);
-    
     ~QOpenGLPlotRendererWidget();
 
     // Public access functions
 public:    
-
     //! Returns the model view projection transform matrix
     const QMatrix4x4 GetModelViewProjection() const;
 
+    //! \param true if InitializeGl() was called, false if not
     bool IsOpenGLInitialized() const;
     
+    //! Set the plot model from which the data is rendered
     void SetPlotModel(PlotModel_C* model);
 
-    // Starts rendering (again)
+    //! Starts rendering (again)
     void StartPaint();
     
-    // Stops rendering
+    //! Stops rendering
     void StopPaint();
+
+    // signals & slots
+public slots:
+    void OnNewChangeRequest(int plot_id,
+        const OGLPlotProperty_TP& type,
+        const QVariant& value);
 
    // Protected functions
 protected:
@@ -117,7 +88,6 @@ protected:
     
     // Private helper functions
 private:
-    
     //! Initializes OpenGL functions
     void InitializeGLParameters();
 
@@ -137,22 +107,19 @@ private:
                       QString& fragment_path, 
                       std::vector<QString>& attribute_locations);
 
-public slots:
-    void OnNewChangeRequest(int plot_id, const OGLPlotProperty_TP& type, const QVariant& value);
-
     // Private attributes
 private:
     //! Projection matrix
-    QMatrix4x4* _projection_mat;
+    QMatrix4x4 _projection_mat;
 
     //! Model matrix
-    QMatrix4x4* _model_mat;
+    QMatrix4x4 _model_mat;
 
     //! View matrix
-    QMatrix4x4* _view_mat;
+    QMatrix4x4 _view_mat;
 
     //! Model-View-Projection matrix
-    QMatrix4x4* _MVP;
+    QMatrix4x4 _MVP;
 
     //! OpenGL shader
     QOpenGLShaderProgram _prog;
@@ -177,14 +144,13 @@ private:
 
     //! OpenGL far plane parameter
 	float _farZ;
+    
+    //! True, when opengl was initialized successfull
+    bool _ogl_initialized = false;
 
     //! Issues the opengl render call at around 30 - 60 Hz
     QTimer* _paint_update_timer;
 
-    //! True, when opengl was initialized successfull
-    bool _ogl_initialized = false;
-
     //! (render)data model
     PlotModel_C* _model;  
-
 };

@@ -63,25 +63,20 @@ public:
    static 
    const 
    std::pair< QVector<VertexType_TP>, QVector<VertexType_TP>>
-       CreateSurfaceGridVertices(const OGLChartGeometry_C& geometry,
+       CreateMajTickSurfaceGridVertices(const OGLChartGeometry_C& geometry,
                                  VertexType_TP time_range_ms,
                                  VertexType_TP max_y_val,
                                  VertexType_TP min_y_val,
                                  VertexType_TP x_major_tick_dist_ms,
                                  VertexType_TP y_major_tick_dist_unit)
     {
-        // x_major_tick_dist_ms and y_major_tick_dist_unit = major ticks in the same unit like the member values : min_y_axis_value and max_y_axis_value
+        // x_major_tick_dist_ms and y_major_tick_dist_unit 
+       // = major ticks in the same unit like the member values : min_y_axis_value and max_y_axis_value
         //p1(from)--------------------------------------------->>>>
         // |                                            |
         // ----------------------------------------------
 
-        // Create vertices
-        QVector<VertexType_TP> horizontal_line_pos;
-        
         // Horizontal (spanning) lines (length of each line = chart_width )
-        int number_of_horizontal_grid_lines;
-        VertexType_TP y_axis_major_tick_value;
-
         //if( (max_y_val - min_y_val) % y_major_tick_dist_unit != 0 ){
         //    // change any of the three values (the tick value?) so it works again
         //    // BUT REPORT THIS CHANGE TO THE OUTSIDE?
@@ -89,15 +84,19 @@ public:
         //    y_major_tick_dist_unit = (max_y_val - min_y_val) / std::ceil(y_major_tick_dist_unit);
         //}
 
-        number_of_horizontal_grid_lines = (max_y_val - min_y_val) / y_major_tick_dist_unit;
-        y_axis_major_tick_value = max_y_val;
+         VertexType_TP y_axis_major_tick_value = max_y_val;
+         int number_of_horizontal_grid_lines = (max_y_val - min_y_val) / y_major_tick_dist_unit;
+         QVector<VertexType_TP> horizontal_line_pos;
+         horizontal_line_pos.reserve(number_of_horizontal_grid_lines * 6);
 
         /*int number_of_horizontal_grid_lines = (max_y_val - min_y_val) / y_major_tick_dist_unit;
         VertexType_TP y_axis_major_tick_value = max_y_val;
         */
         for ( int line_idx = 0; line_idx <= number_of_horizontal_grid_lines; ++line_idx ) {
-            VertexType_TP major_tick_y_pos_S = GetScreenCoordsFromYChartValue(y_axis_major_tick_value, max_y_val, min_y_val, geometry);
 
+            VertexType_TP major_tick_y_pos_S 
+                = GetScreenCoordsFromYChartValue(y_axis_major_tick_value, max_y_val, min_y_val, geometry);
+            
             y_axis_major_tick_value -= y_major_tick_dist_unit;
             // Point from
             horizontal_line_pos.push_back(geometry.GetLeftBottom()._x);
@@ -111,10 +110,11 @@ public:
         }
 
         // Vertical (spanning) lines ( length of each line = chart height )
+        int number_of_vertical_grid_lines = time_range_ms / x_major_tick_dist_ms;
         QVector<VertexType_TP> vertical_line_pos;
+        vertical_line_pos.reserve(number_of_vertical_grid_lines);
 
         VertexType_TP x_axis_major_tick_value = time_range_ms;
-        int number_of_vertical_grid_lines = time_range_ms / x_major_tick_dist_ms;
         for ( int line_idx = 0; line_idx <= number_of_vertical_grid_lines; ++line_idx ) {
             VertexType_TP major_tick_x_pos_S = GetScreenCoordsFromXChartValue(x_axis_major_tick_value, time_range_ms, geometry);
             x_axis_major_tick_value -= x_major_tick_dist_ms;
@@ -131,6 +131,73 @@ public:
         return { horizontal_line_pos, vertical_line_pos }; 
     }
 
+
+
+   static
+       const
+       std::pair< QVector<VertexType_TP>, QVector<VertexType_TP>>
+       CreateMinorTickSurfaceGridVertices(const OGLChartGeometry_C& geometry,
+           VertexType_TP time_range_ms,
+           VertexType_TP max_y_val,
+           VertexType_TP min_y_val,
+           VertexType_TP x_minor_tick_dist_ms,
+           VertexType_TP y_minor_tick_dist_unit)
+   {
+       // x_major_tick_dist_ms and y_major_tick_dist_unit 
+      // = major ticks in the same unit like the member values : min_y_axis_value and max_y_axis_value
+       //p1(from)--------------------------------------------->>>>
+       // |                                            |
+       // ----------------------------------------------
+
+       VertexType_TP y_axis_major_tick_value = max_y_val;
+       int number_of_horizontal_grid_lines = (max_y_val - min_y_val) / y_minor_tick_dist_unit;
+       QVector<VertexType_TP> horizontal_line_pos;
+       horizontal_line_pos.reserve(number_of_horizontal_grid_lines * 6);
+
+       // Lines which are parallel to the x axis 
+       PositionType_TP length_line_x = 10.0;
+
+       for ( int line_idx = 0; line_idx <= number_of_horizontal_grid_lines; ++line_idx ) {
+
+           VertexType_TP major_tick_y_pos_S
+               = GetScreenCoordsFromYChartValue(y_axis_major_tick_value, max_y_val, min_y_val, geometry);
+
+           y_axis_major_tick_value -= y_minor_tick_dist_unit;
+           // Point from
+           horizontal_line_pos.push_back(geometry.GetLeftBottom()._x);
+           horizontal_line_pos.push_back(major_tick_y_pos_S);
+           horizontal_line_pos.push_back(geometry.GetZPosition());
+
+           // Point to
+           horizontal_line_pos.push_back(geometry.GetLeftBottom()._x + length_line_x);
+           horizontal_line_pos.push_back(major_tick_y_pos_S);
+           horizontal_line_pos.push_back(geometry.GetZPosition());
+       }
+
+       // Lines, which are parallel to the y axis
+       // Vertical (spanning) lines ( length of each line = chart height )
+       int number_of_vertical_grid_lines = time_range_ms / x_minor_tick_dist_ms;
+       QVector<VertexType_TP> vertical_line_pos;
+       vertical_line_pos.reserve(number_of_vertical_grid_lines);
+
+       PositionType_TP height_line_y = 10.0;
+
+       VertexType_TP x_axis_major_tick_value = time_range_ms;
+       for ( int line_idx = 0; line_idx <= number_of_vertical_grid_lines; ++line_idx ) {
+           VertexType_TP major_tick_x_pos_S = GetScreenCoordsFromXChartValue(x_axis_major_tick_value, time_range_ms, geometry);
+           x_axis_major_tick_value -= x_minor_tick_dist_ms;
+           // Point from
+           vertical_line_pos.push_back(major_tick_x_pos_S);
+           vertical_line_pos.push_back(geometry.GetLeftTop()._y);
+           vertical_line_pos.push_back(geometry.GetZPosition());
+           // Point to
+           vertical_line_pos.push_back(major_tick_x_pos_S);
+           vertical_line_pos.push_back(geometry.GetLeftTop()._y - height_line_y);
+           vertical_line_pos.push_back(geometry.GetZPosition());
+       }
+
+       return { horizontal_line_pos, vertical_line_pos };
+   }
     // This is not in use currently.
     // Look at MakeSurfaceGridVertices() if you want to know how the axes/grid is created. 
     // The surface grid does look much better than these axes

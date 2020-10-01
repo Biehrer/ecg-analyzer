@@ -44,12 +44,6 @@ class OGLBaseChart_C {
         // Copy assignment
         OGLBaseChart_C& operator=(const OGLBaseChart_C& other) = delete;
 
-        // Move initialization
-        //OGLBaseChart_C(OGLBaseChart_C&& other);
-
-        // Move assignment
-        //OGLBaseChart_C& operator=(OGLBaseChart_C&& other);
-        
         ~OGLBaseChart_C();
 
         // Public access functions
@@ -79,11 +73,11 @@ class OGLBaseChart_C {
         void SetFiducialMarkColor(const QVector3D& color);
 
         //! Sets the model view projection matrix used for text rendering (e.g. axes units)
-        void SetModelViewProjection(QMatrix4x4 model_view_projection);
+        void SetModelViewProjection(const QMatrix4x4& model_view_projection);
 
-        OGLChartGeometry_C GetBoundingBox();
+        const OGLChartGeometry_C& GetBoundingBox();
         
-        OGLChartGeometry_C GetPlotSurfaceArea();
+        const OGLChartGeometry_C& GetPlotSurfaceArea();
 
         const std::string& GetLabel();
 
@@ -102,7 +96,7 @@ class OGLBaseChart_C {
 
         //! Draws the x- and y-axis inside the opengl context
         //! from which the function is called
-        void DrawXYAxes(QOpenGLShaderProgram& shader, QOpenGLShaderProgram& text_shader);
+        void DrawTextLabels(QOpenGLShaderProgram& shader, QOpenGLShaderProgram& text_shader);
 
         //! Draws the border bounding box of the plot area inside the opengl context
         void DrawBoundingBox(QOpenGLShaderProgram& shader);
@@ -115,30 +109,20 @@ class OGLBaseChart_C {
 
         //! Creates a vbo used to draw the grid of the chart
         std::pair<QVector<float>, QVector<float>> CreateSurfaceGrid(int x_dist_unit, 
-                                                                    float y_dist_unit,
+                                                                    float y_dist_unit, 
+                                                                    float x_minor_tick_dist_ms,
+                                                                    float y_minor_tick_dist_ms,
                                                                     int time_range_ms, 
                                                                     float max_y,
                                                                     float min_y);
 
-        //! Creates and fills vertex buffer objects used for the axes of the chart
-        void SetupAxes();
-
         // Protected attributes
     protected:
-        //! Vertex buffer object for the x axis vertices
-        QOpenGLBuffer _x_axis_vbo;
-
-        //! Vertex buffer object for the y axis vertices
-        QOpenGLBuffer _y_axis_vbo;
-
         //! Vertex buffer object for the bounding box
         QOpenGLBuffer _bb_vbo;
 
         //! Vertex buffer object for the background vertical and horizontal grid lines
         QOpenGLBuffer _surface_grid_vbo;
-
-        //! Number of vertices used to draw the vertical surface grid lines
-        int _num_of_surface_grid_positions;
 
         //! The bounding box geometry of the chart.
         //! Stores where to place to chart inside the opengl viewport
@@ -147,11 +131,8 @@ class OGLBaseChart_C {
         //! The plot area is the area in which the data series is drawn
         OGLChartGeometry_C _plot_area;
 
-        //! modifies the surface grid
-        float _major_tick_x_axes;
-
-        //! modifies the surface grid
-        float _major_tick_y_axes;
+        //! Model view projection transform matrix for text rendering
+        QMatrix4x4 _chart_mvp;
 
         // Colors for the shader
         QVector3D _lead_line_color;
@@ -177,16 +158,33 @@ class OGLBaseChart_C {
         //! unit descriptions for the x and y axes
         std::vector<OGLTextBox> _plot_axes;
 
-        //! Model view projection transform matrix for text rendering
-        QMatrix4x4 _chart_mvp;
-
-        //! The parent widget with the opengl context
-        const QObject* _parent_widget;
+        //! A textbox for the label
+        OGLTextBox _plot_label;
 
         // the label (name) of the plot (avR, I, II,...)
         std::string _label = "";
 
         // plot id
-        unsigned int _id;
+        unsigned int _id = 0;
+
+        //! Number of vertices used to draw the vertical surface grid lines
+        int _num_of_grid_positions = 0;
+
+        //! Major tick value for the x-axes 
+        //! In this distance, text labels with axes units are drawn on the x axis
+        float _major_tick_x_axes = 0.0;
+
+        //! Major tick value for the y-axes 
+        //! In this distance, text labels with axes units are drawn on the y axis
+        float _major_tick_y_axes = 0.0;
+
+        //! Minor tick value for the y-axes
+        float _minor_tick_x_axes = 100.0;
+
+        //! Minor tick value for the y-axes 
+        float _minor_tick_y_axes = 0.0;
+
+        //! The parent widget with the opengl context
+        const QObject* _parent_widget;
 };
 

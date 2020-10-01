@@ -10,8 +10,6 @@
 
 OGLBaseChart_C::~OGLBaseChart_C()
 {
-    _y_axis_vbo.destroy();
-    _x_axis_vbo.destroy();
     _bb_vbo.destroy();
     _surface_grid_vbo.destroy();
 }
@@ -19,8 +17,6 @@ OGLBaseChart_C::~OGLBaseChart_C()
 OGLBaseChart_C::OGLBaseChart_C(const OGLChartGeometry_C& geometry,
                               const QObject* parent)
     :
-    _x_axis_vbo(QOpenGLBuffer::VertexBuffer),
-    _y_axis_vbo(QOpenGLBuffer::VertexBuffer),
     _bb_vbo(QOpenGLBuffer::VertexBuffer),
     _surface_grid_vbo(QOpenGLBuffer::VertexBuffer),
     _bounding_box(geometry),
@@ -43,187 +39,6 @@ OGLBaseChart_C::OGLBaseChart_C(const OGLChartGeometry_C& geometry,
     auto right_top = _bounding_box.GetRightTop();
     _plot_area.SetRightTop(right_top + Position3D_TC<PositionType_TP>(-offset, -offset, 0));
 }
-//
-//OGLBaseChart_C::OGLBaseChart_C(OGLBaseChart_C && other)
-//{ // move initialization
-//    //std::lock_guard<std::mutex> lock(other.mtx);
-//    //    value = std::move(other.value);
-//    //    other.value = 0; 
-//    _x_axis_vbo = std::move(other._x_axis_vbo);
-//    other._x_axis_vbo = {};
-//    _y_axis_vbo = std::move(other._y_axis_vbo);
-//    other._y_axis_vbo = {};
-//    _bb_vbo = std::move(other._bb_vbo);
-//    other._bb_vbo = {};
-//    _surface_grid_vbo = std::move(other._surface_grid_vbo);
-//    other._surface_grid_vbo = {};
-//    _num_of_surface_grid_positions = std::move(other._num_of_surface_grid_positions);
-//    other._num_of_surface_grid_positions = 0;
-//    _bounding_box = std::move(other._bounding_box);
-//    other._bounding_box = {};
-//    _plot_area = std::move(other._plot_area);
-//    other._plot_area = {};
-//    _lead_line_color = std::move(other._lead_line_color);
-//    other._lead_line_color = {};
-//    _series_color = std::move(other._series_color);
-//    other._series_color = {};
-//    _fiducial_marks_color = std::move(other._fiducial_marks_color);
-//    other._fiducial_marks_color = {};
-//    _bounding_box_color = std::move(other._bounding_box_color);
-//    other._bounding_box_color = {};
-//    _surface_grid_color = std::move(other._surface_grid_color);
-//    other._surface_grid_color = {};
-//    _axes_color = std::move(other._axes_color);
-//    other._axes_color = {};
-//    _text_color = std::move(other._text_color);
-//    other._text_color = {};
-//    _plot_axes = std::move(other._plot_axes);
-//    other._plot_axes = {};
-//    _chart_mvp = std::move(other._chart_mvp);
-//    other._chart_mvp = {};
-//    _parent_widget = std::move(other._parent_widget);
-//    other._parent_widget = 0;
-//    _label = std::move(other._label);
-//    other._label = "";
-//    _id = std::move(other._id);
-//    other._id = -1;
-//    _mutex = std::move(other._mutex);
-//    other._mutex = 0;
-//}
-//
-//
-//
-//OGLBaseChart_C & OGLBaseChart_C::operator=(OGLBaseChart_C && other)
-//{ // move assignment
-//    //std::lock(mtx, other.mtx);
-//    //std::lock_guard<std::mutex> self_lock(mtx, std::adopt_lock);
-//    //std::lock_guard<std::mutex> other_lock(other.mtx, std::adopt_lock);
-//    //value = std::move(other.value);
-//    //other.value = 0;
-//
-//    _x_axis_vbo = std::move(other._x_axis_vbo);
-//    other._x_axis_vbo = {};
-//    _y_axis_vbo = std::move(other._y_axis_vbo);
-//    other._y_axis_vbo = {};
-//    _bb_vbo = std::move(other._bb_vbo);
-//    other._bb_vbo = {};
-//    _surface_grid_vbo = std::move(other._surface_grid_vbo);
-//    other._surface_grid_vbo = {};
-//    _num_of_surface_grid_positions = std::move(other._num_of_surface_grid_positions);
-//    other._num_of_surface_grid_positions = 0;
-//    _bounding_box = std::move(other._bounding_box);
-//    other._bounding_box = {};
-//    _plot_area = std::move(other._plot_area);
-//    other._plot_area = {};
-//    _lead_line_color = std::move(other._lead_line_color);
-//    other._lead_line_color = {};
-//    _series_color = std::move(other._series_color);
-//    other._series_color = {};
-//    _fiducial_marks_color = std::move(other._fiducial_marks_color);
-//    other._fiducial_marks_color = {};
-//    _bounding_box_color = std::move(other._bounding_box_color);
-//    other._bounding_box_color = {};
-//    _surface_grid_color = std::move(other._surface_grid_color);
-//    other._surface_grid_color = {};
-//    _axes_color = std::move(other._axes_color);
-//    other._axes_color = {};
-//    _text_color = std::move(other._text_color);
-//    other._text_color = {};
-//    _plot_axes = std::move(other._plot_axes);
-//    other._plot_axes = {};
-//    _chart_mvp = std::move(other._chart_mvp);
-//    other._chart_mvp = {};
-//    _parent_widget = std::move(other._parent_widget);
-//    other._parent_widget = 0;
-//    _label = std::move(other._label);
-//    other._label = "";
-//    _id = std::move(other._id);
-//    other._id = -1;
-//    _mutex = std::move(other._mutex);
-//    other._mutex = 0;
-//    return *this;
-//}
-
-//
-//OGLBaseChart_C::OGLBaseChart_C(const OGLBaseChart_C & other)
-//{ // Copy initialization
-//    //std::lock_guard<std::mutex> lock(other.mtx);
-//    //value = other.value;
-//    _x_axis_vbo = other._x_axis_vbo;
-//    _y_axis_vbo = other._y_axis_vbo;
-//    _bb_vbo = other._bb_vbo;
-//    _surface_grid_vbo = other._surface_grid_vbo;
-//    _num_of_surface_grid_positions = other._num_of_surface_grid_positions;
-//    _bounding_box = other._bounding_box;
-//    _plot_area = other._plot_area;
-//    _lead_line_color = other._lead_line_color;
-//    _series_color = other._series_color;
-//    _fiducial_marks_color = other._fiducial_marks_color;
-//    _bounding_box_color = other._bounding_box_color;
-//    _surface_grid_color = other._surface_grid_color;
-//    _axes_color = other._axes_color;
-//    _text_color = other._text_color;
-//    _plot_axes = other._plot_axes;
-//    _chart_mvp = other._chart_mvp;
-//    _parent_widget = other._parent_widget;
-//    _label = other._label;
-//    _id = other._id;
-//    _mutex = other._mutex;
-//
-//    //_x_axis_vbo;
-//    //_y_axis_vbo;
-//    //_bb_vbo;
-//    //_surface_grid_vbo;
-//    //_num_of_surface_grid_positions;
-//    //_bounding_box;
-//    //_plot_area;
-//    //_lead_line_color;
-//    //_series_color;
-//    //_fiducial_marks_color;
-//    //_bounding_box_color;
-//    //_surface_grid_color;
-//    //_axes_color;
-//    //_text_color;
-//    //_plot_axes;
-//    //_chart_mvp;
-//    //_parent_widget;
-//    //_label = "";
-//    //_id;
-//    //_mutex;
-//}
-//
-//OGLBaseChart_C & OGLBaseChart_C::operator=(const OGLBaseChart_C & other)
-//{ // Copy assignment
-//            /*{
-//            std::lock(mtx, other.mtx);
-//            std::lock_guard<std::mutex> self_lock(mtx, std::adopt_lock);
-//            std::lock_guard<std::mutex> other_lock(other.mtx, std::adopt_lock);
-//            value = other.value;
-//            return *this;
-//        }*/
-//    _x_axis_vbo = other._x_axis_vbo;
-//    _y_axis_vbo = other._y_axis_vbo;
-//    _bb_vbo = other._bb_vbo;
-//    _surface_grid_vbo = other._surface_grid_vbo;
-//    _num_of_surface_grid_positions = other._num_of_surface_grid_positions;
-//    _bounding_box = other._bounding_box;
-//    _plot_area = other._plot_area;
-//    _lead_line_color = other._lead_line_color;
-//    _series_color = other._series_color;
-//    _fiducial_marks_color = other._fiducial_marks_color;
-//    _bounding_box_color = other._bounding_box_color;
-//    _surface_grid_color = other._surface_grid_color;
-//    _axes_color = other._axes_color;
-//    _text_color = other._text_color;
-//    _plot_axes = other._plot_axes;
-//    _chart_mvp = other._chart_mvp;
-//    _parent_widget = other._parent_widget;
-//    _label = other._label;
-//    _id = other._id;
-//    _mutex = other._mutex; // just also point to the same mutex the old one shows   
-//    return *this;
-//}
-
 
 void OGLBaseChart_C::InitializeAxesDescription(const QVector<float>& horizontal_grid_line_vertices,
                                                const QVector<float>& vertical_grid_line_vertices,
@@ -231,7 +46,7 @@ void OGLBaseChart_C::InitializeAxesDescription(const QVector<float>& horizontal_
                                                int time_range_ms, 
                                                double max_y_val,
                                                float maj_tick_x, 
-                                               float maj_tick_y)
+                                               float maj_tick_y) // TODO: Pass struct with all of this data ! Too much arguments
 {
     // /2 -> to get the number of half the vertices (Point FROM, not point TO, because they are always equal )
     // /3 -> to get number of text fields 
@@ -282,36 +97,6 @@ void OGLBaseChart_C::InitializeAxesDescription(const QVector<float>& horizontal_
 }
 
 
-
-void 
-OGLBaseChart_C::SetupAxes()
-{
-    const auto axes_vertices = ChartShapes_C<float>::MakesAxesVertices(_plot_area, 5.0); 
-    auto& x_axis_vertices = axes_vertices._x_axis_vertices;
-    auto& y_axis_vertices = axes_vertices._y_axis_vertices;
-
-    QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
-    
-    _x_axis_vbo.create();
-    _x_axis_vbo.bind();
-    f->glEnableVertexAttribArray(0);
-    // 3 positions for x and y and z data coordinates
-    f->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
-    _x_axis_vbo.allocate(x_axis_vertices.constData(), x_axis_vertices.size() * static_cast<int>(sizeof(float)));
-    _x_axis_vbo.setUsagePattern(QOpenGLBuffer::StaticDraw);
-    f->glDisableVertexAttribArray(0);
-    _x_axis_vbo.release();
-
-    _y_axis_vbo.create();
-    _y_axis_vbo.bind();
-    f->glEnableVertexAttribArray(0);
-    f->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
-    _y_axis_vbo.allocate(y_axis_vertices.constData(), y_axis_vertices.size() * static_cast<int>(sizeof(float)));
-    _y_axis_vbo.setUsagePattern(QOpenGLBuffer::StaticDraw);
-    f->glDisableVertexAttribArray(0);
-    _y_axis_vbo.release();
-}
-
 //inline
 void 
 OGLBaseChart_C::DrawSurfaceGrid(QOpenGLShaderProgram& shader)
@@ -322,77 +107,103 @@ OGLBaseChart_C::DrawSurfaceGrid(QOpenGLShaderProgram& shader)
     _surface_grid_vbo.bind();
     f->glEnableVertexAttribArray(0);
     f->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
-    f->glDrawArrays(GL_LINES, 0, _num_of_surface_grid_positions);
+    f->glDrawArrays(GL_LINES, 0, _num_of_grid_positions);
     f->glDisableVertexAttribArray(0);
     _surface_grid_vbo.release();
+
 }
 
-
 std::pair<QVector<float>, QVector<float>>
-OGLBaseChart_C::CreateSurfaceGrid(int x_major_tick_dist_ms, float y_major_tick_dist_unit, 
-                                  int time_range_ms, float max_y, float min_y)
+OGLBaseChart_C::CreateSurfaceGrid(int x_major_tick_dist_ms, 
+                                  float y_major_tick_dist_unit,
+                                  float x_minor_tick_dist_ms,
+                                  float y_minor_tick_dist_unit,
+                                  int time_range_ms, 
+                                  float max_y, 
+                                  float min_y)
 {
-    auto surface_grid_vertices =
-        ChartShapes_C<float>::CreateSurfaceGridVertices(_plot_area,
-                                                        time_range_ms,
-                                                        max_y, 
-                                                        min_y,
-                                                        x_major_tick_dist_ms,
-                                                        y_major_tick_dist_unit);
+    /////////////////////////////
+    // Major Tick vertices
+    /////////////////////////////
 
-    auto& horizontal_grid_vertices = surface_grid_vertices.first;
-    auto& vertical_grid_vertices = surface_grid_vertices.second;
+    // These are also used for the axes text labels
+    auto grid_maj_tick_verts =
+        ChartShapes_C<float>::CreateMajTickSurfaceGridVertices(_plot_area,
+                                                            time_range_ms,
+                                                            max_y, 
+                                                            min_y,
+                                                            x_major_tick_dist_ms,
+                                                            y_major_tick_dist_unit);
 
-    QVector<float> combined_vertices;
-    int num_of_combined_verts = horizontal_grid_vertices.size() + vertical_grid_vertices.size();
-    combined_vertices.reserve(num_of_combined_verts); // preallocate memory
-    for ( auto& horizontal_vert : horizontal_grid_vertices ) {
-        combined_vertices.append(horizontal_vert);
+    const auto& horizontal_maj_grid_vertices = grid_maj_tick_verts.first;
+    const auto& vertical_maj_grid_vertices = grid_maj_tick_verts.second;
+    /////////////////////////////
+    // Minor Tick vertices
+    ///////////////////////////// 
+    auto grid_minor_tick_verts =
+        ChartShapes_C<float>::CreateMinorTickSurfaceGridVertices(_plot_area,
+            time_range_ms,
+            max_y,
+            min_y,
+            x_minor_tick_dist_ms,
+            y_minor_tick_dist_unit);
+
+    const auto& horizontal_minor_grid_vertices = grid_minor_tick_verts.first;
+    const auto& vertical_minor_grid_vertices = grid_minor_tick_verts.second;
+
+    // Create one vector of all vertices
+    QVector<float> combined_grid_verts;
+    int num_of_combined_grid_verts = horizontal_maj_grid_vertices.size() + vertical_maj_grid_vertices.size() +
+                                     horizontal_minor_grid_vertices.size() + vertical_minor_grid_vertices.size();
+
+    combined_grid_verts.reserve(num_of_combined_grid_verts); 
+
+    for ( auto& horizontal_maj_vert : horizontal_maj_grid_vertices ) {
+        combined_grid_verts.append(horizontal_maj_vert);
     }
-    for ( auto& vertical_vert : vertical_grid_vertices ) {
-        combined_vertices.append(vertical_vert);
+    for ( auto& vertical_maj_vert : vertical_maj_grid_vertices ) {
+        combined_grid_verts.append(vertical_maj_vert);
     }
 
-    _num_of_surface_grid_positions = num_of_combined_verts / 3;
+    for ( auto& horizontal_min_vert : horizontal_minor_grid_vertices ) {
+        combined_grid_verts.append(horizontal_min_vert);
+    }
+    for ( auto& vertical_min_vert : vertical_minor_grid_vertices ) {
+        combined_grid_verts.append(vertical_min_vert);
+    }
+
+    _num_of_grid_positions = num_of_combined_grid_verts / 3;
 
     // Destroy the old buffer
     _surface_grid_vbo.destroy();
-    // Create VBO
-    QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
     // Setup OGL Chart buffer - empty 
     _surface_grid_vbo.create();
     _surface_grid_vbo.bind();
+    // Create VBO
+    QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
     f->glEnableVertexAttribArray(0);
     // 3 positions for x and y and z data coordinates
     f->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
-    _surface_grid_vbo.allocate(combined_vertices.constData(), combined_vertices.size() * sizeof(float));
+    _surface_grid_vbo.allocate(combined_grid_verts.constData(), combined_grid_verts.size() * sizeof(float));
     _surface_grid_vbo.setUsagePattern(QOpenGLBuffer::StaticDraw);
     f->glDisableVertexAttribArray(0);
     _surface_grid_vbo.release();
 
-    return surface_grid_vertices;
+    // Return maj tick vertices to for the plot labels
+    return grid_maj_tick_verts;
 }
 
 
 //inline
 void 
-OGLBaseChart_C::DrawXYAxes(QOpenGLShaderProgram& shader, QOpenGLShaderProgram& text_shader)
+OGLBaseChart_C::DrawTextLabels(QOpenGLShaderProgram& shader, QOpenGLShaderProgram& text_shader)
 {
     QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
     shader.bind();
     shader.setUniformValue("u_object_color", _axes_color);
-    //   _y_axis_vbo.bind();
-    //   f->glEnableVertexAttribArray(0);
-    //   f->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
-    //   f->glDrawArrays(GL_TRIANGLES, 0, 6);
-    //   f->glDisableVertexAttribArray(0);
-    //   _y_axis_vbo.release();
-    //   _x_axis_vbo.bind();
-    // f->glEnableVertexAttribArray(0);
-    // f->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
-    // f->glDrawArrays(GL_TRIANGLES, 0, 6);
-    // f->glDisableVertexAttribArray(0);
-    //   _x_axis_vbo.release();
+
+    // Draw the plot label
+    _plot_label.RenderText(text_shader, _text_color, _chart_mvp);
 
     // Draw the axes descriptions
     for ( /*const*/ auto& description : _plot_axes ) {
@@ -404,7 +215,8 @@ OGLBaseChart_C::DrawXYAxes(QOpenGLShaderProgram& shader, QOpenGLShaderProgram& t
 }
 
 //inline
-void OGLBaseChart_C::DrawBoundingBox(QOpenGLShaderProgram& shader)
+void 
+OGLBaseChart_C::DrawBoundingBox(QOpenGLShaderProgram& shader)
 {
     auto* f = QOpenGLContext::currentContext()->functions();
     shader.bind();
@@ -436,73 +248,91 @@ OGLBaseChart_C::CreateBoundingBox()
 
 
 
-const std::string & OGLBaseChart_C::GetLabel()
+const 
+std::string&
+OGLBaseChart_C::GetLabel()
 {
     return _label;
 }
 
-unsigned int OGLBaseChart_C::GetID()
+unsigned int 
+OGLBaseChart_C::GetID()
 {
     return _id;
 }
-void OGLBaseChart_C::SetLabel(const std::string & label)
+
+void 
+OGLBaseChart_C::SetLabel(const std::string & label)
 {
     _label = label;
+    _plot_label.SetText(label,
+                        _bounding_box.GetLeftBottom()._x,
+                        _bounding_box.GetLeftBottom()._y,
+                        0.35f,
+                        Font2D_TP::ARIAL);
+
 }
 
-void OGLBaseChart_C::SetID(unsigned int id)
+void 
+OGLBaseChart_C::SetID(unsigned int id)
 {
     _id = id;
 }
 
-void OGLBaseChart_C::SetAxesColor(const QVector3D& color)
+void 
+OGLBaseChart_C::SetAxesColor(const QVector3D& color)
 {
     _axes_color = color;
 }
 
 
-void OGLBaseChart_C::SetTextColor(const QVector3D& color)
+void 
+OGLBaseChart_C::SetTextColor(const QVector3D& color)
 {
     _text_color = color;
 }
 
 
-void OGLBaseChart_C::SetSeriesColor(const QVector3D& color)
+void 
+OGLBaseChart_C::SetSeriesColor(const QVector3D& color)
 {
     _series_color = color;
 }
 
 
-void OGLBaseChart_C::SetBoundingBoxColor(const QVector3D& color)
+void 
+OGLBaseChart_C::SetBoundingBoxColor(const QVector3D& color)
 {
     _bounding_box_color = color;
 }
 
 
-void OGLBaseChart_C::SetSurfaceGridColor(const QVector3D& color)
+void 
+OGLBaseChart_C::SetSurfaceGridColor(const QVector3D& color)
 {
     _surface_grid_color = color;
 }
 
-void OGLBaseChart_C::SetFiducialMarkColor(const QVector3D & color)
+void 
+OGLBaseChart_C::SetFiducialMarkColor(const QVector3D & color)
 {
     _fiducial_marks_color = color;
 }
 
 
 void
-OGLBaseChart_C::SetModelViewProjection(QMatrix4x4 model_view_projection)
+OGLBaseChart_C::SetModelViewProjection(const QMatrix4x4& model_view_projection)
 {
     _chart_mvp = model_view_projection;
 }
 
-OGLChartGeometry_C
+const OGLChartGeometry_C&
 OGLBaseChart_C::GetBoundingBox()
 {
     return _bounding_box;
 }
 
-OGLChartGeometry_C
+const OGLChartGeometry_C&
 OGLBaseChart_C::GetPlotSurfaceArea()
 {
     return _plot_area;

@@ -130,10 +130,19 @@ public:
     void SetMajorTickValueXAxes(float tick_value_ms);
     float GetMajorTickValueXAxes();
 
+    //! Set the minor tick value for the x-axes.
+    void SetMinorTickValueXAxes(float tick_value_ms);
+    float GetMinorTickValueXAxes();
+
     //! Set the major tick value for the y axis
     //! The major tick value is used to draw the horizontal grid lines
     void SetMajorTickValueYAxes(float tick_value_unit);
     float GetMajorTickValueYAxes();
+
+    //! Set the minor tick value for the y axis
+    //! The major tick value is used to draw the horizontal grid lines
+    void SetMinorTickValueYAxes(float tick_value_unit);
+    float GetMinorTickValueYAxes();
 
     void SetMaxValueYAxes(const DataType_TP max_y_val);
     DataType_TP GetMaxValueYAxes();
@@ -169,27 +178,6 @@ private:
 
     // Private attributes
 private:
-
-    //! Vertex buffer object for the lead line 
-    QOpenGLBuffer _lead_line_vbo;
-
-    //! Vertices for the lead line
-    QVector<float> _lead_line_vertices;
-
-    //! Number of bytes for the lead line used by the vbo. 
-    //! This should be equal to six, when the lead line is a line and no point or other shape.
-    int _number_of_bytes_lead_line;
-
-    //! The maximum value of the y axis 
-    DataType_TP _max_y_axis_value;
-
-    //! The minimum value of the y axis 
-    DataType_TP _min_y_axis_value;
-
-    //! Timerange of the x axis in milliseconds 
-    //! (_max_x_axis_val_ms - _min_x_axis_val_ms)
-    double _time_range_ms;
-
     //! Input buffer used to store the time series data
     RingBufferOptimized_TC<ChartPoint_TP<Position3D_TC<DataType_TP>>> _input_buffer;
 
@@ -202,20 +190,31 @@ private:
     //! Buffer to visualize fiducial markers
     OGLSweepChartBuffer_C<DataType_TP> _ogl_fiducial_data_series;
 
+    //! Vertex buffer object for the lead line 
+    QOpenGLBuffer _lead_line_vbo;
+
+    //! Vertices for the lead line
+    QVector<float> _lead_line_vertices;
+
+    //! Timerange of the x axis in milliseconds 
+    //! (_max_x_axis_val_ms - _min_x_axis_val_ms)
+    double _time_range_ms;
+
+    //! Number of bytes for the lead line used by the vbo. 
+    //! This should be equal to six, when the lead line is a line and no point or other shape.
+    int _number_of_bytes_lead_line;
+
+    //! The maximum value of the y axis 
+    DataType_TP _max_y_axis_value;
+
+    //! The minimum value of the y axis 
+    DataType_TP _min_y_axis_value;
+
     //! The y component of the last value plotted
     DataType_TP _last_plotted_y_value_S = 0;
 
     //! The x component of the last value plotted
     DataType_TP _last_plotted_x_value_S = 0;
-
-    // Colors for the shader
-    //QVector3D _lead_line_color;
-
-    ////! modifies the surface grid
-    //float _major_tick_x_axes;
-
-    ////! modifies the surface grid
-    //float _major_tick_y_axes;
 
     std::atomic<float> _gain = 1.0f;
 
@@ -236,21 +235,21 @@ OGLSweepChart_C<DataType_TP>::~OGLSweepChart_C()
 
 template<typename DataType_TP>
 OGLSweepChart_C<DataType_TP>::OGLSweepChart_C(int time_range_ms,
-    RingBufferSize_TP buffer_size,
-    DataType_TP max_y_value,
-    DataType_TP min_y_value,
-    const OGLChartGeometry_C& geometry,
-    const QObject& parent)
+                                             RingBufferSize_TP buffer_size,
+                                             DataType_TP max_y_value,
+                                             DataType_TP min_y_value,
+                                             const OGLChartGeometry_C& geometry,
+                                             const QObject& parent)
     : OGLBaseChart_C(geometry, &parent),
-    _lead_line_vbo(QOpenGLBuffer::VertexBuffer),
-    _time_range_ms(time_range_ms),
     _input_buffer(buffer_size),
     _fiducial_buffer(RingBufferSize_TP::Size512),
     _ogl_data_series(_input_buffer.MaxSize(), time_range_ms, _input_buffer),
-    _ogl_fiducial_data_series(_fiducial_buffer.MaxSize(), time_range_ms, _fiducial_buffer)
+    _ogl_fiducial_data_series(_fiducial_buffer.MaxSize(), time_range_ms, _fiducial_buffer),
+    _lead_line_vbo(QOpenGLBuffer::VertexBuffer)
 {
     _max_y_axis_value = max_y_value;
     _min_y_axis_value = min_y_value;
+    _time_range_ms = time_range_ms;
     // setup buffer for the vertices, used to draw the lead line: 
     // The most vertices are fixed and only the x value of the vertices needs to be adapted when new data was added.
     // The only value that changes when adding new data, is the x value of the lead line. 
@@ -269,49 +268,6 @@ OGLSweepChart_C<DataType_TP>::OGLSweepChart_C(int time_range_ms,
     _lead_line_vertices[5] = _plot_area.GetZPosition();
 }
 
-//template<typename DataType_TP>
-//inline 
-//OGLSweepChart_C<DataType_TP>::OGLSweepChart_C(const OGLSweepChart_C<DataType_TP>& other)
-//{
-//    _lead_line_vbo = other._lead_line_vbo;
-//    _lead_line_vertices = other._lead_line_vertices;
-//    _number_of_bytes_lead_line = other._number_of_bytes_lead_line;
-//    _max_y_axis_value = other._max_y_axis_value;
-//    _min_y_axis_value = other._min_y_axis_value;
-//    _time_range_ms = other._time_range_ms;
-//    _input_buffer = other._input_buffer; // requires =operator overload
-//    _fiducial_buffer = other._fiducial_buffer;
-//    _ogl_data_series = other._ogl_data_series;
-//    _ogl_fiducial_data_series = other._ogl_fiducial_data_series;
-//    _last_plotted_y_value_S = other._last_plotted_y_value_S;
-//    _last_plotted_x_value_S = other._last_plotted_x_value_S;
-//    _gain = other._gain;
-//    _initialized = other._initialized;
-//
-//}
-//
-//template<typename DataType_TP>
-//inline
-//OGLSweepChart_C&
-//OGLSweepChart_C<DataType_TP>::operator=(const OGLSweepChart_C & other)
-//{
-//    _lead_line_vbo = other._lead_line_vbo;
-//    _lead_line_vertices = other._lead_line_vertices;
-//    _number_of_bytes_lead_line = other._number_of_bytes_lead_line;
-//    _max_y_axis_value = other._max_y_axis_value;
-//    _min_y_axis_value = other._min_y_axis_value;
-//    _time_range_ms = other._time_range_ms;
-//    _input_buffer = other._input_buffer;
-//    _fiducial_buffer = other._fiducial_buffer;
-//    _ogl_data_series = other._ogl_data_series;
-//    _ogl_fiducial_data_series = other._ogl_fiducial_data_series;
-//    _last_plotted_y_value_S = other._last_plotted_y_value_S;
-//    _last_plotted_x_value_S = other._last_plotted_x_value_S;
-//    _gain = other._gain;
-//    _initialized = other._initialized;
-//    return *this;
-//}
-
 template<typename DataType_TP>
 void
 OGLSweepChart_C<DataType_TP>::Initialize()
@@ -329,13 +285,12 @@ OGLSweepChart_C<DataType_TP>::Initialize()
         // Allocate a vertex buffer object to store data for the lead line
         CreateLeadLineVbo();
 
-        // Create vbo for the x and y axis => replaced by surfaced grid
-        //SetupAxes();
-
         // Create vbo for the bounding box of the chart
         CreateBoundingBox();
 
         CreateAxesGrid();
+        
+        SetLabel(_label);
 
         _initialized = true;
     }
@@ -343,7 +298,8 @@ OGLSweepChart_C<DataType_TP>::Initialize()
 
 template<typename DataType_TP>
 void
-OGLSweepChart_C<DataType_TP>::AddDatapoint(const DataType_TP value, const Timestamp_TP & timestamp)
+OGLSweepChart_C<DataType_TP>::AddDatapoint(const DataType_TP value, 
+                                          const Timestamp_TP & timestamp)
 {
     // Don't add the value if its not inside the range, 
     // because its not visible eitherway -> better solution would be: Add it to the series but don't draw it!
@@ -368,7 +324,7 @@ OGLSweepChart_C<DataType_TP>::AddDatapoint(const DataType_TP value, const Timest
         ChartPoint_TP<Position3D_TC<DataType_TP>>(Position3D_TC<DataType_TP>(x_val_scaled_S,
             y_val_scaled_S,
             _plot_area.GetZPosition()),
-            x_ms));
+        x_ms));
 
 }
 
@@ -401,7 +357,9 @@ OGLSweepChart_C<DataType_TP>::SetChartType(DrawingStyle_TP chart_type)
 }
 
 template<typename DataType_TP>
-inline DrawingStyle_TP OGLSweepChart_C<DataType_TP>::GetChartType()
+inline 
+DrawingStyle_TP 
+OGLSweepChart_C<DataType_TP>::GetChartType()
 {
     return _ogl_data_series.GetDrawingStyle();
 }
@@ -443,11 +401,9 @@ OGLSweepChart_C<DataType_TP>::SetMajorTickValueYAxes(float tick_value_unit)
         if ( tick_value_unit > _max_y_axis_value - _min_y_axis_value ) {
             tick_value_unit = _max_y_axis_value;
         }
-
         Clear();
         CreateAxesGrid();
     }
-
 }
 
 template<typename DataType_TP>
@@ -459,16 +415,49 @@ OGLSweepChart_C<DataType_TP>::GetMajorTickValueYAxes()
 }
 
 template<typename DataType_TP>
+inline void OGLSweepChart_C<DataType_TP>::SetMinorTickValueYAxes(float tick_value_unit)
+{
+    _minor_tick_y_axes = tick_value_unit;
+    if ( _initialized ) {
+        Clear();
+        CreateAxesGrid();
+    }
+}
+
+template<typename DataType_TP>
+inline float OGLSweepChart_C<DataType_TP>::GetMinorTickValueYAxes()
+{
+    return _minor_tick_y_axes;
+}
+
+template<typename DataType_TP>
+inline
+void
+OGLSweepChart_C<DataType_TP>::SetMinorTickValueXAxes(float tick_value_ms)
+{
+    _minor_tick_x_axes = tick_value_ms;
+    if ( _initialized ) {
+        Clear();
+        CreateAxesGrid();
+    }
+
+}
+
+template<typename DataType_TP>
+inline
+float
+OGLSweepChart_C<DataType_TP>::GetMinorTickValueXAxes()
+{
+    return _minor_tick_x_axes;
+}
+
+template<typename DataType_TP>
 inline
 void
 OGLSweepChart_C<DataType_TP>::SetMaxValueYAxes(const DataType_TP max_y_val)
 {
     _max_y_axis_value = max_y_val;
 
-    if ( _initialized ) {
-        Clear();
-        CreateAxesGrid();
-    }
 }
 
 template<typename DataType_TP>
@@ -539,7 +528,6 @@ OGLSweepChart_C<DataType_TP>::SetLeadLineColor(const QVector3D& color)
 }
 
 template<typename DataType_TP>
-//inline 
 void
 OGLSweepChart_C<DataType_TP>::SetGain(const float new_gain) {
     _gain.store(new_gain);
@@ -559,10 +547,10 @@ OGLSweepChart_C<DataType_TP>::Draw(QOpenGLShaderProgram& shader,
     QOpenGLShaderProgram& text_shader)
 {
     DrawSeries(shader);
-    //DrawBoundingBox(shader);
+    // DrawBoundingBox(shader);
     DrawLeadLine(shader);
     DrawSurfaceGrid(shader);
-    DrawXYAxes(shader, text_shader);
+    DrawTextLabels(shader, text_shader);
 }
 
 template<typename DataType_TP>
@@ -642,23 +630,25 @@ inline
 void
 OGLSweepChart_C<DataType_TP>::CreateAxesGrid()
 {
-    auto grid_vertices = CreateSurfaceGrid(_major_tick_x_axes,
-        _major_tick_y_axes,
-        _time_range_ms,
-        _max_y_axis_value,
-        _min_y_axis_value);
+    auto grid_vertices_maj_tick = CreateSurfaceGrid(_major_tick_x_axes,
+                                                    _major_tick_y_axes, 
+                                                    _minor_tick_x_axes,
+                                                    _minor_tick_y_axes,
+                                                    _time_range_ms,
+                                                    _max_y_axis_value,
+                                                    _min_y_axis_value);
 
-    auto& horizontal_verts = grid_vertices.first;
-    auto& vertical_verts = grid_vertices.second;
+    auto& horizontal_verts_maj_tick = grid_vertices_maj_tick.first;
+    auto& vertical_verts_maj_tick = grid_vertices_maj_tick.second;
     double scale = 0.25f;
-    // Use the surface grid vertice
-    InitializeAxesDescription(horizontal_verts,
-        vertical_verts,
-        scale,
-        _time_range_ms,
-        _max_y_axis_value,
-        _major_tick_x_axes,
-        _major_tick_y_axes);
+    // Use the surface grid vertice to create the text labels for the axes 
+    InitializeAxesDescription(horizontal_verts_maj_tick,
+                              vertical_verts_maj_tick,
+                              scale,
+                              _time_range_ms,
+                              _max_y_axis_value,
+                              _major_tick_x_axes,
+                              _major_tick_y_axes);
 }
 
 template<typename DataType_TP>
@@ -670,9 +660,9 @@ OGLSweepChart_C<DataType_TP>::DrawLeadLine(QOpenGLShaderProgram& shader)
     shader.bind();
     shader.setUniformValue("u_object_color", _lead_line_color);
     _lead_line_vbo.bind();
-
+    // Update position vertices
     UpdateLeadLinePosition(_ogl_data_series.GetLastPlottedXValue());
-
+    // Draw
     f->glEnableVertexAttribArray(0);
     f->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
     f->glDrawArrays(GL_LINES, 0, 2);
