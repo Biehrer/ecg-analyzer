@@ -35,19 +35,16 @@ find_package(Qt5Widgets)
 find_package(Qt5Gui)
 
 # add test directory -> do this only when a flag is set in Cmake
-add_subdirectory(includes/tests/signal_proc_lib)
-add_subdirectory(includes/tests/visualization)
+option(ENABLE_TESTS "Enable tests" OFF)
+if ( ${ENABLE_TESTS})
+    enable_testing()
+endif()
 
-# add visualization and signal proc lib 
-#if(USE_VISUALIZATION)
-#    add_subdirectory(includes/visualization)
-#endif()
-
+add_subdirectory(includes/tests)
 add_subdirectory(includes/visualization)
 add_subdirectory(includes/signal_proc_lib)
 
 add_executable(${PROJECT_NAME} main.cpp 
-                      # ${CMAKE_CURRENT_SOURCE_DIR}/includes/time_series_player.h
                         ${CMAKE_CURRENT_SOURCE_DIR}/includes/jones_plot_app.h
                         ${CMAKE_CURRENT_SOURCE_DIR}/includes/jones_plot_app.cpp
                         ${CMAKE_CURRENT_SOURCE_DIR}/includes/JonesPlot.ui
@@ -90,6 +87,3 @@ target_link_libraries(signalanalyzer PUBLIC
                                       Qt5::Gui
                                       Qt5::Core
                                      )
-
-
-#target_compile_definitions(signalanalyzer PRIVATE __cplusplus)
