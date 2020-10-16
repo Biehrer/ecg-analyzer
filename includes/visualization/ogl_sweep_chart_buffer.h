@@ -3,7 +3,6 @@
 // Project includes
 #include "circular_buffer.h"
 #include "chart_types.h"
-//#include "line_notation.h"
 
 // STL includes
 #include <iostream>
@@ -28,6 +27,9 @@ enum class DrawingStyle_TP {
 template<typename DataType_TP>
 class OGLSweepChartBuffer_C {
 
+public:
+    friend class OGLChartRingBufferTest_C;
+
     // Constructing / Copying / Destuction
 public:
 
@@ -40,7 +42,7 @@ public:
     OGLSweepChartBuffer_C& operator=(const OGLSweepChartBuffer_C& other) = delete;
     
     // Move constructor / assignment
-    OGLSweepChartBuffer_C(OGLSweepChartBuffer_C &&) = delete;/*default;*/
+    OGLSweepChartBuffer_C(OGLSweepChartBuffer_C &&) = delete;
     OGLSweepChartBuffer_C& operator=(OGLSweepChartBuffer_C &&) = delete;
 
     ~OGLSweepChartBuffer_C();
@@ -50,10 +52,16 @@ public:
     //! Draws the chart inside an active OpenGL context
     void Draw();
 
+    //! Set the timerange of the buffer
+    //! Determines which values are removed inside the OnChartUpdate() method.
+    //! All values, which are older than time_range_ms, will be removed from the buffer
     void SetTimeRange(double time_range_ms);
 
-    //! currently supported: GL_LINE_STRIP and GL_POINTS
+    //! Sets the Drawing behavior (glDrawElements/Arrays)
+    //! currently supported: GL_LINE_STRIP and GL_POINTS and GL_LINES
     void SetPrimitiveType(DrawingStyle_TP primitive_type);
+
+    DrawingStyle_TP GetDrawingStyle();
 
     //! Returns the x value last addded to the plot
     DataType_TP GetLastPlottedXValue();
@@ -67,8 +75,6 @@ public:
     //! return_value * 3 * sizeof(float) = number of bytes in buffer
     int GetNumberOfPoints();
 
-    DrawingStyle_TP GetDrawingStyle();
-    
     //! Destroy the content of the buffer 
     void Clear();
 
@@ -98,12 +104,10 @@ private:
     //! This function returns the index of the position of the 'timestamp' inside the input_buffer. 
     //! The function returns the next index, bigger than the timestamp value inside 'timestamp'
     //! The function uses binary search (std::upper_limit) for fast searching. 
-    //! Its possible to compare Timestamp_TP objects with ChartPoint_TP objects 
-    //! because of an compare-function which compares the Timestamp_TP object with the Timestamp_TP object of the ChartPoint_TP
     //!
-    //! \param timestamp the timestamp to search
-    //! \param data the data array of ChartPoint_TP to look for.
-    //! \returns on success, the offset to the timestamp value inside the ogl chart input ring-buffer. 
+    //! \param timestamp the timestamp to which the index is needed
+    //! \param data the data array in which the timestamp is searched
+    //! \returns on success, the index to the timestamp value inside the ogl chart input ring-buffer. 
     //!     If nothing was found the function returns -1.
     int FindIdxToTimestampInsideData(const Timestamp_TP & timestamp,
                                      const std::vector<ChartPoint_TP<Position3D_TC<DataType_TP>>>& data);
@@ -134,22 +138,27 @@ private:
     //! Indicates if the dataseries was already wrapped one time from the right to the left screen
     bool _dataseries_wrapped_once = false;
 
+    //! A vector filled with NAN values 
+    //! -> these values are send to opengl to interrupt the line strip, 
+    //! when it reached the left screen border)
     QVector<DataType_TP> _no_line_vertices;
 
     DataType_TP _last_plotted_y_value_S = 0;
 
     DataType_TP _last_plotted_x_value_S = 0;
 
+    //! Input buffer, from which new data is read, each time when the Draw() method was called.
     RingBufferOptimized_TC<ChartPoint_TP<Position3D_TC<DataType_TP>>>& _input_buffer;
 
+    //! Determines how vertices added to the buffer are drawn on screen (GL_LINES, GL_POINTS, GL_LINE_STRIP)
     GLenum _primitive_type = GL_LINE_STRIP;
 };
 
 
 template<typename DataType_TP>
 OGLSweepChartBuffer_C<DataType_TP>::OGLSweepChartBuffer_C(int buffer_size,
-                        double time_range_ms,
-                        RingBufferOptimized_TC<ChartPoint_TP<Position3D_TC<DataType_TP>>>& input_buffer)
+                                                        double time_range_ms,
+                                                        RingBufferOptimized_TC<ChartPoint_TP<Position3D_TC<DataType_TP>>>& input_buffer)
     :
     _vbo_size(buffer_size * 3 * sizeof(float)),
     _input_buffer(input_buffer),
@@ -163,7 +172,8 @@ OGLSweepChartBuffer_C<DataType_TP>::OGLSweepChartBuffer_C(int buffer_size,
 
 
 template<typename DataType_TP>
-OGLSweepChartBuffer_C<DataType_TP>::~OGLSweepChartBuffer_C() {
+OGLSweepChartBuffer_C<DataType_TP>::~OGLSweepChartBuffer_C() 
+{
     _chart_vbo.destroy();
 }
 
@@ -253,14 +263,17 @@ OGLSweepChartBuffer_C<DataType_TP>::OnChartUpdate()
                 additional_point_vertices.append(NAN);
             }
             // DEBUG(element);
-            // force construction inplace via std::move (because QVector is missing emplace_back())
-            additional_point_vertices.append(std::move(element._value._x));
-            additional_point_vertices.append(std::move(element._value._y));
-            additional_point_vertices.append(std::move(element._value._z));
+            // force construction inplace via std::move (because QVector is missing emplace_back() -> but has a move override since Qt5.)
+            //additional_point_vertices.append(std::move(element._value._x));
+            //additional_point_vertices.append(std::move(element._value._y));
+            //additional_point_vertices.append(std::move(element._value._z));
+            additional_point_vertices.append(element._value._x);
+            additional_point_vertices.append(element._value._y);
+            additional_point_vertices.append(element._value._z);
             _last_plotted_x_value_S = element._value._x;
         }
-
-        _last_plotted_y_value_S = (latest_data.end() - 1)->_value._y;
+        // Does not work if the items weree moved, because latest_data is empty
+        _last_plotted_y_value_S =  (latest_data.end() - 1)->_value._y;
 
         WriteToVbo(additional_point_vertices);
 
@@ -337,25 +350,33 @@ OGLSweepChartBuffer_C<DataType_TP>::AllocateSeriesVbo()
 
 }
 
-// AddVerticalLine(ChartDataType_TP x_coord_S)
+// Write test for this function => Make the Test class a friend, so it can call this function directly!
 template<typename DataType_TP>
 inline
 int
 OGLSweepChartBuffer_C<DataType_TP>::FindIdxToTimestampInsideData(const Timestamp_TP& timestamp,
     const std::vector<ChartPoint_TP<Position3D_TC<DataType_TP>>>& data)
 {
-    int current_idx = _head_idx / 3 / sizeof(float);
-
+    
     // We can not scan the whole buffer, because binary search requires that the data is sorted.
     // therefore, in the worst case scenario, two binary searches are necessary, to get the index of the timestamp
     auto latest_raw_data_begin = data.begin() + _tail_idx;
     auto it_interesting_data_range_until_end
-        = std::lower_bound(latest_raw_data_begin, data.end(), timestamp, CmpTimestamps);
+        = std::lower_bound(latest_raw_data_begin, data.end(), timestamp, CmpTimestamps); // Makes no sense, because data until .end() is not sorted, from latest_raw_data_begin
+    //TODO: (Because it was wrong all the time, but the problem did not show itself until 
+    // I choose a buffer which was way too big for the timerange -> I just got luck the last times, because the buffer was approximately the right size)
+    //
+    // check not until end, but check from latest timerange it
+    //= std::lower_bound(latest_raw_data_begin, data.begin() + _head_idx, timestamp, CmpTimestamps);
+    // Some fixed value(100) -> makes problem when the buffer is smaller than this value because we access invalid memory locations
+    //= std::lower_bound(latest_raw_data_begin, latest_raw_data_begin+ 100 , timestamp, CmpTimestamps);
 
     if ( it_interesting_data_range_until_end != data.end() ) {
         std::size_t index = std::distance(data.begin(), it_interesting_data_range_until_end);
         return index;
     }
+
+    int current_idx = _head_idx / 3 / sizeof(float); // /6 with GL_LINE?
 
     auto current_data_ptr = data.begin() + current_idx +1;// +1 ? -> because .end() does also point to one position after the end
     auto it_interesting_data_range_until_current =
@@ -368,6 +389,18 @@ OGLSweepChartBuffer_C<DataType_TP>::FindIdxToTimestampInsideData(const Timestamp
         return -1;
         std::cout << "could not find idx to timestamp. return -1 " << std::endl;
     }
+
+    // Possibilitys: 
+    // (Values added -> ++_tail)
+    // (Values poped -> ++_head)
+
+    //- begin() until _head => these are old values which are not inside the timerange of the buffer -> But they should be sorted
+    //- begin() until _tail => Should be sorted(NOT ITS NOT) -> I Have to check timeranges from the beginning if noting succeeds
+    //- _head until _tail   => this is the latest timerange-> makes sense! -> is sorted
+
+    //- begin() until end() => this is not sorted and makes no sense
+    //- _head until end()   => not sorted
+    // _tail until end()    => not sorted
 
     //// Not good, because binary search does only work when everything is sorted. this is not the case with the ring buffer (only two parts are sorted)
     //auto complete_range =
@@ -464,13 +497,11 @@ OGLSweepChartBuffer_C<DataType_TP>::RemoveOutdatedDataInsideVBO()
     int start_time_idx = FindIdxToTimestampInsideData(Timestamp_TP(start_time_ms), _input_buffer.constData()) - 1;
 
     if ( start_time_idx > -1 ) {
-        int bytes_to_remove = (start_time_idx + 1 - _tail_idx) * 3 * sizeof(float);
+        uint32_t bytes_to_remove = (start_time_idx + 1 - _tail_idx) * 3 * sizeof(float);
 
         if ( bytes_to_remove > 0 ) {
             _chart_vbo.write(_tail_idx * 3 * sizeof(float), _no_line_vertices.constData(), bytes_to_remove);
-            //_line_engine.RemoveUntil(_tail_idx * 3 * sizeof(float), bytes_to_remove);
-            _tail_idx = start_time_idx;
-
+            // _line_engine.RemoveUntil(_tail_idx * 3 * sizeof(float), bytes_to_remove);
         } else {
             // recalculate the index when the current write_index wrapped (this means its near zero of the time axis) and 
            // the remove-index is still removing data at the end of the buffer(this means its at the end of the time axis):
@@ -485,8 +516,9 @@ OGLSweepChartBuffer_C<DataType_TP>::RemoveOutdatedDataInsideVBO()
             _chart_vbo.write(_tail_idx * 3 * sizeof(float), _no_line_vertices.constData(), number_of_free_bytes_until_end);
             int bytes_to_remove_at_beginning = (start_time_idx + 1) * 3 * sizeof(float);
             _chart_vbo.write(0, _no_line_vertices.constData(), bytes_to_remove_at_beginning);
-            _tail_idx = start_time_idx;
         }
+
+        _tail_idx = start_time_idx;
     }
 }
 

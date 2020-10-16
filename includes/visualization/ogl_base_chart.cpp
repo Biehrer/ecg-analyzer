@@ -38,43 +38,48 @@ OGLBaseChart_C::OGLBaseChart_C(const OGLChartGeometry_C& geometry,
 
     auto right_top = _bounding_box.GetRightTop();
     _plot_area.SetRightTop(right_top + Position3D_TC<PositionType_TP>(-offset, -offset, 0));
+
+    // Create vbo for the bounding box of the chart -> cant this be in Base class constructor?
+    CreateBoundingBox();
 }
 
-void OGLBaseChart_C::InitializeAxesDescription(const QVector<float>& horizontal_grid_line_vertices,
+// The axes are aligned on the major tick surface grid lines
+void 
+OGLBaseChart_C::InitializeAxesDescription(const QVector<float>& horizontal_grid_line_vertices,
                                                const QVector<float>& vertical_grid_line_vertices,
-                                               float scale, 
-                                               int time_range_ms, 
-                                               double max_y_val,
-                                               float maj_tick_x, 
-                                               float maj_tick_y) // TODO: Pass struct with all of this data ! Too much arguments
+                                               float scale) 
 {
     // /2 -> to get the number of half the vertices (Point FROM, not point TO, because they are always equal )
     // /3 -> to get number of text fields 
-    int num_y_textboxes = horizontal_grid_line_vertices.size() / 2 / 3; // y axes textboxes
-    int num_x_textboxes = vertical_grid_line_vertices.size() / 2 / 3; // x axes textboxes
-
+    int num_y_textboxes = horizontal_grid_line_vertices.size() / 2 / 3; 
+    int num_x_textboxes = vertical_grid_line_vertices.size() / 2 / 3; 
     int num_of_textboxes = num_y_textboxes + num_x_textboxes;
 
+    // Remove old text boxes
     _plot_axes.clear(); 
+    // Initialize new ones 
     for ( int num_axes = 0; num_axes < num_of_textboxes; ++num_axes ) {
         _plot_axes.emplace_back();
     }
 
-    // horizontal changing descriptions (y-axes):
-    // Vars for fine adjustment of text positioning(via offet_x_S and offset_y_S)
-    int offset_x_S = 3;
-    int offset_y_S = -10;
-    int vec_offset_idx = 1;
+    // Set Text for the textboxes
 
-    auto current_y_description = max_y_val;
+    // horizontal changing descriptions (y-axes):
+    // offset to manually shift the textbox on the x-axis
+    int offset_x_S = 3;
+    // offset to manually shift the textbox on the y-axis
+    int offset_y_S = -10;
+
+    int vec_offset_y_idx = 1;
+    auto current_y_description = _max_y_axis_value;
     auto y_textboxes_it_end = _plot_axes.begin() + num_y_textboxes;
     for ( auto y_textbox_it = _plot_axes.begin(); y_textbox_it != y_textboxes_it_end; ++y_textbox_it ) {
         float pos_x = _bounding_box.GetLeftBottom()._x + offset_x_S;
-        float pos_y = horizontal_grid_line_vertices.at(vec_offset_idx) + offset_y_S;
+        float pos_y = horizontal_grid_line_vertices.at(vec_offset_y_idx) + offset_y_S;
         std::string text = std::to_string(static_cast<double>(current_y_description)) + " mV";
         y_textbox_it->SetText(text, pos_x, pos_y, scale, Font2D_TP::ARIAL);
-        current_y_description -= maj_tick_y;
-        vec_offset_idx += 6;
+        current_y_description -= _major_tick_y_axes;
+        vec_offset_y_idx += 6; // + 6 to get to the next y-value of the next box
     }
 
     // Vertical changing descriptions (x-axes):
@@ -82,22 +87,20 @@ void OGLBaseChart_C::InitializeAxesDescription(const QVector<float>& horizontal_
     offset_x_S = 0;
     // offset to manually shift the textbox on the y-axis
     offset_y_S = 8;
-    vec_offset_idx = 0;
-    auto current_x_description = time_range_ms;
+    int vec_offset_x_idx = 0;
+    auto current_x_description = _time_range_ms;
     for ( auto x_textbox_it = y_textboxes_it_end; x_textbox_it != _plot_axes.end(); ++x_textbox_it ) {
-        float pos_x = vertical_grid_line_vertices.at(vec_offset_idx) + offset_x_S;
+        float pos_x = vertical_grid_line_vertices.at(vec_offset_x_idx) + offset_x_S;
         float pos_y = _plot_area.GetLeftTop()._y + offset_y_S;
         std::string text = std::to_string(static_cast<int>(current_x_description)) + " ms";
         x_textbox_it->SetText(text, pos_x, pos_y, scale, Font2D_TP::ARIAL);
 
-        current_x_description -= maj_tick_x;
-        vec_offset_idx += 6;
+        current_x_description -= _major_tick_x_axes;
+        vec_offset_x_idx += 6; // + 6 to get to the next x-value of the next box
     }
-
 }
 
 
-//inline
 void 
 OGLBaseChart_C::DrawSurfaceGrid(QOpenGLShaderProgram& shader)
 {
@@ -114,26 +117,20 @@ OGLBaseChart_C::DrawSurfaceGrid(QOpenGLShaderProgram& shader)
 }
 
 std::pair<QVector<float>, QVector<float>>
-OGLBaseChart_C::CreateSurfaceGrid(int x_major_tick_dist_ms, 
-                                  float y_major_tick_dist_unit,
-                                  float x_minor_tick_dist_ms,
-                                  float y_minor_tick_dist_unit,
-                                  int time_range_ms, 
-                                  float max_y, 
-                                  float min_y)
+OGLBaseChart_C::CreateSurfaceGridVertices()
 {
+    
     /////////////////////////////
     // Major Tick vertices
     /////////////////////////////
-
     // These are also used for the axes text labels
     auto grid_maj_tick_verts =
         ChartShapes_C<float>::CreateMajTickSurfaceGridVertices(_plot_area,
-                                                            time_range_ms,
-                                                            max_y, 
-                                                            min_y,
-                                                            x_major_tick_dist_ms,
-                                                            y_major_tick_dist_unit);
+                                                            _time_range_ms,
+                                                            _max_y_axis_value, 
+                                                            _min_y_axis_value,
+                                                            _major_tick_x_axes,
+                                                            _major_tick_y_axes);
 
     const auto& horizontal_maj_grid_vertices = grid_maj_tick_verts.first;
     const auto& vertical_maj_grid_vertices = grid_maj_tick_verts.second;
@@ -142,15 +139,16 @@ OGLBaseChart_C::CreateSurfaceGrid(int x_major_tick_dist_ms,
     ///////////////////////////// 
     auto grid_minor_tick_verts =
         ChartShapes_C<float>::CreateMinorTickSurfaceGridVertices(_plot_area,
-            time_range_ms,
-            max_y,
-            min_y,
-            x_minor_tick_dist_ms,
-            y_minor_tick_dist_unit);
+            _time_range_ms,
+            _max_y_axis_value,
+            _min_y_axis_value,
+            _minor_tick_x_axes,
+            _minor_tick_y_axes);
 
     const auto& horizontal_minor_grid_vertices = grid_minor_tick_verts.first;
     const auto& vertical_minor_grid_vertices = grid_minor_tick_verts.second;
 
+    //TODO: remove duplicate lines(they are created because major/minor lines are created independent from each other)
     // Create one vector of all vertices
     QVector<float> combined_grid_verts;
     int num_of_combined_grid_verts = horizontal_maj_grid_vertices.size() + vertical_maj_grid_vertices.size() +
@@ -184,7 +182,8 @@ OGLBaseChart_C::CreateSurfaceGrid(int x_major_tick_dist_ms,
     f->glEnableVertexAttribArray(0);
     // 3 positions for x and y and z data coordinates
     f->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
-    _surface_grid_vbo.allocate(combined_grid_verts.constData(), combined_grid_verts.size() * sizeof(float));
+    _surface_grid_vbo.allocate(combined_grid_verts.constData(), 
+                               combined_grid_verts.size() * sizeof(float));
     _surface_grid_vbo.setUsagePattern(QOpenGLBuffer::StaticDraw);
     f->glDisableVertexAttribArray(0);
     _surface_grid_vbo.release();
@@ -232,7 +231,7 @@ OGLBaseChart_C::DrawBoundingBox(QOpenGLShaderProgram& shader)
 void 
 OGLBaseChart_C::CreateBoundingBox()
 {
-    auto bb_vertices = ChartShapes_C<float>::MakeBoundingBoxVertices(_bounding_box);
+    const auto bb_vertices = ChartShapes_C<float>::MakeBoundingBoxVertices(_bounding_box);
     // Setup vbo
     QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
     _bb_vbo.create();
@@ -245,7 +244,6 @@ OGLBaseChart_C::CreateBoundingBox()
     f->glDisableVertexAttribArray(0);
     _bb_vbo.release();
 }
-
 
 
 const 
@@ -270,7 +268,6 @@ OGLBaseChart_C::SetLabel(const std::string & label)
                         _bounding_box.GetLeftBottom()._y,
                         0.35f,
                         Font2D_TP::ARIAL);
-
 }
 
 void 
@@ -325,6 +322,98 @@ OGLBaseChart_C::SetModelViewProjection(const QMatrix4x4& model_view_projection)
 {
     _chart_mvp = model_view_projection;
 }
+
+float OGLBaseChart_C::GetScreenCoordsFromChartXValue(float x_value_ms)
+{
+    // calculate x-value after wrapping
+    return static_cast<float>(_bounding_box.GetLeftBottom()._x) +
+        ((x_value_ms) / (_time_range_ms)) *
+        _bounding_box.GetChartWidth();
+}
+
+float OGLBaseChart_C::GetScreenCoordsFromChartYValue(double y_value_unit)
+{
+    return static_cast<float>(_bounding_box.GetLeftTop()._y) -
+        ((y_value_unit - _min_y_axis_value) / (_max_y_axis_value - _min_y_axis_value)) *
+        _bounding_box.GetChartHeight();
+}
+
+float 
+OGLBaseChart_C::GetMaxValueYAxes()
+{
+    return _max_y_axis_value;
+}
+
+float 
+OGLBaseChart_C::GetMinValueYAxes()
+{
+    return _min_y_axis_value;
+}
+
+void
+OGLBaseChart_C::SetMaxValueYAxes(float max_y_val)
+{
+    _max_y_axis_value = max_y_val;
+}
+
+void 
+OGLBaseChart_C::SetMinValueYAxes(float min_y_val)
+{
+    _min_y_axis_value = min_y_val;
+}
+
+double 
+OGLBaseChart_C::GetTimerangeMs()
+{
+    return _time_range_ms;
+}
+
+void
+OGLBaseChart_C::SetTimerangeMs(double timerange_ms)
+{
+    _time_range_ms = timerange_ms;
+}
+
+void OGLBaseChart_C::SetMinorTickValueXAxes(float minor_tick_x)
+{
+    _minor_tick_x_axes = minor_tick_x;
+}
+
+void OGLBaseChart_C::SetMajorTickValueXAxes(float major_tick_x)
+{
+    _major_tick_x_axes = major_tick_x;
+}
+
+float OGLBaseChart_C::GetMajorTickValueXAxes()
+{
+    return _major_tick_x_axes;
+}
+
+float OGLBaseChart_C::GetMinorTickValueXAxes()
+{
+    return _minor_tick_x_axes;
+}
+
+void OGLBaseChart_C::SetMinorTickValueYAxes(float minor_tick_y)
+{
+    _minor_tick_y_axes = minor_tick_y;
+}
+
+void OGLBaseChart_C::SetMajorTickValueYAxes(float major_tick_y)
+{
+    _major_tick_y_axes = major_tick_y;
+}
+
+float OGLBaseChart_C::GetMajorTickValueYAxes()
+{
+    return _major_tick_y_axes;
+}
+
+float OGLBaseChart_C::GetMinorTickValueYAxes()
+{
+    return _minor_tick_y_axes;
+}
+
 
 const OGLChartGeometry_C&
 OGLBaseChart_C::GetBoundingBox()

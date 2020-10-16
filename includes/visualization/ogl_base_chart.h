@@ -4,7 +4,7 @@
 #include "ogl_chart_geometry_c.h"
 #include "chart_shapes_c.h"
 #include "chart_types.h"
-#include "text_renderer_2d.h"
+#include "ogl_text_label_c.h"
 
 // STL includes
 #include <iostream>
@@ -17,6 +17,11 @@
 #include <ctime>
 
 // Qt includes
+#include <QDesktopWidget>
+#include <QApplication>
+#include <qguiapplication.h>
+#include <QScreen>
+
 #include <qlist.h>
 #include <qvector.h>
 #include "qbuffer.h"
@@ -75,6 +80,30 @@ class OGLBaseChart_C {
         //! Sets the model view projection matrix used for text rendering (e.g. axes units)
         void SetModelViewProjection(const QMatrix4x4& model_view_projection);
 
+        float GetScreenCoordsFromChartXValue(float y_value_unit);
+        float GetScreenCoordsFromChartYValue(double x_value_ms);
+
+        virtual float GetMaxValueYAxes();
+        virtual float GetMinValueYAxes();
+
+        virtual void SetMaxValueYAxes(float max_y_val);
+        virtual void SetMinValueYAxes(float min_y_val);
+
+        virtual double GetTimerangeMs();
+        virtual void SetTimerangeMs(double timerange_ms);
+
+        virtual void SetMinorTickValueXAxes(float minor_tick_x);
+        virtual void SetMajorTickValueXAxes(float major_tick_x);
+
+        virtual float GetMajorTickValueXAxes();
+        virtual float GetMinorTickValueXAxes();
+
+        virtual void SetMinorTickValueYAxes(float minor_tick_y);
+        virtual void SetMajorTickValueYAxes(float major_tick_y);
+
+        virtual float GetMajorTickValueYAxes();
+        virtual float GetMinorTickValueYAxes();
+
         const OGLChartGeometry_C& GetBoundingBox();
         
         const OGLChartGeometry_C& GetPlotSurfaceArea();
@@ -88,11 +117,7 @@ class OGLBaseChart_C {
         //! Create the text for displaying axes units
         void InitializeAxesDescription(const QVector<float>& horizontal_grid_vertices,
                                        const QVector<float>& vertical_grid_vertices,
-                                       float scale, 
-                                       int time_range_ms, 
-                                       double max_y_val,
-                                       float maj_tick_x, 
-                                       float maj_tick_y);
+                                       float scale);
 
         //! Draws the x- and y-axis inside the opengl context
         //! from which the function is called
@@ -108,13 +133,7 @@ class OGLBaseChart_C {
         void CreateBoundingBox();
 
         //! Creates a vbo used to draw the grid of the chart
-        std::pair<QVector<float>, QVector<float>> CreateSurfaceGrid(int x_dist_unit, 
-                                                                    float y_dist_unit, 
-                                                                    float x_minor_tick_dist_ms,
-                                                                    float y_minor_tick_dist_ms,
-                                                                    int time_range_ms, 
-                                                                    float max_y,
-                                                                    float min_y);
+        std::pair<QVector<float>, QVector<float>> CreateSurfaceGridVertices();
 
         // Protected attributes
     protected:
@@ -134,9 +153,9 @@ class OGLBaseChart_C {
         //! Model view projection transform matrix for text rendering
         QMatrix4x4 _chart_mvp;
 
-        // Colors for the shader
-        QVector3D _lead_line_color;
-        
+        // Todo: Does this color stuff really belong in here? 
+        // Sure it helps, but this should belong inside the appropriate clases of these objects, I guess
+
         //! color of the data series
         QVector3D _series_color;
         
@@ -183,6 +202,16 @@ class OGLBaseChart_C {
 
         //! Minor tick value for the y-axes 
         float _minor_tick_y_axes = 0.0;
+
+        //! Timerange of the x axis in milliseconds 
+        //! (_max_x_axis_val_ms - _min_x_axis_val_ms)
+        double _time_range_ms;
+
+        //! The maximum value of the y axis 
+        float _max_y_axis_value;
+
+        //! The minimum value of the y axis 
+        float _min_y_axis_value;
 
         //! The parent widget with the opengl context
         const QObject* _parent_widget;
