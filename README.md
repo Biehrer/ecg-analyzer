@@ -8,6 +8,8 @@ Supports reading of Phsyionet MIT-BIH-Database records files via the wfdb librar
 
 ![bb](https://user-images.githubusercontent.com/44288843/82672250-67b55b00-9c40-11ea-8014-09ff70e12b38.png)
 
+![qrs detector](https://user-images.githubusercontent.com/44288843/96221845-861f4880-0f8b-11eb-818a-eee13710c80e.png)
+
 https://github.com/Biehrer/ecg-analyzer
 ## Get started
 
