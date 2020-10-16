@@ -35,6 +35,8 @@ struct ECGChannelInfo_TP {
         _low_hz = other._low_hz;
         _range_mV = other._range_mV;
         _scale = other._scale;
+        _min_val = other._min_val;
+        _max_val = other._max_val;
     }
 
     //ECGChannelInfo_TP(ECGChannelInfo_TP&& other) {
@@ -78,6 +80,12 @@ public:
 
     //! scale / gain factor
     uint32_t _scale = 0;
+    
+    //! Biggest value inside the data series(in the corresponding unit)
+    DataFormat_TP _max_val = 0.0;
+    
+    //! Smallest value inside the data series(in the corresponding unit)
+    DataFormat_TP _min_val = 0.0;
 
     //! Channel samples
     std::vector<DataFormat_TP> _data;
@@ -268,6 +276,10 @@ TimeSignal_C<DataType_TP>::LoadFromMITFileFormat(const std::string filename)
             element = (element - mit_channel._adc_baseline_0U_output_mV) / mit_channel._gain;
         });
 
+        ecg_data[channel_idx]._min_val = *std::min_element(ecg_data[channel_idx]._data.begin(), ecg_data[channel_idx]._data.end());
+        ecg_data[channel_idx]._max_val = *std::max_element(ecg_data[channel_idx]._data.begin(), ecg_data[channel_idx]._data.end());
+        
+
         GenerateTimestamps(ecg_data[channel_idx]._timestamps,
             mit_channel._num_samples,
             mit_channel._sample_frequency_hz);
@@ -375,6 +387,9 @@ TimeSignal_C<DataType_TP>::ReadG11Data(const std::string& filename)
             element *= scale_factor;
         });
         
+        ecg_channel._max_val = max_y_val_dataset;
+        ecg_channel._min_val = *min_element(ecg_channel._data.begin(),
+                                 ecg_channel._data.end());
         // Calculate x-values if there are none values inside the timestamps attribute
         if( ecg_channel._timestamps.empty() ) {
             GenerateTimestamps(ecg_channel._timestamps, 
