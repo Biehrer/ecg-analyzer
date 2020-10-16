@@ -2,7 +2,7 @@
 
 // Project includes
 #include "ogl_sweep_chart.h"
-#include "text_renderer_2d.h"
+#include "ogl_text_label_c.h"
 #include "plot_model.h"
 
 // STL includes

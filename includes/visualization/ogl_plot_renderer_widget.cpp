@@ -152,7 +152,7 @@ QOpenGLPlotRendererWidget::resizeGL(int width, int height)
 void 
 QOpenGLPlotRendererWidget::paintGL()
 {
-    Timer_C timer("paintGL loop");
+    //Timer_C timer("paintGL loop");
     QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
     f->glClearColor(0.0f, 0.0f, 0.0f, 0.8f);
 	f->glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -174,6 +174,7 @@ QOpenGLPlotRendererWidget::paintGL()
         plot->Draw(_light_shader, _text_shader);
     }
 
+
     //_prog.release();
     //_light_shader.bind();
     //_light_shader.setUniformValue("u_MVP", *_MVP);
@@ -182,7 +183,7 @@ QOpenGLPlotRendererWidget::paintGL()
     //_light_shader.setUniformValue("u_light_color", QVector3D(1.0f, 0.0f, 1.0f));
     //_light_source.Draw();
     _light_shader.release();
-    timer.StopNow();
+    //timer.StopNow();
 }
 
 void 
