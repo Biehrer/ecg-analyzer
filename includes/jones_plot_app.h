@@ -34,7 +34,11 @@ protected:
 public:
     void Setup();
 
+    
 public slots:
+    void TestComboBox(int idx);
+
+    void OnSetupPlotsForSignal();
     // Pus
     void OnButtonSettingsPage();
 

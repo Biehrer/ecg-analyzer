@@ -19,12 +19,35 @@
   <property name="windowTitle">
    <string>JonesPlot</string>
   </property>
+  <property name="styleSheet">
+   <string notr="true">#_central_widget { background: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:0, stop:0 rgba(33, 147, 176, 255), stop:1 rgba(109, 213, 237, 100)) }
+
+#_stacked_widget { 
+ background: rgba(32, 80, 96, 100);
+ border-radius: 8px;
+}
+
+#topPanel { 
+    background-color: qlineargradient(spread:reflect, x1:0.5, y1:0, x2:0, y2:0, stop:0 rgba(91, 204, 233, 100), stop:1 rgba(109, 213, 237, 100) );
+}</string>
+  </property>
   <widget class="QWidget" name="_central_widget">
    <property name="sizePolicy">
     <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
      <horstretch>0</horstretch>
      <verstretch>0</verstretch>
     </sizepolicy>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">#_stacked_widget { 
+ background: rgba(32, 80, 96, 100);
+ border-radius: 8px;
+}
+
+#_settings_page_stckd { 
+ background: rgba(32, 80, 96, 100);
+ border-radius: 8px;
+}</string>
    </property>
    <widget class="QWidget" name="gridLayoutWidget_3">
     <property name="geometry">
@@ -49,8 +72,14 @@
            <verstretch>0</verstretch>
           </sizepolicy>
          </property>
+         <property name="styleSheet">
+          <string notr="true">#_stacked_widget { 
+ background: rgba(32, 80, 96, 100);
+ border-radius: 8px;
+}</string>
+         </property>
          <property name="currentIndex">
-          <number>2</number>
+          <number>0</number>
          </property>
          <widget class="QWidget" name="_plot_page_stckd">
           <widget class="QWidget" name="gridLayoutWidget">
@@ -233,6 +262,24 @@
                     </property>
                    </widget>
                   </item>
+                  <item>
+                   <widget class="QComboBox" name="_combo_box_writing_speed"/>
+                  </item>
+                  <item>
+                   <widget class="QLabel" name="_label_writing_speed">
+                    <property name="font">
+                     <font>
+                      <family>Calibri</family>
+                      <pointsize>8</pointsize>
+                      <weight>75</weight>
+                      <bold>true</bold>
+                     </font>
+                    </property>
+                    <property name="text">
+                     <string>speed [mm/s]</string>
+                    </property>
+                   </widget>
+                  </item>
                  </layout>
                 </item>
                 <item>
@@ -242,6 +289,9 @@
                     <family>Calibri</family>
                     <pointsize>12</pointsize>
                    </font>
+                  </property>
+                  <property name="styleSheet">
+                   <string notr="true"/>
                   </property>
                   <property name="text">
                    <string>Start</string>
@@ -352,6 +402,19 @@
             </rect>
            </property>
            <layout class="QGridLayout" name="_grid_layout_page_settings">
+            <item row="5" column="0">
+             <spacer name="verticalSpacer_3">
+              <property name="orientation">
+               <enum>Qt::Vertical</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>20</width>
+                <height>40</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
             <item row="2" column="0">
              <layout class="QVBoxLayout" name="_vertical_layout_page_Settings">
               <item>
@@ -369,6 +432,44 @@
                </widget>
               </item>
              </layout>
+            </item>
+            <item row="4" column="0">
+             <layout class="QHBoxLayout" name="_horizontal_layout_buttons_page_settings">
+              <item>
+               <widget class="QPushButton" name="_settings_page_btn_add_plot">
+                <property name="text">
+                 <string>Add Plot</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="_settings_page_btn_remove_plot">
+                <property name="text">
+                 <string>Remove Plot</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="_settings_page_btn_setupForSignal">
+                <property name="text">
+                 <string>Setup Plots For Signal</string>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </item>
+            <item row="4" column="1">
+             <spacer name="horizontalSpacer">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>40</width>
+                <height>20</height>
+               </size>
+              </property>
+             </spacer>
             </item>
            </layout>
           </widget>
@@ -425,8 +526,22 @@
            <bold>true</bold>
           </font>
          </property>
+         <property name="styleSheet">
+          <string notr="true">QPushButton {
+    color: white;
+    background-color: #27a9e3;
+    border-width: 0px;
+    border-radius: 3px;
+}
+
+QPushButton:hover { background-color: #66c011; }
+</string>
+         </property>
          <property name="text">
           <string>Plots</string>
+         </property>
+         <property name="flat">
+          <bool>false</bool>
          </property>
         </widget>
        </item>
@@ -439,6 +554,18 @@
            <weight>75</weight>
            <bold>true</bold>
           </font>
+         </property>
+         <property name="styleSheet">
+          <string notr="true">QPushButton {
+    color: white;
+    background-color: #27a9e3;
+    border-width: 0px;
+    border-radius: 3px;
+}
+
+QPushButton:hover { background-color: #66c011; }
+
+</string>
          </property>
          <property name="text">
           <string>Plot settings</string>
@@ -455,6 +582,17 @@
            <bold>true</bold>
           </font>
          </property>
+         <property name="styleSheet">
+          <string notr="true">QPushButton {
+    color: white;
+    background-color: #27a9e3;
+    border-width: 0px;
+    border-radius: 3px;
+}
+
+QPushButton:hover { background-color: #66c011; }
+</string>
+         </property>
          <property name="text">
           <string>Load Signal</string>
          </property>
@@ -470,6 +608,17 @@
            <bold>true</bold>
           </font>
          </property>
+         <property name="styleSheet">
+          <string notr="true">QPushButton {
+    color: white;
+    background-color: #27a9e3;
+    border-width: 0px;
+    border-radius: 3px;
+}
+
+QPushButton:hover { background-color: #66c011; }
+</string>
+         </property>
          <property name="text">
           <string>Serial Port</string>
          </property>
@@ -479,8 +628,6 @@
      </item>
     </layout>
    </widget>
-   <zorder>gridLayoutWidget_3</zorder>
-   <zorder></zorder>
   </widget>
   <widget class="QMenuBar" name="menuBar">
    <property name="geometry">

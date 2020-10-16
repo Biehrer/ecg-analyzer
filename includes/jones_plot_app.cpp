@@ -35,7 +35,7 @@ JonesPlotApplication_C::JonesPlotApplication_C(QWidget *parent)
     // Connect the plot_model to the OpenGl-View.
     // The OpenGLPlotRendererWidget _openGl_widget renders the data inside the plot model
     ui._openGL_widget->SetPlotModel(&_plot_model);
-
+    
     // Connect the plot model to the table view of the plot-settings-page of the stacked widget
     ui._plot_settings_table_view->setModel(&_plot_model);
     ui._plot_settings_table_view->show();
@@ -66,18 +66,90 @@ JonesPlotApplication_C::JonesPlotApplication_C(QWidget *parent)
     // Gain dial
     connect(ui._dial_gain, SIGNAL(sliderMoved(int)), this, SLOT(OnGainChanged(int)));
 
+    ui._combo_box_writing_speed->addItem("25mm/s", QVariant(25));
+    ui._combo_box_writing_speed->addItem("50mm/s", QVariant(50));
+    ui._combo_box_writing_speed->addItem("100mm/s", QVariant(100));
+    ui._combo_box_writing_speed->addItem("200mm/s", QVariant(200));
+
+    //connect(ui._combo_box_writing_speed, &QComboBox::currentIndexChanged, this, &JonesPlotApplication_C::TestComboBox);
+    connect(ui._combo_box_writing_speed, SIGNAL(currentIndexChanged(int)), this, SLOT(TestComboBox(int)));
+
     // Connect model to plot widget, so modifications in the plot_model are also displayed in the widget
     qRegisterMetaType<OGLPlotProperty_TP>("OGLPlotProperty_TP");
     connect(&_plot_model, SIGNAL(NewChangeRequest(int, const OGLPlotProperty_TP&, const QVariant&)),
             ui._openGL_widget, SLOT(OnNewChangeRequest(int, const OGLPlotProperty_TP&, const QVariant&)));
 
-    //connect(&_plot_model, SIGNAL(OGLUpdateRequired()), this, SLOT(OnOGLUpdate()));
+    //ui._settings_page_btn_add_plot
+    //ui._settings_page_btn_remove_plot
+    connect(ui._settings_page_btn_setupForSignal, SIGNAL(clicked()), this, SLOT(OnSetupPlotsForSignal()));
 
     ui._openGL_widget->show();
     // Start drawing
     ui._openGL_widget->StartPaint();
 }
 
+void JonesPlotApplication_C::TestComboBox(int curr_idx) 
+{
+    // TODO Switch: curr idx
+    WritingSpeed_TP w_speed;
+
+    switch ( /*ui._combo_box_writing_speed->currentIndex() */curr_idx ) {
+    case WritingSpeed_TP::TwentyFive:
+        w_speed = WritingSpeed_TP::TwentyFive;
+        break;
+    case WritingSpeed_TP::Fivty:
+        w_speed = WritingSpeed_TP::Fivty;
+        break;
+    case WritingSpeed_TP::OneHundred:
+        w_speed = WritingSpeed_TP::OneHundred;
+        break;
+    case WritingSpeed_TP::TwoHundred:
+        w_speed = WritingSpeed_TP::TwoHundred;
+        break;
+    }
+    ui._openGL_widget->makeCurrent();
+    _plot_model.SetTimeRangeWritingSpeed(w_speed);
+
+    // This does also work but is hard to read because the user does not know what exactly is assigned
+    //_plot_model.SetTimeRangeWritingSpeed( /*ui._combo_box_writing_speed->currentIndex()*/ );
+
+    //_plot_model.SetTimeRangeWritingSpeed( ui._combo_box_writing_speed->itemData(ui._combo_box_writing_speed->currentIndex()).toDouble );
+}
+
+void JonesPlotApplication_C::OnSetupPlotsForSignal(){
+    // choose a signal - the first one loaded for now
+    if ( _signal_model.Data().empty() ) {
+        std::cout << "load a signal first before you can adjust the plots for one" << std::endl;
+            return;
+    }
+    auto& signal = _signal_model.Data()[0];
+    auto num_of_plots = signal->GetChannelCount();
+    auto timerange_ms = signal->GetTimerangeMs();
+
+    auto& channel_data = signal->constData();
+    std::vector<std::pair<ModelDataType_TP, ModelDataType_TP>> y_ranges;
+    // Y max and Y min are 5 % bigger / smaller than the biggest / smallest values in the signal
+    for ( auto& channel : channel_data ) {
+        y_ranges.push_back(std::make_pair(channel._min_val - (channel._min_val * 0.05), 
+                           channel._max_val + (channel._max_val * 0.05)));
+    }
+    // Create plots
+    ui._openGL_widget->makeCurrent();
+    bool success = _plot_model.InitializePlotsWithOverlap(num_of_plots,
+                                                          ui._openGL_widget->width(),
+                                                          ui._openGL_widget->height(),
+                                                          timerange_ms, 
+                                                          y_ranges);
+
+    auto& channel_labels = signal->GetChannelLabels();
+    // Setup plots now
+    int id = 0;
+    for ( auto& plot : _plot_model.Data() ) {
+        plot->SetLabel(channel_labels[id]);
+        plot->SetID(channel_data.at(0)._id);
+        ++id;
+    }
+}
 
 void JonesPlotApplication_C::Setup() 
 {
@@ -95,7 +167,7 @@ void JonesPlotApplication_C::Setup()
     y_ranges[1].second = 0.0009; // max val
 
 
-    bool success = _plot_model.InitializePlots(number_of_plots, 
+    bool success = _plot_model.InitializePlots/*WithOverlap*/(number_of_plots,
                                                     ui._openGL_widget->width(), 
                                                     ui._openGL_widget->height(),
                                                     10000.0, 
@@ -211,13 +283,14 @@ void JonesPlotApplication_C::OnBtnPlaySignal()
         const auto& plot0_timestamps = data[plot0_id]._timestamps;
 
         // data to plot 1
-        int plot1_id = 4;//plot_1->GetID() + 3;
+        int plot1_id = 3;//plot_1->GetID() + 3;
         const auto& plot1_data = data[plot1_id]._data;
         const auto& plot1_timestamps = data[plot1_id]._timestamps;
 
         // iterator to the channel-data for plot 0
         auto series_1_begin_it = plot0_data.begin();
         auto timestamps_1_begin_it = plot0_timestamps.begin();
+        auto time_series_end = plot0_data.end();
         // iterator to the channel-data for plot 1
         auto series_2_begin_it = plot1_data.begin();
         auto timestamps_2_begin_it = plot1_timestamps.begin();
@@ -225,8 +298,7 @@ void JonesPlotApplication_C::OnBtnPlaySignal()
         // Hide all this pointer stuff in convenience methods so we can use:
         double sample_rate_hz = data[plot0_id]._sample_rate_hz;
         double sample_dist_ms = (1.0 / sample_rate_hz) * 1000.0;
-        auto time_series_end = plot0_data.end();
-
+        
         // Testing Detector 1 - plot 0
         PanTopkinsQRSDetection<double> detector_0(sample_rate_hz, 2);
         // Callback :
@@ -243,7 +315,7 @@ void JonesPlotApplication_C::OnBtnPlaySignal()
             std::placeholders::_1);
         detector_1.Connect(member_callback_1);
 
-        // TODO: Also respect the moving average delay?
+        // TODO: Also respect the moving average delay
         auto filt_delay_samples =  detector_0.GetFilterDelay(); 
         auto filt_delay_sec = filt_delay_samples / sample_rate_hz;
 
@@ -256,10 +328,10 @@ void JonesPlotApplication_C::OnBtnPlaySignal()
             if ( series_1_begin_it != time_series_end ) {
                 // AddDatapoint(..) is the only thread safe method of OGLSweepChart_C!
                 plot_0->AddDatapoint(*series_1_begin_it, *timestamps_1_begin_it);
-                detector_0.AppendPoint(*series_1_begin_it, *timestamps_1_begin_it);
+                //detector_0.AppendPoint(*series_1_begin_it, *timestamps_1_begin_it);
 
-                plot_1->AddDatapoint(*series_2_begin_it, *(timestamps_2_begin_it));
-                detector_1.AppendPoint(*series_2_begin_it, *timestamps_2_begin_it);
+                plot_1->AddDatapoint(*series_2_begin_it, *timestamps_2_begin_it);
+                //detector_1.AppendPoint(*series_2_begin_it, *timestamps_2_begin_it);
 
                 // Prototyping
                 /*double filtered_sig = detector_0.AppendPoint(*series_1_begin_it, *timestamps_1_begin_it);*/
