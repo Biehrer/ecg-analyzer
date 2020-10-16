@@ -87,9 +87,8 @@ TranslateRingBufferSize(RingBufferSize_TP size)
 }
 
 //! Circular buffer class used as input bufer for OGLSweepChart_C
-//! because masking with modulo is prevented and the & operator is used, 
+//! => because masking with modulo is prevented and the & operator is used, 
 //! you must use a buffer size which is a power of 2
-
 template<typename T>
 class RingBufferOptimized_TC
 {
@@ -190,7 +189,7 @@ public:
             _number_of_elements -= num_elements;
             return av;
         } else {
-            return {}; // TODO what is constructed here in span?
+            return {}; // TODO what is constructed here in span? nullptr?
         }
 
         //if ( !IsBufferEmpty() ){

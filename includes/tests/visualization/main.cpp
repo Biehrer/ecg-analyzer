@@ -1,6 +1,7 @@
 // Project includes
 //#include "text_renderer_test.h"
-#include "text_renderer_test_independent.h"
+//#include "text_renderer_test_independent.h"
+#include "ogl_chart_ring_buffer_test.h"
 // testing
 //#include "../../visualization/ogl_plot_renderer_widget.h"
 
@@ -70,6 +71,4 @@ int main(int argc, char **argv) {
 
     // Return error code 1 if the one of test failed.
     std::cout << std::endl << success ? "success" : "fail";
-
-
 }

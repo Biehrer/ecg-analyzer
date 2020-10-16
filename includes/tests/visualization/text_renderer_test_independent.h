@@ -86,7 +86,7 @@ TextRendererTestIndependent::OnNewMajortickYAxesValue()
     //auto* plot = _model.GetPlotPtr(0);
     //plot->SetMajorTickValueYAxes(1.0);
     //_renderer.StopPaint();
-    _model.SetMajorTickValueYAxes(0, 1.0);
+    //_model.SetMajorTickValueYAxes(0, 1.0);
     //_renderer.StartPaint();
 }
 
