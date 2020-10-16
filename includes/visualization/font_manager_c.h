@@ -4,20 +4,10 @@
 
 // STL includes
 #include <vector>
+#include <memory>
 
 //! Singleton FontManager_C class
 class FontManager_C {
-
-private:
-    static std::vector<Font*> _fonts;
-
-private:
-    // All rendering is single threaded. 
-    // This should be enough to declare this class Singleton
-    FontManager_C();
-    FontManager_C(const FontManager_C& other) = delete;
-    FontManager_C& operator=(const FontManager_C& other) = delete;
-
 public:
     //! Adds a new font to the manager
     //! returns 0 if the font is already initialized and 1 on success.
@@ -30,8 +20,21 @@ public:
     static Character GetFontCharacter(Font2D_TP font, const GLchar character);
 
     //! Get a pointer to a Font object
-    static const Font* GetFont(Font2D_TP font);
+    //static const Font* GetFont(Font2D_TP font);
+    static const std::shared_ptr<Font> GetFont(Font2D_TP font);
 
     //! Removes all loaded fonts
     static void Clean();
+
+
+private:
+    FontManager_C();
+    FontManager_C(const FontManager_C& other) = delete;
+    FontManager_C& operator=(const FontManager_C& other) = delete;
+
+
+private:
+    static std::vector<std::shared_ptr<Font>> _fonts;
+    //static std::vector < Font*> _fonts;
+
 };
