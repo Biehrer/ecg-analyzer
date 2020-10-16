@@ -155,7 +155,7 @@ public:
        horizontal_line_pos.reserve(number_of_horizontal_grid_lines * 6);
 
        // Lines which are parallel to the x axis 
-       PositionType_TP length_line_x = 10.0;
+       PositionType_TP length_line_x = 10.0; //geometry.GetRightBottom()._x - geometry.GetLeftBottom()._x;
 
        for ( int line_idx = 0; line_idx <= number_of_horizontal_grid_lines; ++line_idx ) {
 
@@ -180,7 +180,7 @@ public:
        QVector<VertexType_TP> vertical_line_pos;
        vertical_line_pos.reserve(number_of_vertical_grid_lines);
 
-       PositionType_TP height_line_y = 10.0;
+       PositionType_TP height_line_y = geometry.GetLeftTop()._y - geometry.GetLeftBottom()._y;//10.0;
 
        VertexType_TP x_axis_major_tick_value = time_range_ms;
        for ( int line_idx = 0; line_idx <= number_of_vertical_grid_lines; ++line_idx ) {
