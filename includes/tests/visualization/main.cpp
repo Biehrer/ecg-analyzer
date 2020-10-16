@@ -18,55 +18,58 @@ int main(int argc, char **argv) {
     //auto format = QSurfaceFormat::defaultFormat();
     //format.setSwapInterval(0);
     //QSurfaceFormat::setDefaultFormat(format);
-    QCoreApplication::setAttribute(Qt::AA_UseDesktopOpenGL);
-    QApplication::setAttribute(Qt::AA_UseDesktopOpenGL);
 
-    QApplication a(argc, argv);
 
-    TextRendererTestIndependent test;
-    test.Initialize();
+    //QCoreApplication::setAttribute(Qt::AA_UseDesktopOpenGL);
+    //QApplication::setAttribute(Qt::AA_UseDesktopOpenGL);
 
-    //CppUnit::Test *suite = CppUnit::TestFactoryRegistry::getRegistry().makeTest();
+    //QApplication a(argc, argv);
 
-    //CppUnit::TextUi::TestRunner runner;
-    //runner.addTest(suite);
+    //TextRendererTestIndependent test;
+    //test.Initialize();
+    //return a.exec();
 
-    //CppUnit::TestResult test_result;
+    CppUnit::Test *suite = CppUnit::TestFactoryRegistry::getRegistry().makeTest();
 
-    //CppUnit::TestResultCollector result_collector;
-    //test_result.addListener(&result_collector);
+    CppUnit::TextUi::TestRunner runner;
+    runner.addTest(suite);
 
-    //runner.run(test_result);
+    CppUnit::TestResult test_result;
 
-    //// Output results 
-    //CppUnit::CompilerOutputter comp_out(&result_collector, std::cerr);
-    //comp_out.write();
+    CppUnit::TestResultCollector result_collector;
+    test_result.addListener(&result_collector);
 
-    ////# pragma warning(push)
-    ////# pragma warning(disable:4996)
-    ////    char * env = std::getenv("SIGNALROCLIB_TEST_XML_OUTPUT_FILE");
-    ////# pragma warning(pop)
-    ////
-    ////    std::string xml_fname = (nullptr == env) ? "signalproclib.test.results.xml" : std::string(env);
-    ////
-    ////    if ( xml_fname != "" ) {
-    ////        std::cout << "Writing XML output to: " << xml_fname << "\n";
-    ////
-    ////        // In XML format
-    ////        std::ofstream xml_os(xml_fname);
-    ////        if ( !xml_os )
-    ////            std::cerr << "WARNING: XML test output requested to " << xml_fname << ", but can't create file.\n";
-    ////        else {
-    ////            CppUnit::XmlOutputter xml_out(&result_collector, xml_os);
-    ////            xml_out.write();
-    ////        }
-    ////    }
-    ////
-    //// Run the tests.
-    //bool success = result_collector.wasSuccessful();
+    runner.run(test_result);
 
-    //// Return error code 1 if the one of test failed.
-    //std::cout << std::endl << success ? "success" : "fail";
+    // Output results 
+    CppUnit::CompilerOutputter comp_out(&result_collector, std::cerr);
+    comp_out.write();
 
-    return a.exec();
+    //# pragma warning(push)
+    //# pragma warning(disable:4996)
+    //    char * env = std::getenv("SIGNALROCLIB_TEST_XML_OUTPUT_FILE");
+    //# pragma warning(pop)
+    //
+    //    std::string xml_fname = (nullptr == env) ? "signalproclib.test.results.xml" : std::string(env);
+    //
+    //    if ( xml_fname != "" ) {
+    //        std::cout << "Writing XML output to: " << xml_fname << "\n";
+    //
+    //        // In XML format
+    //        std::ofstream xml_os(xml_fname);
+    //        if ( !xml_os )
+    //            std::cerr << "WARNING: XML test output requested to " << xml_fname << ", but can't create file.\n";
+    //        else {
+    //            CppUnit::XmlOutputter xml_out(&result_collector, xml_os);
+    //            xml_out.write();
+    //        }
+    //    }
+    //
+    // Run the tests.
+    bool success = result_collector.wasSuccessful();
+
+    // Return error code 1 if the one of test failed.
+    std::cout << std::endl << success ? "success" : "fail";
+
+
 }
