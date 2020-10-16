@@ -5,19 +5,25 @@
 
 // Qt includes
 #include <QAbstractTableModel>
+//#include <qabstractitemmodel.h>
 #include <qobject.h>
 #include <qvariant.h>
 #include <qvector3d.h>
 #include <qvector.h>
 #include <qstring.h>
+
 // STL includes
 #include <vector>
 #include <string>
 #include <atomic>
-const int COLS = 9;
 
 using ModelDataType_TP = float;
 
+//! There are 9 enums in OGLPlotProperty_TP (Without NOT_DEFINED)
+//! These are shown as column in the table view
+const int COLS = 9;
+
+//! Columns of the table view  
 enum OGLPlotProperty_TP {
     ID,
     LABEL,
@@ -80,7 +86,7 @@ struct PlotDescription_TP
     }
 };
 
-class PlotModel_C : public QAbstractTableModel
+class PlotModel_C : public /*QAbstractItemModel*/ QAbstractTableModel
 {
     Q_OBJECT
 
@@ -112,6 +118,12 @@ public:
         int time_range_ms,
         const std::vector<std::pair<ModelDataType_TP, ModelDataType_TP>>& y_ranges);
 
+    bool InitializePlotsWithOverlap(int number_of_plots,
+                                    int view_width,
+                                    int view_height,
+                                    int time_range_ms,
+                                    const std::vector<std::pair<ModelDataType_TP, ModelDataType_TP>>& y_ranges);
+
     OGLSweepChart_C<ModelDataType_TP>* GetPlotPtr(unsigned int plot_idx);
 
     OGLSweepChart_C<ModelDataType_TP>* GetPlotPtr(const std::string & plot_label);
@@ -122,14 +134,13 @@ public:
 
     void SetGain(const float gain);
 
+    void SetTimeRangeWritingSpeed(WritingSpeed_TP w_speed);
+
     void ClearPlotSurfaces();
 
     std::vector<OGLSweepChart_C<ModelDataType_TP >*>& Data();
     const std::vector<OGLSweepChart_C<ModelDataType_TP >*>& constData() const;
     
-    //std::list<OGLSweepChart_C<ModelDataType_TP >*>& Data();
-    //const std::list<OGLSweepChart_C<ModelDataType_TP >*>& constData() const;
-
     //!
     QVariant headerData(int section, Qt::Orientation orientation, int role) const;
 
@@ -152,8 +163,7 @@ signals:
 
 private:
     //! the data this model manages
-    //std::list<OGLSweepChart_C<ModelDataType_TP >*>* _plots;
     std::vector<OGLSweepChart_C<ModelDataType_TP >*> _plots;
-
+    //! Global signal gain
     std::atomic<float> _sig_gain;
 };
