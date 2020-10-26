@@ -21,7 +21,7 @@ required dependencies:
 - KFR library for DSP (Filtering)
 - CPPUnit for unit testing
 
-! You can install Freetype and KFR with the conan package manager(use the conanlists.txt inside the project directory)
+! You can install Freetype and KFR with the conan package manager(use the conanfile.txt inside the project directory)
 ### How 2 build:
 
 - clone the repository: "git clone (*link_2_git_repo)"
