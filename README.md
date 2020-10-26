@@ -22,6 +22,8 @@ required dependencies:
 - CPPUnit for unit testing
 
 ! You can install Freetype and KFR with the conan package manager(use the conanfile.txt inside the project directory)
+Prebuild wfdb binaries (Win 7 / 10): https://bintray.com/biehrer/WFDB/wfdb-10.6.2-win10
+
 ### How 2 build:
 
 - clone the repository: "git clone (*link_2_git_repo)"
