@@ -14,12 +14,14 @@ https://github.com/Biehrer/ecg-analyzer
 ## Get started
 
 required dependencies:
+ (Conan package manager is supported)
 - Qt5 (Core/Widgets/GUI module)
 - Freetype II for OGL glyph rendering
 - WFDB C-Library (& Curl) for loading of MIT-BIH-Database records
 - KFR library for DSP (Filtering)
 - CPPUnit for unit testing
 
+! You can install Freetype and KFR with the conan package manager(use the conanlists.txt inside the project directory)
 ### How 2 build:
 
 - clone the repository: "git clone (*link_2_git_repo)"
