@@ -1,0 +1,8 @@
+[requires]
+ freetype/2.10.4
+ kfr/4.0@mykfrtest/kfrlib
+ #Can we tell conan to copy wfbd-build from bintray?
+ #todo: CPPUnit for unit testing
+
+[generators]
+ cmake
