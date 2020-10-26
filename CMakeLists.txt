@@ -38,9 +38,11 @@ find_package(Qt5Gui)
 option(ENABLE_TESTS "Enable tests" OFF)
 if ( ${ENABLE_TESTS})
     enable_testing()
+	add_subdirectory(includes/tests)
 endif()
 
-add_subdirectory(includes/tests)
+#add_subdirectory(includes/tests)
+
 add_subdirectory(includes/visualization)
 add_subdirectory(includes/signal_proc_lib)
 
